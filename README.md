@@ -5,8 +5,8 @@ you to follow your select hermits in order!
 
 ## Motivation
 
-The first was I wanted to watch a HermitCraft season in order and easily
-bounce between series.
+The first reason I created this site was I wanted to watch a HermitCraft easily
+season in order and bounce between series.
 
 The second was I wanted to build a low-dependency, simple and understandable
 web page. I decided to make the actual content static to simplify hosting and
