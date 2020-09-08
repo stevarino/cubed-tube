@@ -179,9 +179,12 @@ function renderSeries(data) {
     channels.setAttribute('id', 'channels');
     content.appendChild(channels);
 
-    Object.keys(series.channels).sort().forEach(function(key) {
+    let channel_list = {};
+    series.channels.forEach((ch) => {channel_list[ch.name] = ch.t});
+
+    Object.keys(channel_list).sort().forEach(function(key) {
         channels.appendChild(renderChannelCheckbox(
-            key, series.channels[key].ch_title));
+            key, channel_list[key]));
     });
 
     var videos = document.createElement('div');
@@ -192,11 +195,11 @@ function renderSeries(data) {
     prevDate = '';
     for (let i=0; i<series.videos.length; i++) {
         let vid = series.videos[i];
-        if (vid.title === null) {
+        if (vid.t === null) {
             continue;
         }
         let d = new Date(0);
-        d.setUTCSeconds(vid.timestamp);
+        d.setUTCSeconds(vid.ts);
         dateText = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`
         if (prevDate != dateText) {
             let dateEl = document.createElement('h2');
@@ -205,7 +208,7 @@ function renderSeries(data) {
             prevDate = dateText;
         }
 
-        videos.appendChild(renderVideo(vid, series.channels[vid.ch_name]));
+        videos.appendChild(renderVideo(vid, series.channels[vid.ch]));
     }
     
     STATE[window.series].channels.forEach((ch_id) => {
@@ -217,6 +220,7 @@ function renderSeries(data) {
     console.log('scrolling to: ', offsetY);
     window.scrollTo(0, offsetY);
     lazyload();
+    loadDescriptions();
 }
 
 /**
@@ -262,52 +266,42 @@ function renderChannelCheckbox(id, title) {
 function renderVideo(vid, ch) {
     vidEl = document.createElement('div');
     vidEl.classList.add('video');
-    vidEl.classList.add(`channel_${vid.ch_name}`);
-    vidEl.setAttribute('data-timestamp', vid.timestamp);
+    vidEl.classList.add(`channel_${ch['name']}`);
+    vidEl.setAttribute('data-timestamp', vid.ts);
+    vidEl.setAttribute('data-video-id', vid.id);
 
-    let vidURL = `https://www.youtube.com/watch?v=${vid.video_id}`;
-    let chURL = `https://www.youtube.com/channel/${ch.ch_id}`;
+    let vidURL = `https://www.youtube.com/watch?v=${vid.id}`;
+    let chURL = `https://www.youtube.com/channel/${ch.id}`;
 
     let thumbLink = htmlToElement(`<a href='${vidURL}' target='_blank'></a>`);
     vidEl.appendChild(thumbLink);
     let thumb = htmlToElement(`
         <img
-            data-src='https://i.ytimg.com/vi/${vid.video_id}/mqdefault.jpg'
+            data-src='https://i.ytimg.com/vi/${vid.id}/mqdefault.jpg'
             class="lazyload thumb" width='320' height='180' />`)
-    thumb.setAttribute('alt', vid.title);
-    thumb.setAttribute('title', vid.title);
+    thumb.setAttribute('alt', vid.t);
+    thumb.setAttribute('title', vid.t);
     thumbLink.appendChild(thumb);
 
     let title = htmlToElement(`
         <h3>
             <a href='${chURL}' target='_blank'>
-                <img data-src='${ch.ch_thumbs}' width='44' height='44'
-                    title='${ch.ch_title}' alt='${ch.ch_title}'
+                <img data-src='${ch.thumb}' width='44' height='44'
+                    title='${ch.t}' alt='${ch.t}'
                     class="lazyload" />
             </a>
         </h3>
     `);
     let vidLink = htmlToElement(`<a href='${vidURL}' target='_blank'></a>`)
-    vidLink.innerText = vid.title;
+    vidLink.innerText = vid.t;
     title.appendChild(vidLink);
     title.appendChild(document.createElement('br'));
     title.appendChild(htmlToElement(`
-        <a href='${chURL}' target='_blank' title='${ch.ch_title} channel'
-            class='channel_link'>
-            ${ch.ch_title}</a>
+        <a href='${chURL}' target='_blank' title='${ch.t} channel'
+            class='channel_link'>${ch.t}</a>
     `))
     vidEl.appendChild(title);
 
-    let para = document.createElement('p');
-    vid.desc.split(/(?:\r\n|\r|\n)/).forEach((text) => {
-        para.appendChild(document.createTextNode(text));
-        para.appendChild(document.createElement('br'));
-    });
-    while (para.lastChild.nodeName.toLowerCase() == 'br') {
-        para.removeChild(para.lastChild);
-    }
-    vidEl.appendChild(para);
-    
     return vidEl;
 }
 
@@ -376,4 +370,39 @@ function updateTimeline() {
         });
     }
     console.log('updateTimeLine:', scrollToEpoch.length)
+}
+
+function loadDescriptions() {
+    var req = new XMLHttpRequest();
+    req.overrideMimeType("application/json");
+    req.open('GET', '/data/' + series + '.desc.json', true);
+    req.onreadystatechange = function () {
+        if (req.readyState == 4) {
+            if (req.status == "200") {
+                renderDescriptions(req.responseText);
+            } else {
+                console.log('Error during request:', req);
+            }
+        }
+    };
+    req.send();
+}
+
+function renderDescriptions(jsonText) {
+    let descs = JSON.parse(jsonText);   
+    let videos = document.getElementsByClassName('video');
+    for (var i=0; i<videos.length; i++) {
+        let vid = videos[i];
+        let desc = descs[vid.getAttribute('data-video-id')]
+
+        para = document.createElement('p');
+        desc.split(/(?:\r\n|\r|\n)/).forEach((text) => {
+            para.appendChild(document.createTextNode(text));
+            para.appendChild(document.createElement('br'));
+        });
+        while (para.lastChild.nodeName.toLowerCase() == 'br') {
+            para.removeChild(para.lastChild);
+        }
+        vid.appendChild(para);
+    }
 }

@@ -46,19 +46,20 @@ def render_html(default_series: str, series_list: List[Dict[str, str]]):
         with open(out_file, 'w') as fp:
             fp.write(process_html(html_file, context))
 
-def check_order(videos: List[Dict], attempt=0):
+def check_order(data: Dict, attempt=0):
     """
     Validates that videos are sorted by position and attempts to fix any errors
     found by reordering by video published time and playlist added time (see
     giant note below...).
     """
+    videos = data['videos']
     vids_by_ch = defaultdict(list)
     for video in videos:
-        vids_by_ch[video['ch_name']].append(video)
+        vids_by_ch[video['ch']].append(video)
     
     for ch, vids in vids_by_ch.items():
         prev = {}
-        for i, vid in enumerate(vids):
+        for vid in vids:
             if vid['position'] is None:
                 continue
             # position is absolutely trustable, but has no meaning when joined
@@ -71,23 +72,23 @@ def check_order(videos: List[Dict], attempt=0):
             # average of surrounding videos (assuming we an identify the
             # problem video)
             if prev and prev['position'] > vid['position']:
-                if prev['timestamp'] > vid['playlist_at']:
-                    vid['timestamp'] = vid['playlist_at']
-                elif prev['playlist_at'] > vid['timestamp']:
-                    prev['timestamp'] = prev['playlist_at']
-                elif attempt:
-                    print(
-                        f"  WARNINNG: {ch} {prev['position']} < "
-                        f"{vid['position']}")
+                if prev['ts'] > vid['playlist_at']:
+                    vid['ts'] = vid['playlist_at']
+                elif prev['playlist_at'] > vid['ts']:
+                    prev['ts'] = prev['playlist_at']
+                # elif attempt:
+                #     print(
+                #         f"  WARNINNG: {data['channels'][ch]['name']} "
+                #         f"{prev['position']} < {vid['position']}")
             prev = vid
 
     vids = sorted(
         itertools.chain(*vids_by_ch.values()),
-        key=lambda k: k['timestamp'])
+        key=lambda k: k['ts'])
 
     if not attempt:
         print('... trying again.')
-        return check_order(vids, 1)
+        return check_order(data, 1)
     return vids
 
 
@@ -99,34 +100,62 @@ def render_series(series: Dict):
         .where(Video.series.slug == series['slug'])
         .order_by(Video.published_at)
     )
-    data = {'channels': {}, 'videos': []}
+    data = {'channels': [], 'videos': []}
 
+    channels = {}
+    channel_lookup = {}
+    descs = {}
     for video in videos:
-        if video.title is None:
-            continue
-        data['videos'].append({
-            'video_id': video.video_id,
-            'timestamp': video.published_at,
-            'published_at': video.published_at,
-            'playlist_at': video.playlist_at,
-            'position': video.position,
-            'desc': video.description,
-            'title': video.title,
-            'ch_name': video.playlist.channel.name,
-        })
-        if video.playlist.channel.name not in data['channels']: 
+        if video.playlist.channel.name not in channels: 
             thumb = {}
             if video.playlist.channel.thumbnails:
                 thumbs = json.loads(video.playlist.channel.thumbnails)
                 thumb = thumbs['default']['url']
-            data['channels'][video.playlist.channel.name] = {
-                'ch_id': video.playlist.channel.channel_id,
-                'ch_title': video.playlist.channel.tag,
-                'ch_custom_url': video.playlist.channel.custom_url,
-                'ch_thumbs': thumb,
+            channels[video.playlist.channel.name] = {
+                'id': video.playlist.channel.channel_id,
+                'name': video.playlist.channel.name,
+                't': video.playlist.channel.tag,
+                # 'url': video.playlist.channel.custom_url,
+                'thumb': thumb,
+                'count': 1,
             }
+        else:
+            channels[video.playlist.channel.name]['count'] += 1
+    channel_names = sorted(
+        channels.keys(), key=lambda k: channels[k]['count'], reverse=True)
+    for i, name in enumerate(channel_names):
+        data['channels'].append(channels[name])
+        del data['channels'][i]['count']
+        channel_lookup[name] = i
 
-    data['videos'] = check_order(data['videos'])
+    for video in videos:
+        if video.title is None:
+            continue
+        descs[video.video_id] = video.description
+        data['videos'].append({
+            'id': video.video_id,
+            'ts': video.published_at,
+            'published_at': video.published_at,
+            'playlist_at': video.playlist_at,
+            'position': video.position,
+            # 'desc': video.description,
+            't': video.title,
+            # 'ch_name': video.playlist.channel.name,
+            'ch': channel_lookup[video.playlist.channel.name],
+        })
+        # if video.playlist.channel.name not in data['channels']: 
+        #     thumb = {}
+        #     if video.playlist.channel.thumbnails:
+        #         thumbs = json.loads(video.playlist.channel.thumbnails)
+        #         thumb = thumbs['default']['url']
+        #     data['channels'][video.playlist.channel.name] = {
+        #         'ch_id': video.playlist.channel.channel_id,
+        #         'ch_title': video.playlist.channel.tag,
+        #         'ch_custom_url': video.playlist.channel.custom_url,
+        #         'ch_thumbs': thumb,
+        #     }
+
+    data['videos'] = check_order(data)
     
     for vid in data['videos']:
         for key in 'published_at playlist_at position'.split():
@@ -134,6 +163,8 @@ def render_series(series: Dict):
 
     with open(f'output/data/{series["slug"]}.json', 'w') as fp:
         fp.write(json.dumps(data))
+    with open(f'output/data/{series["slug"]}.desc.json', 'w') as fp:
+        fp.write(json.dumps(descs))
 
 def main():
     parser = argparse.ArgumentParser()
