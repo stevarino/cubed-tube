@@ -1,0 +1,178 @@
+body {
+    font-family: sans-serif;
+}
+
+
+a {
+    color: #000;
+}
+
+#wrap {
+    margin: 0 100px;
+}
+
+#content {
+    width: 1200px;
+    margin: 110px auto 0 auto;
+    position: relative;
+}
+
+#header {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    width: 1200px;
+    height: 100px;
+    margin-left: -600px;
+    background: #fff;
+    z-index: 10;
+    opacity: 0.95;
+}
+
+h1 {
+    font-size: 3em;
+    padding-bottom: 1rem;
+    opacity: 1;
+}
+h1 a {
+    text-decoration: none;
+}
+
+/* https://css-tricks.com/solved-with-css-dropdown-menus/ */
+
+#menu {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    opacity: 1;
+}
+
+#menu li {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: block;
+    float: left;
+    position: relative;
+    transition-duration: 0.5s;
+    padding: 1rem;
+    z-index: 20;
+    border: 1px solid #fff;
+}
+
+#menu li a {
+    color: #000; 
+    text-decoration: none;
+}
+
+#menu li:hover,
+#menu li:focus-within {
+    cursor: pointer;
+    border: 1px solid #000;
+}
+  
+#menu li:focus-within a {
+    outline: none;
+}
+  
+#menu li ul {
+    margin: 0;
+    padding: 0;
+    height: 0;
+    visibility: hidden;
+    opacity: 0;
+    min-width: 15rem;
+    position: absolute;
+    transition: all 0.5s ease;
+    margin-top: 1rem;
+    display: none;
+    background: #fff; 
+    left: 0;
+    border: 1px solid #000;
+    z-index: 30;
+}
+#menu li ul li {
+    box-sizing: border-box;
+}
+  
+#menu li:hover > ul,
+#menu li:focus-within > ul,
+#menu li ul:hover,
+#menu li ul:focus {
+    visibility: visible;
+    opacity: 1;
+    display: block;
+    height: auto;
+    transition-duration: 0.5s;
+}
+  
+#menu li ul li {
+    clear: both;
+    width: 100%;
+}
+
+#channels {
+    width: 200px;
+    position: fixed;
+    left: 50%;
+    top: 100px;
+    margin-left: -600px;
+    bottom: 0;
+    overflow: scroll;
+}
+
+#channels p {
+    margin: 0.2em 0;
+}
+
+#videos {
+    margin: 0 0 0 240px;
+}
+
+#videos .video {
+    clear: both;
+    margin: 0 0 30px 0;
+    padding-left: 340px;
+    position: relative;
+    height: 180px;
+    overflow: hidden;
+}
+
+#videos h2 {
+    clear: both;
+    margin: 1em 0;
+    text-align: center;
+    background: #000;
+    color: #fff;
+}
+
+#videos .thumb {
+    position: absolute;
+    left: 0;
+    border: 2px solid #000;
+}
+
+#videos h3 {
+    position: relative;
+    min-height: 50px;
+    margin: 0;
+    padding: 0 0 0 50px;
+}
+
+#videos h3 a {
+    text-decoration: none;
+}
+
+#videos h3 img {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#videos h3 .channel_link {
+    color: #999;
+}

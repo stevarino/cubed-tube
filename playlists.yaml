@@ -1,0 +1,366 @@
+
+series:
+  - title: Hermitcraft Season 7
+    slug: hc7
+    default: true
+    channels:
+    # https://hermitcraft.fandom.com/wiki/Season_7
+    - name: BdoubleO100
+      playlist: https://www.youtube.com/playlist?list=PL2XncHqN_7yJNW-I1zUfFRbTnj0TIGrrZ
+    - name: cubfan135
+      playlist: https://www.youtube.com/playlist?list=PLoH7Sjb8-XEga029q9zamdRqt_dncTSTT
+    - name: docm77
+      playlist: https://www.youtube.com/playlist?list=PLvh8CGg6LWwqd3lUvFStCVP6yO_daqUe-
+    - name: EthosLab
+      playlist: https://www.youtube.com/playlist?list=PLaAVDbMg_XAoTkSw42KSc-pl7rG9Hr95v
+    - name: FalseSymmetry
+      playlist: https://www.youtube.com/playlist?list=PLgj0MXHeQpb-XIr_XZVYZQdWRohUntp_x
+    - name: GoodTimeWithScar
+      playlist: https://www.youtube.com/playlist?list=PLSCZsQa9VSCfF4L1OfY46sMac8anhsk6D
+    - name: Grian
+      playlist: https://www.youtube.com/playlist?list=PLU2851hDb3SE6S9YJFY6n1B4t_Qv26f1m
+    - name: Hypnotizd
+      playlist: https://www.youtube.com/playlist?list=PLriprjos26pvLjj5SRhOJPdPBTDcXYHiB
+    - name: iJevin
+      playlist: https://www.youtube.com/playlist?list=PL9heRuhTVdQRDh9SNvhSv-AxlW5DPqTDB
+    - name: impulseSV
+      playlist: https://www.youtube.com/playlist?list=PL0Z8otuXXj_3paGa74e-CDWLJHcepCV67
+    - name: iskall85
+      playlist: https://www.youtube.com/playlist?list=PLQDo59MddgIcahwqJoRjKb2BFk0raWHgT
+    - name: JoeHillsSays
+      playlist: https://www.youtube.com/playlist?list=PL7On8E0_x1tqmoE8Jme8dnvVhwEfRsGXJ
+    - name: Keralis
+      playlist: https://www.youtube.com/playlist?list=PLs6cC73V4fpvUrk9VrNv-YUpr5XuHh18N
+    - name: Mumbo Jumbo
+      playlist: https://www.youtube.com/playlist?list=PLFm1tTY1NA4eFO89sYmMDVghvH0m2wUmc
+    - name: Renthedog
+      playlist: https://www.youtube.com/playlist?list=PL6_PcQuFcLhu3Hdm4FocWMI1JHP5lzPRz
+    - name: Stressmonster101
+      playlist: https://www.youtube.com/playlist?list=PLFDYDXHl7Us-sTd8L0HUvjnotx-1ePMrM
+    - name: TangoTek
+      playlist: https://www.youtube.com/playlist?list=PL8t707flkqpf-LWYZw1LU7XtSL0as2OYG
+    - name: TinfoilChef
+      playlist: https://www.youtube.com/playlist?list=PLrp4YiBloNz7_G3gaG8Y-iOyHNw-1ZGLC
+    - name: Welsknight
+      playlist: https://www.youtube.com/playlist?list=PL3e14exB92LIc7GfSBQHqDC3JyopavrH7
+    - name: VintageBeef
+      playlist: https://www.youtube.com/playlist?list=PLhSQ4KysKPiiTsUjj3UD-Xpk0MUXHrp3l
+    - name: xBCrafted
+      playlist: https://www.youtube.com/playlist?list=PLmtS5lzk1pBT-lDvSubQEdhmAEIyduTeq
+    - name: Xisuma
+      playlist: https://www.youtube.com/playlist?list=PL7VmhWGNRxKgtwHFgDMCnutcmiafoP1c4
+    - name: Zedaph
+      playlist: https://www.youtube.com/playlist?list=PLaURolsKD_VEbQEXMOLaM7P761YIb1URU
+    - name: ZombieCleo
+      playlist: https://www.youtube.com/playlist?list=PLVO4L4qtJmBonAKh9Zcb7yyfjVsG4U9CR
+  - title: Hermitcraft Season 6
+    slug: hc6
+    active: false
+    channels:
+    # https://hermitcraft.fandom.com/wiki/Season_6
+    - name: BdoubleO100
+      playlist: https://www.youtube.com/playlist?list=PL2XncHqN_7yLzyAKUAd7YrM55e4PkfZ-E
+    - name: Biffa
+      playlist: https://www.youtube.com/playlist?list=PLupcYE1our208EXUimrSEw1oF9XeD55Ee
+    - name: cubfan135
+      playlist: https://www.youtube.com/playlist?list=PLoH7Sjb8-XEh-mU5C_MrCB6aiekTnYXrG
+    - name: docm77
+      playlist: https://www.youtube.com/playlist?list=PLvh8CGg6LWwofNzSNIB4gt38jl7Z25qDv
+    - name: FalseSymmetry
+      playlist: https://www.youtube.com/playlist?list=PLgj0MXHeQpb9cTSk82HPvkOpjbzOvGsSs
+    - name: Grian
+      playlist: https://www.youtube.com/playlist?list=PLU2851hDb3SEesCjVCmseu60aJht1DQwh
+    - name: GoodTimeWithScar
+      playlist: https://www.youtube.com/playlist?list=PLSCZsQa9VSCcbpidzioByfZYyX3hKLOvO
+    - name: iJevin
+      playlist: https://www.youtube.com/playlist?list=PL9heRuhTVdQQJgYjfHR0l8iR5U8O5cWJQ
+    - name: impulseSV
+      playlist: https://www.youtube.com/playlist?list=PL0Z8otuXXj_3XMGQ6Njua-ub497UBto_e
+    - name: iskall85
+      playlist: https://www.youtube.com/playlist?list=PLQDo59MddgIc-bKlNjtK57FA8DELdBIhY
+    - name: Jessassin
+      playlist: https://www.youtube.com/playlist?list=PL-1S95SbGoW-rucjQ2rllo5RRmJr042Xo
+    - name: JoeHillsSays
+      playlist: https://www.youtube.com/playlist?list=PL7On8E0_x1toV37YD6aV5MOCQFN77NbGN
+    - name: Keralis
+      playlist: https://www.youtube.com/playlist?list=PLs6cC73V4fptLFDngaF2xP3DLiPaDZcaZ
+    - name: Mumbo Jumbo
+      playlist: https://www.youtube.com/playlist?list=PLFm1tTY1NA4fcZddqsijPEignAza8nF74
+    - name: PythonGB
+      playlist: https://www.youtube.com/playlist?list=PLbFBnggbJ1rmBAYQbA13lPEvrGbKXCSyS
+    - name: Renthedog
+      playlist: https://www.youtube.com/playlist?list=PL6_PcQuFcLhv5WfeYF6EKE66yaUNrtPDf
+    - name: Stressmonster101
+      playlist: https://www.youtube.com/playlist?list=PLFDYDXHl7Us-nU_9gYcoyynScgLqqwDQ6
+    - name: TangoTek
+      playlist: https://www.youtube.com/playlist?list=PL8t707flkqpdg6OkNMJ6IREsFXN3UDsmn
+    - name: TinfoilChef
+      playlist: https://www.youtube.com/playlist?list=PLrp4YiBloNz59jfHQI1gm_Cvi1N6TKfCW
+    - name: Welsknight
+      playlist: https://www.youtube.com/playlist?list=PL3e14exB92LJUFMNUNKCBbEm_u3GS9JPn
+    - name: xBCrafted
+      playlist: https://www.youtube.com/playlist?list=PLmtS5lzk1pBQVc2HMDk44foISIDAcihIq
+    - name: Xisuma
+      playlist: https://www.youtube.com/playlist?list=PL7VmhWGNRxKgL1PCx0cAwp44Gt7uKSKyd
+    - name: Zedaph
+      playlist: https://www.youtube.com/playlist?list=PLaURolsKD_VHk5m1tvQxIOnQCI7Al2ZCW
+    - name: ZombieCleo
+      playlist: https://www.youtube.com/playlist?list=PLVO4L4qtJmBqLb7UZmGE7QWf1j3pJJaOE
+  - title: Hermitcraft Season 5
+    slug: hc5
+    active: false
+    channels:
+    - name: BdoubleO100
+      playlist: https://www.youtube.com/playlist?list=PL2XncHqN_7yKIafwGT8bIeHjjHlt1MUBx
+    - name: Biffa
+      playlist: https://www.youtube.com/playlist?list=PLupcYE1our21lRqMcZQWCwFMmOM4Q_LCF
+    - name: cubfan135
+      playlist: https://www.youtube.com/playlist?list=PLoH7Sjb8-XEhQSO1J4pZBF6wSnWbGCOsE
+    - name: docm77
+      playlist: https://www.youtube.com/playlist?list=PLvh8CGg6LWwotlAFM8Wqy6oERT3XQikbF
+    - name: FalseSymmetry
+      playlist: https://www.youtube.com/playlist?list=PLgj0MXHeQpb82bigJD4Bhc-cGzvEeMRMh
+    - name: GoodTimeWithScar
+      playlist: https://www.youtube.com/playlist?list=PLSCZsQa9VSCeNqmYmTsLDfax6aMIGFQsb
+    - name: iJevin
+      playlist: https://www.youtube.com/playlist?list=PL9heRuhTVdQR-j9wR6_NpwM44p4YeIG-5
+    - name: impulseSV
+      playlist: https://www.youtube.com/playlist?list=PL0Z8otuXXj_25eTjX_s1Q0KHRMD8kWX1m
+    - name: iskall85
+      playlist: https://www.youtube.com/playlist?list=PLQDo59MddgIfE6LZ-ZXxOUO5VcJLzDXjk
+    - name: JoeHillsSays
+      playlist: https://www.youtube.com/playlist?list=PL7On8E0_x1trPLZAhCme5840779kwAc-n
+    - name: Mumbo Jumbo
+      playlist: https://www.youtube.com/playlist?list=PLFm1tTY1NA4eujwhiJv4XLatEDgUbc3Jw
+    - name: PythonGB
+      playlist: https://www.youtube.com/playlist?list=PL4uClqJN4QKVRSDbT0xNSBzxeXmMjRLP6
+    - name: Renthedog
+      playlist: https://www.youtube.com/playlist?list=PL6_PcQuFcLhuS5r8K7YkOdSx6cBFbxlWM
+    - name: Stressmonster101
+      playlist: https://www.youtube.com/playlist?list=PLFDYDXHl7Us8sEH0xzqzfBiYyEVzbSG7d
+    - name: TangoTek
+      playlist: https://www.youtube.com/playlist?list=PL8t707flkqpe05eUlarroRIck0oQOdqqF
+    - name: TinfoilChef
+      playlist: https://www.youtube.com/playlist?list=PLrp4YiBloNz6BO_rWF280iNyfpSFKAzap
+    - name: VintageBeef
+      playlist: https://www.youtube.com/playlist?list=PLnw9-SvEl3c7XAgM7Qj20VEKkKA08qdx3
+    - name: Welsknight
+      playlist: https://www.youtube.com/playlist?list=PL3e14exB92LJ5WLkH_0nysZcihI0rIO75
+    - name: xBCrafted
+      playlist: https://www.youtube.com/playlist?list=PLmtS5lzk1pBRtgaOxkbX1rok02Uh1C2pn
+    - name: Xisuma
+      playlist: https://www.youtube.com/playlist?list=PL7VmhWGNRxKhmCu3twJ6ZB3Wt7wdK-L6S
+    - name: Zedaph
+      playlist: https://www.youtube.com/playlist?list=PLaURolsKD_VGE8OJZMYU88pRfVFwU4FQq
+    - name: ZombieCleo
+      playlist: https://www.youtube.com/playlist?list=PLVO4L4qtJmBoBpkiE86G9vyV9FC2nCjdy
+  - title: Hermitcraft Season 4
+    slug: hc4
+    active: false
+    channels:
+    - name: Biffa
+      playlist: https://www.youtube.com/playlist?list=PLR5G_Kc9r-JAXozbYc7EIJVA5dgNkegF6
+    - name: cubfan135
+      playlist: https://www.youtube.com/playlist?list=PLoH7Sjb8-XEglUWkLJT-Nlf-P_El8LJn_
+    - name: docM77
+      playlist: https://www.youtube.com/playlist?list=PLvh8CGg6LWwp0Sg6qsLrDGcWcPzdEytFN
+    - name: EthosLab
+      playlist: https://www.youtube.com/playlist?list=PLAFtA2SWA9KxbYqIPazuoDTFsYxxq8azV
+    - name: FalseSymmetry
+      playlist: https://www.youtube.com/playlist?list=PLgj0MXHeQpb9BpC5JKbdKjCDcSd-ela0m
+    - name: GoodTimeWithScar
+      playlist: https://www.youtube.com/playlist?list=PLSCZsQa9VSCdLumE1KTAh4Pgg0V_7Ijmg
+    # Hypnotizd - stream only. TODO: find a source.
+    - name: iJevin
+      playlist: https://www.youtube.com/playlist?list=PL9heRuhTVdQT5rnpWKKy6zvUU1EdovWfp
+    - name: impulseSV
+      playlist: https://www.youtube.com/playlist?list=PL0Z8otuXXj_3gt5GTHnj4kwfVw8s_tOqb
+    - name: iskall85
+      playlist: https://www.youtube.com/playlist?list=PLQDo59MddgIexIkO7a_Hi5T83_zl7_4Kn
+    - name: Jessassin
+      playlist: https://www.youtube.com/playlist?list=PL-1S95SbGoW_o1KC8Y8U0WOq2n8sHIHZs
+    - name: JoeHillsSays
+      playlist: https://www.youtube.com/playlist?list=PL7On8E0_x1toB6z-1uPa--k6cnH6zccg9
+    # Monkeyfarm - stream only. TODO: find a source.
+    - name: Mumbo Jumbo
+      playlist: https://www.youtube.com/playlist?list=PLFm1tTY1NA4d6abie0QfuB3b0oLrpG_jT
+    - name: Renthedog
+      playlist: https://www.youtube.com/playlist?list=PL6_PcQuFcLhvQJjz_if90hvuy4pDMzoUE
+    - name: PythonGB
+      playlist: https://www.youtube.com/playlist?list=PL4uClqJN4QKXRMqnR3LjsOmTfZV8Rx05O
+    - name: TangoTek
+      playlist: https://www.youtube.com/playlist?list=PL8t707flkqpf31J-qb4WyQaAwEpm_m8_C
+    - name: TinfoilChef
+      playlist: https://www.youtube.com/playlist?list=PLrp4YiBloNz7mPbBWpURbUS3XUYKMaQvX
+    - name: VintageBeef
+      playlist: https://www.youtube.com/playlist?list=PLbREhjIFsPX-aHgzKWsBBEgYcHi463otT
+    - name: Welsknight
+      playlist: https://www.youtube.com/playlist?list=PL3e14exB92LKasZJiGBghm-GkVtV-Knm9
+    - name: xBCrafted
+      playlist: https://www.youtube.com/playlist?list=PLmtS5lzk1pBQbcYM4196YkO_i_Bgbl-wy
+    - name: Xisuma
+      playlist: https://www.youtube.com/playlist?list=PL7VmhWGNRxKiM-l7idq3OjLChImNaQ3Ew
+    - name: ZombieCleo
+      playlist: https://www.youtube.com/playlist?list=PLVO4L4qtJmBrfdaqWwN4l1lD_jb5TCz0Q
+    - name: Zueljin
+      playlist: https://www.youtube.com/playlist?list=PLk6W1KxWnn5ALRcVInqaBsW8oK_3R8wur
+  - title: Hermitcraft Season 3
+    slug: hc3
+    active: false
+    channels:
+    - name: Biffa
+      playlist: https://www.youtube.com/playlist?list=PLR5G_Kc9r-JCxdNr76FKo763Ig1wwUmMb
+    - name: docm77
+      playlist: https://www.youtube.com/playlist?list=PLvh8CGg6LWwoJjoig0esbDxjpfw4ncVCb
+    # EthosLab - no playlist TODO: fix this
+    - name: FalseSymmetry
+      playlist: https://www.youtube.com/playlist?list=PLgj0MXHeQpb9hekRhe5V2VuyGMsGmcwhp
+    - name: Hypnotizd
+      playlist: https://www.youtube.com/playlist?list=PLriprjos26pudMRWXQqZ_gW5URHZ_WuA9
+    - name: iJevin
+      playlist: https://www.youtube.com/playlist?list=PL9heRuhTVdQSo1WDxXSp4I8T65pjtJLKh
+    - name: impulseSV
+      playlist: https://www.youtube.com/playlist?list=PL0Z8otuXXj_3QypGmpxJZElEOctbxKRdv
+    - name: JoeHillsSays
+      playlist: https://www.youtube.com/playlist?list=PL7On8E0_x1toKhhPoWt4rEGHIhc-FUUKh
+    # Keralis - stream only
+    - name: KingDaddyDMAC
+      playlist: https://www.youtube.com/playlist?list=PL7vFECXWtNMHIfy6xMPVl3zgQ6j8apgjE
+    - name: Monkeyfarm
+      playlist: https://www.youtube.com/playlist?list=PL742700FFFEF70836
+    - name: Mumbo Jumbo
+      playlist: https://www.youtube.com/playlist?list=PLFm1tTY1NA4d4xMGQ0IOembHDW8MbOR7n
+    - name: Pungence
+      playlist: https://www.youtube.com/playlist?list=PLlg4p5KBL2C04PFF-E3V6v6kpKEBfBWel
+    - name: PythonGB
+      playlist: https://www.youtube.com/playlist?list=PL4uClqJN4QKUPxIwSt5kvlGjK1PtvgWlU
+    - name: skyzm
+      playlist: https://www.youtube.com/playlist?list=PLsBqca1-_w7AoiuumqLbU4crLkJyeY82g
+    - name: Sl1pg8r
+      playlist: https://www.youtube.com/playlist?list=PLvDeH9y3Xxat-StKz2_wqKL3_GBnIFNft
+    # Spumwackles
+    - name: TangoTek
+      playlist: https://www.youtube.com/playlist?list=PL8t707flkqpceX8_CIhEjSRrUyu9xkulu
+    - name: TinfoilChef
+      playlist: https://www.youtube.com/playlist?list=PLrp4YiBloNz5XzCmBz-vydNwslMET2s55
+    - name: Topmass
+      playlist: https://www.youtube.com/playlist?list=PLoKHWOFLcwuYRI33IXmBdEWYst31q6N2d
+    - name: xBCrafted
+      playlist: https://www.youtube.com/playlist?list=PLmtS5lzk1pBRlGMbN8SQgKHkmmb0W-tby
+    - name: Xisuma
+      playlist: https://www.youtube.com/playlist?list=PL7VmhWGNRxKj1ks9-Q941E_LVUKEFermz
+    - name: ZombieCleo
+      playlist: https://www.youtube.com/playlist?list=PLVO4L4qtJmBqUpKtnQ9FkEwZV5tgDt1Cg
+    - name: Zueljin
+      playlist: https://www.youtube.com/playlist?list=PLk6W1KxWnn5ANivDF0m4fpc0YKlzIYU74
+  - title: Hermitcraft Season 2
+    slug: hc2
+    active: false
+    channels:
+    - name: Aureylian
+      playlist: https://www.youtube.com/playlist?list=PL01kV0pVAnWbhQEZv9IX8wJ5N97QBDlDl
+    - name: Biffa
+      playlist: https://www.youtube.com/playlist?list=PLR5G_Kc9r-JA9zSZ1XEpavqqLdrzyIGad
+    # dewtroid
+    - name: FalseSymmetry
+      playlist: https://www.youtube.com/playlist?list=PLgj0MXHeQpb8A1tZ9h_xoeoSWreLdf5u4
+    - name: Hypnotizd
+      playlist: https://www.youtube.com/playlist?list=PLriprjos26pstWT0jAC7ZB1xZPaUWEB9n
+    - name: IAmSp00n
+      playlist: https://www.youtube.com/playlist?list=PLtdgAUT2pa3-Un6V1TEuV97YugZLtXaBw
+    - name: iJevin
+      playlist: https://www.youtube.com/playlist?list=PL9heRuhTVdQSX6tsW9KTR1qd0q5MomgdE
+    - name: Jessassin
+      playlist: https://www.youtube.com/playlist?list=PL-1S95SbGoW8CGV0h3tyTWD9BOZnjCb1G
+    - name: Juicetra
+      playlist: https://www.youtube.com/playlist?list=PLMopnJLfnrzcTe8JZ-QqVGcML2DKEsIIs
+    - name: JoeHillsSays
+      playlist: https://www.youtube.com/playlist?list=PLE75D8E8FA5BD0D0C
+    - name: Keralis
+      playlist: https://www.youtube.com/playlist?list=PLs6cC73V4fptkqD6So_esan5VifwoX0i-
+    - name: KingDaddyDMAC
+      playlist: https://www.youtube.com/playlist?list=PL7vFECXWtNMEXRfpI1OBLKInEdJ6NyHuj
+    # KingHappy
+    # LuclinMCWB
+    - name: Marriland
+      playlist: https://www.youtube.com/playlist?list=PL2qqrSqvrZ8A-8n4Ko22hLPpvc4rHU75B
+    - name: Monkeyfarm
+      playlist: https://www.youtube.com/playlist?list=PLA1nTfnXQpfofL1iotPLKZXONLBclughS
+    - name: Mumbo Jumbo
+      playlist: https://www.youtube.com/playlist?list=PLFm1tTY1NA4fC4-WeWUOVubsPh-A4YknH
+    - name: Pungence
+      playlist: https://www.youtube.com/playlist?list=PLlg4p5KBL2C1cZEkltY_xaDgFgUmP4AHa
+    # Red3yz
+    - name: skyzm
+      playlist: https://www.youtube.com/playlist?list=PLsBqca1-_w7Az6RRoHWB_4Urv1akENmPp
+    - name: Sl1pg8r
+      playlist: https://www.youtube.com/playlist?list=PLvDeH9y3XxavkA5smTLtsxeeI-UItXDLp
+    - name: TangoTek
+      playlist: https://www.youtube.com/playlist?list=PL8t707flkqpfVYANNw-rr1UmKKYxpiCSO
+    # ThePixelNerds
+    # Spumwackles
+    - name: TinfoilChef
+      playlist: https://www.youtube.com/playlist?list=PLrp4YiBloNz64jDYmzBOB0j_EBnaKsdMo
+    - name: Topmass
+      playlist: https://www.youtube.com/playlist?list=PL9188F5316A0720BB
+    - name: Unhost
+      playlist: https://www.youtube.com/playlist?list=PLp57jNhoiUe0rGhLv8j9Ga19NzkTTYQNa
+    # VenomKisser
+    - name: xBCrafted
+      playlist: https://www.youtube.com/playlist?list=PLmtS5lzk1pBQXRgOmt5T3beC3cJzN7iit
+    - name: Xisuma
+      playlist: https://www.youtube.com/playlist?list=PL7VmhWGNRxKiL51GPEbeRajHdVg_afvIn
+    - name: ZombieCleo
+      playlist: https://www.youtube.com/playlist?list=PLVO4L4qtJmBqbEDDL_J8oMSSSrVkPNlfe
+    - name: Zueljin
+      playlist: https://www.youtube.com/playlist?list=PLk6W1KxWnn5D9Y5zmoPbvFrjtJ5T_HVNp
+  - title: Hermitcraft Season 1
+    slug: hc1
+    active: false
+    channels:
+    - name: Aureylian
+      playlist: https://www.youtube.com/playlist?list=PL01kV0pVAnWYCad7KtdxMMr_18FrRiUPY
+    # BdoubleO100
+    - name: Biffa
+      playlist: https://www.youtube.com/playlist?list=PLA0CF1EE448ECF0CA
+    # cilantroGamer
+    - name: Cubehamster
+      playlist: https://www.youtube.com/playlist?list=PL8DA4B341385FF72E
+    # Dinnerbone
+    - name: generikb
+      playlist: https://www.youtube.com/playlist?list=PLD10F520D9B63EB06
+    - name: Hypnotizd
+      playlist: https://www.youtube.com/playlist?list=PL9DBAC295B4C7E7C7
+    - name: IAmSp00n
+      playlist: https://www.youtube.com/playlist?list=PLtdgAUT2pa3-Un6V1TEuV97YugZLtXaBw
+    - name: Jessassin
+      playlist: https://www.youtube.com/playlist?list=PLD278E534A5C9FA69
+    - name: JoeHillsSays
+      playlist: https://www.youtube.com/playlist?list=PLE75D8E8FA5BD0D0C
+    - name: Juicetra
+      playlist: https://www.youtube.com/playlist?list=PLMopnJLfnrzcTe8JZ-QqVGcML2DKEsIIs
+    - name: Keralis
+      playlist: https://www.youtube.com/playlist?list=PLC61697A269F1720A
+    - name: KingDaddyDMAC
+      playlist: https://www.youtube.com/playlist?list=PL7vFECXWtNMEXRfpI1OBLKInEdJ6NyHuj
+    # MidnightEnforcer
+    - name: PixelNerds
+      playlist: https://www.youtube.com/playlist?list=PL91DB39B43E104B1F
+    - name: Pungence
+      playlist: https://www.youtube.com/playlist?list=PLlg4p5KBL2C1FKuVYZFJbcmWOl4APcuuh
+    - name: shaunstatic
+      playlist: https://www.youtube.com/playlist?list=PLp57jNhoiUe0NizPL2fHSYhFDqiIgzf8o
+    - name: shawnvmartin
+      playlist: https://www.youtube.com/playlist?list=PLp57jNhoiUe2GNXbMCv_WFn1K3uOZBKO8
+    - name: skyzm
+      playlist: https://www.youtube.com/playlist?list=PLsBqca1-_w7AbCZQhSxIU8YmSYQwHYGqI
+    - name: Topmass
+      playlist: https://www.youtube.com/playlist?list=PL9188F5316A0720BB
+    # Kiershar
+    - name: red3yz
+      playlist: https://www.youtube.com/playlist?list=PL235r2Fauuih7C7tSy7CoA36cOgr1A5_K
+    # Sokar
+    - name: Unhost
+      playlist: https://www.youtube.com/playlist?list=PLp57jNhoiUe0ZSM0YWRDa8miyTvwKGVrD
+    - name: Xisuma
+      playlist: https://www.youtube.com/playlist?list=PL5F968FA0F2323D39
