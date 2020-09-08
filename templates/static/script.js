@@ -397,7 +397,16 @@ function renderDescriptions(jsonText) {
 
         para = document.createElement('p');
         desc.split(/(?:\r\n|\r|\n)/).forEach((text) => {
-            para.appendChild(document.createTextNode(text));
+            // there are so many problems with this, but its good enough.
+            // probably...
+            text.split(/(https?:\/\/[^\s]+)/).forEach((part) => {
+                if (part.startsWith('http')) {
+                    let link = htmlToElement(`<a href="${part}">${part}</a>`);
+                    para.appendChild(link);
+                } else {
+                    para.appendChild(document.createTextNode(part));
+                }
+            })
             para.appendChild(document.createElement('br'));
         });
         while (para.lastChild.nodeName.toLowerCase() == 'br') {

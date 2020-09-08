@@ -2,7 +2,6 @@ body {
     font-family: sans-serif;
 }
 
-
 a {
     color: #000;
 }
@@ -15,6 +14,7 @@ a {
     width: 1200px;
     margin: 110px auto 0 auto;
     position: relative;
+    padding-bottom: 300x;
 }
 
 #header {
