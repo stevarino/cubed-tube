@@ -18,7 +18,7 @@ window.onload = function () {
     STATE = loadFromStorage('state');
     if (STATE === null) {
         STATE = {};
-        stateToStorage('state', STATE);
+        saveToStorage('state', STATE);
     }
     window.addEventListener('scroll', function(e) {
         if (scrollTimeout !== null) {
@@ -27,8 +27,7 @@ window.onload = function () {
         var pos = window.scrollY;
         scrollTimeout = window.setTimeout(function() {
             STATE[window.series].scroll = getScrollPos(pos);
-            console.log(`scrolled to ${STATE[window.series].scroll} (${pos})`);
-            stateToStorage('state', STATE);
+            saveToStorage('state', STATE);
         }, 300);
     });
       
@@ -51,7 +50,7 @@ function initDropdown() {
         dropdown.appendChild(li);
         link.onclick = function() {
             clearSeries();
-            stateToStorage('series', this.getAttribute('data-series'));
+            saveToStorage('series', this.getAttribute('data-series'));
             loadSeries();
             return false;
         };
@@ -64,7 +63,7 @@ function initDropdown() {
  * @param {str} key 
  * @param {object} val 
  */
-function stateToStorage(key, val) {
+function saveToStorage(key, val) {
     try {
         localStorage.setItem(key, JSON.stringify(val));
     } catch (e) {
@@ -105,7 +104,7 @@ function loadSeries() {
     console.log('Loading', series);
     if (!(series in STATE)) {
         STATE[series] = {'channels': [], 'scroll': 0};
-        stateToStorage('state', STATE);
+        saveToStorage('state', STATE);
     }
 
     var req = new XMLHttpRequest();
@@ -152,14 +151,28 @@ function toggleChannel(e) {
         STATE[window.series].channels.push(ch_id);
     }
     updateScrollPos();
-    stateToStorage('state', STATE);
+    saveToStorage('state', STATE);
+}
+
+function toggleChannels() {
+    let channel_map = {};
+    document.querySelectorAll('#channels input').forEach((el) => {
+        channel_map[getAttribute('data-channel')] = el.checked;
+    });
+    let vids = document.getElementsByClassName('video');
+    for (let i=0; i<vids.length; i++) {
+        let visible = channel_map[vids[i].getAttribute('data-channel')];
+        vids[i].style.display = (visible ? 'block' : 'none');
+    }
+    updateScrollPos();
+    saveToStorage('state', STATE);
 }
 
 /**
  * Resets the content window to load a different series.
  */
 function clearSeries() {
-    document.querySelectorAll('#videos, #channels').forEach((el) => {
+    document.querySelectorAll('#videos, #channels > *').forEach((el) => {
         el.parentElement.removeChild(el);
     });
     document.getElementById('loading').style.display = 'block';
@@ -171,8 +184,8 @@ function clearSeries() {
  * @param {str} data JSON server response payload
  */
 function renderSeries(data) {
-    document.getElementById('loading').style.display = 'none';
     var series = JSON.parse(data);
+    document.getElementById('loading').style.display = 'none';
     var content = document.getElementById('content');
 
     var channels = document.createElement('div');
@@ -182,6 +195,26 @@ function renderSeries(data) {
     let channel_list = {};
     series.channels.forEach((ch) => {channel_list[ch.name] = ch.t});
 
+    channels.appendChild(htmlToElement(`
+        <p>Select <a id='selectall' href='#'>All</a> | 
+        <a id='selectnone' href='#'>None</a></p>
+    `))
+    document.getElementById('selectall').addEventListener('click', (e)=> {
+        document.querySelectorAll('#channels input').forEach((el) => {
+            el.checked = true;
+            toggleChannel({target: el})
+        });
+        e.preventDefault();
+        return false;
+    })
+    document.getElementById('selectnone').addEventListener('click', (e)=> {
+        document.querySelectorAll('#channels input').forEach((el) => {
+            el.checked = false;
+            toggleChannel({target: el})
+        });
+        e.preventDefault();
+        return false;
+    })
     Object.keys(channel_list).sort().forEach(function(key) {
         channels.appendChild(renderChannelCheckbox(
             key, channel_list[key]));
@@ -217,7 +250,6 @@ function renderSeries(data) {
 
     updateTimeline();
     let offsetY = setScrollPos();
-    console.log('scrolling to: ', offsetY);
     window.scrollTo(0, offsetY);
     lazyload();
     loadDescriptions();
@@ -242,18 +274,17 @@ function htmlToElement(html) {
  * @param {str} title 
  */
 function renderChannelCheckbox(id, title) {
-    let ch_p = document.createElement('p');
     let checked = (
         (STATE[window.series].channels.indexOf(id) == -1)
         ? 'checked="checked"' : '');
-    let input = document.createElement('input');
-    ch_p.innerHTML = `
+    let label = htmlToElement(`<label for='channel_${id}'></label>`);
+    let input = htmlToElement(`
         <input type='checkbox' ${checked} id='channel_${id}'
-            data-channel='${id}' />
-        <label for='channel_${id}'>${title}</label>
-    `.trim();
-    ch_p.firstChild.onchange = toggleChannel;
-    return ch_p;
+            data-channel='${id}' />`);
+    label.appendChild(input);
+    label.appendChild(htmlToElement(title));
+    input.addEventListener('change', toggleChannel);
+    return label;
 }
 
 /**
@@ -269,6 +300,7 @@ function renderVideo(vid, ch) {
     vidEl.classList.add(`channel_${ch['name']}`);
     vidEl.setAttribute('data-timestamp', vid.ts);
     vidEl.setAttribute('data-video-id', vid.id);
+    vidEl.setAttribute('data-channel', ch.name);
 
     let vidURL = `https://www.youtube.com/watch?v=${vid.id}`;
     let chURL = `https://www.youtube.com/channel/${ch.id}`;
@@ -300,9 +332,60 @@ function renderVideo(vid, ch) {
         <a href='${chURL}' target='_blank' title='${ch.t} channel'
             class='channel_link'>${ch.t}</a>
     `))
+
+    let d = new Date(0);
+    d.setUTCSeconds(vid.ts);
+    let month = MONTHS[d.getMonth()].substr(0,3);
+    title.appendChild(htmlToElement(`
+        <span class='date'>${month} ${d.getDate()} ${d.getFullYear()}</span>
+    `));
+
+    
     vidEl.appendChild(title);
 
+    vidEl.addEventListener('mouseenter', videoShowMoreLess);
+    vidEl.addEventListener('mouseleave', videoHideMoreLess);
+
     return vidEl;
+}
+
+function videoShowMoreLess(e) {
+    let vid = e.target;
+    let rect = vid.getBoundingClientRect();
+    let para = vid.lastChild;
+    if (para.tagName.toLowerCase() != 'p') {
+        return;
+    }
+    let paraRect = para.getBoundingClientRect();
+    let text = vid.classList.contains('expanded') ? 'Less': 'More';
+    
+    let show = htmlToElement(`
+        <span class="showmoreless">
+            Show ${text}
+        </span>`);
+    show.addEventListener('click', videoExpand);
+    vid.appendChild(show);
+}
+
+function videoHideMoreLess(e) {
+    let vid = e.target;
+    let span = vid.getElementsByClassName('showmoreless');
+    if (span.length == 0) {
+        return;
+    }
+    vid.removeChild(span[0]);
+}
+
+function videoExpand(e) {
+    var vid = e.target.parentElement;
+    vid.classList.toggle('expanded');
+    updateScrollPos();
+    let text = vid.classList.contains('expanded') ? 'Less': 'More';
+    let span = vid.getElementsByClassName('showmoreless');
+    if (span.length == 0) {
+        return;
+    }
+    span[0].innerText = 'Show ' + text;
 }
 
 /**

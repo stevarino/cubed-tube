@@ -1,38 +1,28 @@
 body {
     font-family: sans-serif;
+    margin: 0;
 }
 
 a {
     color: #000;
 }
 
-#wrap {
-    margin: 0 100px;
-}
-
-#content {
-    width: 1200px;
-    margin: 110px auto 0 auto;
-    position: relative;
-    padding-bottom: 300x;
-}
-
 #header {
-    position: fixed;
+    position: sticky;
     top: 0;
-    left: 50%;
     width: 1200px;
-    height: 100px;
-    margin-left: -600px;
-    background: #fff;
+    height: 100%;
     z-index: 10;
-    opacity: 0.95;
+    margin: 0 auto;
 }
 
 h1 {
     font-size: 3em;
-    padding-bottom: 1rem;
     opacity: 1;
+    margin: 0;
+    padding: 1rem 0;
+    background: #fff;
+    opacity: 0.95;
 }
 h1 a {
     text-decoration: none;
@@ -59,7 +49,6 @@ h1 a {
     float: left;
     position: relative;
     transition-duration: 0.5s;
-    padding: 1rem;
     z-index: 20;
     border: 1px solid #fff;
 }
@@ -67,6 +56,8 @@ h1 a {
 #menu li a {
     color: #000; 
     text-decoration: none;
+    padding: 1rem;
+    display: block;
 }
 
 #menu li:hover,
@@ -88,7 +79,6 @@ h1 a {
     min-width: 15rem;
     position: absolute;
     transition: all 0.5s ease;
-    margin-top: 1rem;
     display: none;
     background: #fff; 
     left: 0;
@@ -115,36 +105,49 @@ h1 a {
     width: 100%;
 }
 
-#channels {
-    width: 200px;
-    position: fixed;
-    left: 50%;
-    top: 100px;
-    margin-left: -600px;
-    bottom: 0;
-    overflow: scroll;
+#content {
+    width: 1200px;
+    margin: 0 auto 0 auto;
+    position: relative;
 }
 
-#channels p {
-    margin: 0.2em 0;
+#channels {
+    position: fixed;
+    top: 100px;
+    bottom: 0;
+    left: 50%;
+    margin-left: -600px;
+    width: 200px;
+    overflow-y: scroll;
+}
+
+#channels label {
+    display: block;
 }
 
 #videos {
     margin: 0 0 0 240px;
+    padding-bottom: 300px;
 }
 
 #videos .video {
     clear: both;
-    margin: 0 0 30px 0;
+    margin: 0 0 2em 0;
     padding-left: 340px;
     position: relative;
     height: 180px;
     overflow: hidden;
 }
 
+#videos .video.expanded {
+    overflow: display;
+    min-height: 180px;
+    height: auto;
+}
+
 #videos h2 {
     clear: both;
-    margin: 1em 0;
+    margin: 0 0 1em 0;
     text-align: center;
     background: #000;
     color: #fff;
@@ -175,4 +178,18 @@ h1 a {
 
 #videos h3 .channel_link {
     color: #999;
+}
+
+#videos h3 .date {
+    color: #ccc;
+    margin-left: 1em;
+}
+
+#videos .showmoreless {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: #fff;
+    opacity: 0.95;
+    cursor: pointer;
 }

@@ -164,8 +164,8 @@ series:
       playlist: https://www.youtube.com/playlist?list=PLoH7Sjb8-XEglUWkLJT-Nlf-P_El8LJn_
     - name: docM77
       playlist: https://www.youtube.com/playlist?list=PLvh8CGg6LWwp0Sg6qsLrDGcWcPzdEytFN
-    - name: EthosLab
-      playlist: https://www.youtube.com/playlist?list=PLAFtA2SWA9KxbYqIPazuoDTFsYxxq8azV
+    # - name: EthosLab
+    #   playlist: https://www.youtube.com/playlist?list=PLAFtA2SWA9KxbYqIPazuoDTFsYxxq8azV
     - name: FalseSymmetry
       playlist: https://www.youtube.com/playlist?list=PLgj0MXHeQpb9BpC5JKbdKjCDcSd-ela0m
     - name: GoodTimeWithScar
