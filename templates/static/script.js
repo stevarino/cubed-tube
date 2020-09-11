@@ -28,6 +28,7 @@ var PLAYER = {
 
 window.onload = function () {
     loadSettings();
+    initDropdown()
     if (document.getElementById('loading') === null) {
         return;
     }
@@ -46,7 +47,6 @@ window.onload = function () {
             saveToStorage('state', STATE);
         }, 300);
     });
-    initDropdown()
     loadSeries();
 }
 
@@ -88,8 +88,13 @@ function initDropdown() {
         li.appendChild(link);
         dropdown.appendChild(li);
         link.onclick = function() {
-            clearSeries();
             saveToStorage('series', this.getAttribute('data-series'));
+            // if we're  not on the home page (has a loading message), go there
+            if (document.getElementById('loading') == null) {
+                window.location = '/';
+                return;
+            }
+            clearSeries();
             loadSeries();
             return false;
         };
