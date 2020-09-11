@@ -11,7 +11,23 @@ var scrollTimeout = null
 // scroll to epoch data structure.
 var scrollToEpoch = []
 
+var SETTINGS = {};
+
+// embedded YouTube player
+var PLAYER = {
+    obj: null,
+    // state enum: -1 unplayed, 0 fin, 1 play, 2 pause, 3 buff, 5 cued
+    state: null,
+    ready: false,
+    controls: {
+    'Escape': closePlayer,
+    ' ': pausePlayer,
+    },
+    video: null
+};
+
 window.onload = function () {
+    loadSettings();
     if (document.getElementById('loading') === null) {
         return;
     }
@@ -30,9 +46,32 @@ window.onload = function () {
             saveToStorage('state', STATE);
         }, 300);
     });
-      
     initDropdown()
     loadSeries();
+}
+
+function onYouTubeIframeAPIReady() {
+    PLAYER.ready = true;
+}
+
+function loadSettings() {
+    SETTINGS = this.loadFromStorage('settings')
+    if (SETTINGS === null) {
+        SETTINGS = {player: true, autoplay: true};
+        this.saveToStorage('settings', SETTINGS);
+    }
+    document.getElementById('opt_player').checked = SETTINGS.player;
+    document.getElementById('opt_player').addEventListener('change', (e) => {
+        SETTINGS.player = document.getElementById('opt_player').checked;
+        console.log(SETTINGS);
+        this.saveToStorage('settings', SETTINGS);
+    })
+    document.getElementById('opt_autoplay').checked = SETTINGS.autoplay;
+    document.getElementById('opt_autoplay').addEventListener('change', (e) => {
+        SETTINGS.autoplay = document.getElementById('opt_autoplay').checked;
+        console.log(SETTINGS);
+        this.saveToStorage('settings', SETTINGS);
+    })
 }
 
 /**
@@ -306,6 +345,8 @@ function renderVideo(vid, ch) {
     let chURL = `https://www.youtube.com/channel/${ch.id}`;
 
     let thumbLink = htmlToElement(`<a href='${vidURL}' target='_blank'></a>`);
+    thumbLink.setAttribute('data-video-id', vid.id);
+    thumbLink.addEventListener('click', loadPlayer);
     vidEl.appendChild(thumbLink);
     let thumb = htmlToElement(`
         <img
@@ -324,7 +365,9 @@ function renderVideo(vid, ch) {
             </a>
         </h3>
     `);
-    let vidLink = htmlToElement(`<a href='${vidURL}' target='_blank'></a>`)
+    let vidLink = htmlToElement(`<a href='${vidURL}' target='_blank'></a>`);
+    vidLink.setAttribute('data-video-id', vid.id);
+    vidLink.addEventListener('click', loadPlayer);
     vidLink.innerText = vid.t;
     title.appendChild(vidLink);
     title.appendChild(document.createElement('br'));
@@ -455,6 +498,10 @@ function updateTimeline() {
     console.log('updateTimeLine:', scrollToEpoch.length)
 }
 
+/**
+ * Asynchronously load video descriptions. This saves >90% of playlist loading
+ * latency.
+ */
 function loadDescriptions() {
     var req = new XMLHttpRequest();
     req.overrideMimeType("application/json");
@@ -471,6 +518,11 @@ function loadDescriptions() {
     req.send();
 }
 
+/**
+ * Receives an XMLHttpRequest payload and loads the data into the appropriate
+ * video descriptions.
+ * @param {str} jsonText 
+ */
 function renderDescriptions(jsonText) {
     let descs = JSON.parse(jsonText);   
     let videos = document.getElementsByClassName('video');
@@ -484,7 +536,8 @@ function renderDescriptions(jsonText) {
             // probably...
             text.split(/(https?:\/\/[^\s]+)/).forEach((part) => {
                 if (part.startsWith('http')) {
-                    let link = htmlToElement(`<a href="${part}">${part}</a>`);
+                    let link = htmlToElement(
+                        `<a href="${part}" target='blank'>${part}</a>`);
                     para.appendChild(link);
                 } else {
                     para.appendChild(document.createTextNode(part));
@@ -497,4 +550,135 @@ function renderDescriptions(jsonText) {
         }
         vid.appendChild(para);
     }
+}
+
+/**
+ * Initialize the YouTube Embedded Player if available and play the clicked
+ * video.
+ * @param {Object} e onclick triggering event
+ */
+function loadPlayer(e) {
+    if (!SETTINGS.player || !PLAYER.ready) {
+        return true;
+    }
+    let link = e.target;
+    if (link.tagName.toLowerCase() == 'img') {
+        link = link.parentElement;
+    }
+    let wrap = document.getElementById('player_wrap');
+    wrap.style.display = 'block';
+    wrap.addEventListener('click', closePlayer);
+    wrap.appendChild(htmlToElement('<div id="player"></div>'));
+    document.body.addEventListener('keydown', (e) => {
+        console.log(e);
+        if (e.key in PLAYER.controls) {
+            PLAYER.controls[e.key](e);
+        }
+    });
+    PLAYER.video = link.getAttribute('data-video-id');
+    console.log('playing video ', PLAYER.video);
+    PLAYER.obj = new YT.Player('player', {
+        height: '390',
+        width: '640',
+        videoId: PLAYER.video,
+        events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
+        }
+    });
+    e.preventDefault();
+    return false;
+}
+
+/**
+ * Receives ready status when YouTube player is loaded.
+ */
+function onPlayerReady(e) {
+    console.log('player ready');
+    e.target.playVideo();
+}
+
+/**
+ * YouTube Player State Change Event, with e.data being an enum corresponding
+ * as follows: 
+ *  
+    -1 unplayed,
+     0 video finished
+     1 playing
+     2 paused
+     3 buffering
+     5 cued
+
+ * @param {Object} e YouTube Event
+ */
+function onPlayerStateChange(e) {
+    console.log('player state change:', e.data, e);
+    PLAYER.state = e.data;
+    if (PLAYER.state != 0) {
+        return;
+    }
+    if (!SETTINGS.autoplay) {
+        closePlayer();
+        return;
+    }
+    let videoId = findNextVideo(PLAYER.video);
+    if (videoId == null) {
+        closePlayer();
+        return;
+    }
+    PLAYER.video = videoId;
+    PLAYER.obj.loadVideoById({'videoId': videoId});
+}
+
+/**
+ * Destroys the embedded YouTube player, resets state, and restores the site.
+ */
+function closePlayer() {
+    document.getElementById('player_wrap').style.display = 'none';
+    PLAYER.obj.destroy();
+    PLAYER.obj = null;
+    PLAYER.video = null;
+    PLAYER.state = null;
+    document.getElementById('player_wrap').innerHTML = '';
+}
+
+/**
+ * Keypress event to play/pause the video.
+ * @param {Object} e Keypress event
+ */
+function pausePlayer(e) {
+    if (PLAYER.obj === null) {
+        return true;
+    }
+    if (PLAYER.state == 2 || PLAYER.state == 5) {
+        PLAYER.obj.playVideo();
+    } else {
+        PLAYER.obj.pauseVideo();
+    }
+    e.preventDefault();
+    return false;
+}
+
+/**
+ * Given a video id, finds the next video id for the user's selected channels.
+ * @param {str} videoId 
+ */
+function findNextVideo(videoId) {
+    let videos = document.getElementsByClassName('video');
+    found = false;
+    for(let i=0; i<videos.length; i++) {
+        let other_id = videos[i].getAttribute('data-video-id');
+        if (other_id == videoId) {
+            found = true;
+            continue;
+        }
+        if (!found) {
+            continue;
+        }
+        if (videos[i].style.display == 'none') {
+            continue;
+        }
+        return other_id;
+    }
+    return null; 
 }

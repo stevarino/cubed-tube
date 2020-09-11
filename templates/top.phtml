@@ -6,6 +6,7 @@
         <link rel="stylesheet" href="/static/style.css" />
         <!-- Global site tag (gtag.js) - Google Analytics -->
         <script async src="https://www.googletagmanager.com/gtag/js?id=UA-177412705-1"></script>
+        <script async src="https://www.youtube.com/iframe_api"></script>
         <script>
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -23,7 +24,18 @@
                         <ul id="seasons" aria-label='submenu'></ul>
                     </li>
                     <li><a href='/about/'>About</a></li>
-                    <li><a href='https://github.com/stevarino/hermit-book/issues'>Feedback</a></li>
+                    <li><a href='#' onclick='return false'>Settings</a>
+                        <ul id="settings" aria-label='submenu'>
+                            <li><label for='opt_player'>
+                                <input type='checkbox' id='opt_player' name='opt_player' />
+                                Use embedded player
+                            </label></li>
+                            <li><label for='opt_autoplay'>
+                                <input type='checkbox' id='opt_autoplay' name='opt_autoplay' />
+                                Autoplay next video
+                            </label></li>
+                        </ul>
+                    </li>
                     <li><a href='https://github.com/stevarino/hermit-book'>Github</a></li>
                 </ul>
             </div>
