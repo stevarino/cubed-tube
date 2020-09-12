@@ -1,3 +1,7 @@
+:root {
+    --size: auto; /* 600px */
+}
+
 body {
     font-family: sans-serif;
     margin: 0;
@@ -10,19 +14,18 @@ a {
 #header {
     position: sticky;
     top: 0;
-    width: 1200px;
     height: 100%;
     z-index: 10;
     margin: 0 auto;
+    width: var(--size);
+    background: rgba(255, 255, 255, 0.9);
 }
 
 h1 {
-    font-size: 3em;
+    font-size: 3rem;
     opacity: 1;
-    margin: 0;
-    padding: 1rem 0;
-    background: #fff;
-    opacity: 0.95;
+    margin: 0 1rem;
+    padding: 1rem 0 1rem 0;
 }
 h1 a {
     text-decoration: none;
@@ -31,33 +34,31 @@ h1 a {
 /* https://css-tricks.com/solved-with-css-dropdown-menus/ */
 
 #menu {
-    position: absolute;
-    right: 0;
-    bottom: 0;
+    margin: 0 1rem 0 auto;
     list-style: none;
-    margin: 0;
     padding: 0;
-    background: #fff;
-    opacity: 1;
+    height: 3.5rem;
+    white-space: nowrap;
+    overflow-x: scroll;
+    text-align: right;
 }
 
-#menu li {
+#menu > li {
     list-style: none;
     margin: 0;
     padding: 0;
-    display: block;
-    float: left;
     position: relative;
     transition-duration: 0.5s;
     z-index: 20;
-    border: 1px solid #fff;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    display: inline-block;
 }
 
-#menu li a, #menu li label {
+#menu > li > * {
     color: #000; 
     text-decoration: none;
     padding: 1rem;
-    display: block;
+    display: inline-block;
 }
 
 #menu li:hover,
@@ -73,20 +74,26 @@ h1 a {
 #menu li ul {
     margin: 0;
     padding: 0;
-    height: 0;
     visibility: hidden;
-    opacity: 0;
-    min-width: 15rem;
-    position: absolute;
     transition: all 0.5s ease;
     display: none;
-    background: #fff; 
+    position: fixed;
+    top: 8rem;
+    bottom: 0;
     left: 0;
-    border: 1px solid #000;
-    z-index: 30;
+    right: 0;
+    overflow-y: scroll;
+    text-align: left;
 }
 #menu li ul li {
     box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 1.5rem;
+}
+
+#menu li ul li > * {
+    padding: 1rem;
+    display: block;
 }
   
 #menu li:hover > ul,
@@ -94,7 +101,6 @@ h1 a {
 #menu li ul:hover,
 #menu li ul:focus {
     visibility: visible;
-    opacity: 1;
     display: block;
     height: auto;
     transition-duration: 0.5s;
@@ -105,48 +111,62 @@ h1 a {
     width: 100%;
 }
 
+#channels {
+}
+
+#menu li #channels li label {
+    padding: 0.5rem;
+    position: relative;
+    padding-left: 2em;
+    color: #999;
+}
+
+#menu li #channels li.checked label {
+    color: #000;
+}
+
+#channels input {
+    visibility: hidden;
+}
+
+#channels img {
+    left: 1rem;
+    top: calc(50% - 0.75em);
+    height: 1.5em;
+    width: 1.5em;
+    position: absolute;
+    filter: grayscale(80%);
+    opacity: 0.2;
+}
+
+#channels .checked img,
+#channels li:hover img {
+    filter: unset;
+    opacity: 1;
+}
+
 #content {
-    width: 1200px;
+    width: var(--size);
     margin: 0 auto 0 auto;
     position: relative;
 }
 
-#channels {
-    position: fixed;
-    top: 100px;
-    bottom: 0;
-    left: 50%;
-    margin-left: -600px;
-    width: 200px;
-    overflow-y: scroll;
-}
-
-#channels label {
-    display: block;
-}
-
 #videos {
-    margin: 0 0 0 240px;
-    padding-bottom: 300px;
+    padding-bottom: 20rem;
 }
 
 #videos .video {
-    clear: both;
     margin: 0 0 2em 0;
-    padding-left: 340px;
     position: relative;
-    height: 180px;
-    overflow: hidden;
 }
 
 #videos .video.expanded {
-    overflow: display;
+    overflow: visible;
     min-height: 180px;
     height: auto;
 }
 
 #videos h2 {
-    clear: both;
     margin: 0 0 1em 0;
     text-align: center;
     background: #000;
@@ -154,9 +174,11 @@ h1 a {
 }
 
 #videos .thumb {
-    position: absolute;
-    left: 0;
     border: 2px solid #000;
+    display: block;
+    margin: 0 auto;
+    width: 320px;
+    height: 180px;
 }
 
 #videos h3 {
@@ -185,6 +207,14 @@ h1 a {
     margin-left: 1em;
 }
 
+#videos p {
+    display: none;
+}
+
+#videos .video.expanded p {
+    display: block;
+}
+
 #videos .showmoreless {
     position: absolute;
     bottom: 0;
@@ -208,4 +238,71 @@ h1 a {
 #player {
     margin: 2em auto 0 auto;
     display: block;
+}
+
+@media only screen and (min-width: 62rem) { /* 992px */
+    :root {
+        --size: 56rem; /* 896px */
+    }
+    #menu {
+        overflow: visible;
+        position: absolute;
+        bottom: 0;
+        right: 0;
+    }
+    #menu li a#channel_dropdown {
+        display: none;
+    }
+    #menu li ul {
+        min-width: 15rem;
+        position: absolute;
+        top: 3rem;
+        left: 0;
+        height: auto;
+        overflow: visible;
+    }
+    #menu li ul li {
+        font-size: 1rem;
+    }
+    #menu li ul#channels {
+        position: fixed;
+        top: 7rem;
+        bottom: 0;
+        left: 50%;
+        margin-left: calc(var(--size) /  -2);
+        width: 12.5rem; /* 200px */
+        overflow-y: scroll;
+        visibility: visible;
+        height: auto;
+        display: block;
+        opacity: 1;
+        background: transparent;
+        border: 0;
+        z-index: 50;
+    }
+    #menu #channels li {
+        border: 0;
+    }
+    #videos {
+        margin: 0 0 0 15rem; /* 240px; */
+    }
+    #videos .video {
+        padding-left: 340px;
+        height: 180px;
+        overflow: hidden;
+    }
+    #videos .thumb {
+        position: absolute;
+        left: 0;
+        top: 0;
+    }
+    #videos p {
+        display: block;
+    }
+}
+
+@media only screen and (min-width: 80rem) { /* 1280px */
+    :root {
+        --size: 75rem; /* 1200px */
+    }
 }

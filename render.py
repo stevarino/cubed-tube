@@ -138,22 +138,9 @@ def render_series(series: Dict):
             'published_at': video.published_at,
             'playlist_at': video.playlist_at,
             'position': video.position,
-            # 'desc': video.description,
             't': video.title,
-            # 'ch_name': video.playlist.channel.name,
             'ch': channel_lookup[video.playlist.channel.name],
         })
-        # if video.playlist.channel.name not in data['channels']: 
-        #     thumb = {}
-        #     if video.playlist.channel.thumbnails:
-        #         thumbs = json.loads(video.playlist.channel.thumbnails)
-        #         thumb = thumbs['default']['url']
-        #     data['channels'][video.playlist.channel.name] = {
-        #         'ch_id': video.playlist.channel.channel_id,
-        #         'ch_title': video.playlist.channel.tag,
-        #         'ch_custom_url': video.playlist.channel.custom_url,
-        #         'ch_thumbs': thumb,
-        #     }
 
     data['videos'] = check_order(data)
     
@@ -166,28 +153,40 @@ def render_series(series: Dict):
     with open(f'output/data/{series["slug"]}.desc.json', 'w') as fp:
         fp.write(json.dumps(descs))
 
+def copytree(src, dst, symlinks=False, ignore=None):
+    """https://stackoverflow.com/a/12514470"""
+    for item in os.listdir(src):
+        s = os.path.join(src, item)
+        d = os.path.join(dst, item)
+        if os.path.isdir(s):
+            shutil.copytree(s, d, symlinks, ignore)
+        else:
+            shutil.copy2(s, d)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--series', '-s', nargs='*')
+    parser.add_argument('--quick', '-q', action='store_true')
     args = parser.parse_args()
 
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     with open('playlists.yaml') as fp:
         config = yaml.safe_load(fp)
 
-    shutil.rmtree('output/')
-    os.makedirs('output/data', exist_ok=True)
+    if not args.quick:
+        shutil.rmtree('output/')
+        os.makedirs('output/data', exist_ok=True)
 
-    for series in config['series']:
-        print(f'Processing {series["slug"]}')
-        if args.series and series['slug'] not in args.series:
-            continue
-        render_series(series)
+        for series in config['series']:
+            print(f'Processing {series["slug"]}')
+            if args.series and series['slug'] not in args.series:
+                continue
+            render_series(series)
 
     render_html(
         [s['slug'] for s in config['series'] if s.get('default')][0],
         [[s['slug'], s['title']] for s in config['series']])
-    shutil.copytree('templates/static', 'output/static')
+    copytree('templates/static', 'output/static')
 
 if __name__ == "__main__":
     main()

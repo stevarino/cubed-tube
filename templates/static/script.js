@@ -194,14 +194,28 @@ function toggleChannel(e) {
     } else if (!visible && index == -1) {
         STATE[window.series].channels.push(ch_id);
     }
+    updateCheckbox(e.target);
     updateScrollPos();
     saveToStorage('state', STATE);
+}
+
+function updateCheckbox(el) {
+    let parent = el.parentElement;
+    while (parent.tagName.toLowerCase() != 'li') {
+        parent = parent.parentElement;
+    }
+    if (el.checked) {
+        parent.classList.add('checked');
+    } else {
+        parent.classList.remove('checked');
+    }
 }
 
 function toggleChannels() {
     let channel_map = {};
     document.querySelectorAll('#channels input').forEach((el) => {
         channel_map[getAttribute('data-channel')] = el.checked;
+        updateCheckbox(el);
     });
     let vids = document.getElementsByClassName('video');
     for (let i=0; i<vids.length; i++) {
@@ -232,37 +246,7 @@ function renderSeries(data) {
     document.getElementById('loading').style.display = 'none';
     var content = document.getElementById('content');
 
-    var channels = document.createElement('div');
-    channels.setAttribute('id', 'channels');
-    content.appendChild(channels);
-
-    let channel_list = {};
-    series.channels.forEach((ch) => {channel_list[ch.name] = ch.t});
-
-    channels.appendChild(htmlToElement(`
-        <p>Select <a id='selectall' href='#'>All</a> | 
-        <a id='selectnone' href='#'>None</a></p>
-    `))
-    document.getElementById('selectall').addEventListener('click', (e)=> {
-        document.querySelectorAll('#channels input').forEach((el) => {
-            el.checked = true;
-            toggleChannel({target: el})
-        });
-        e.preventDefault();
-        return false;
-    })
-    document.getElementById('selectnone').addEventListener('click', (e)=> {
-        document.querySelectorAll('#channels input').forEach((el) => {
-            el.checked = false;
-            toggleChannel({target: el})
-        });
-        e.preventDefault();
-        return false;
-    })
-    Object.keys(channel_list).sort().forEach(function(key) {
-        channels.appendChild(renderChannelCheckbox(
-            key, channel_list[key]));
-    });
+    renderChannels(series.channels);
 
     var videos = document.createElement('div');
     videos.setAttribute('id', 'videos');
@@ -311,24 +295,72 @@ function htmlToElement(html) {
 }
 
 /**
+ * Renders the Channel Selection checkboxes.
+ * 
+ * @param {Array} seriesChannels The series channels
+ */
+function renderChannels(seriesChannels) {
+    let channelList = {};
+    seriesChannels.forEach((ch) => {
+        channelList[ch.name] = ch
+    });
+    var channels = document.getElementById('channels');
+    channels.appendChild(htmlToElement(`
+        <li><span>Select <a id='selectall' href='#'>All</a> | 
+        <a id='selectnone' href='#'>None</a></span></li>
+    `))
+    document.getElementById('selectall').addEventListener('click', (e)=> {
+        document.querySelectorAll('#channels input').forEach((el) => {
+            el.checked = true;
+            toggleChannel({target: el})
+        });
+        e.preventDefault();
+        return false;
+    })
+    document.getElementById('selectnone').addEventListener('click', (e)=> {
+        document.querySelectorAll('#channels input').forEach((el) => {
+            el.checked = false;
+            toggleChannel({target: el})
+        });
+        e.preventDefault();
+        return false;
+    })
+    Object.keys(channelList).sort().forEach(function(key) {
+        channels.appendChild(renderChannelCheckbox(
+            key, channelList[key]));
+    });
+}
+
+
+/**
  * Renders a channel checkbox. All channel values are from the config so
  * HTML-injection safe.
  * 
  * @param {str} id 
  * @param {str} title 
  */
-function renderChannelCheckbox(id, title) {
-    let checked = (
-        (STATE[window.series].channels.indexOf(id) == -1)
-        ? 'checked="checked"' : '');
+function renderChannelCheckbox(id, data) {
+    let active = STATE[window.series].channels.indexOf(id) == -1;
+    let checked = active ? 'checked="checked"' : '';
+    let root = htmlToElement('<li></li>');
+    if (active) {
+        root.classList.add('checked');
+    }
     let label = htmlToElement(`<label for='channel_${id}'></label>`);
+    root.appendChild(label);
     let input = htmlToElement(`
         <input type='checkbox' ${checked} id='channel_${id}'
             data-channel='${id}' />`);
     label.appendChild(input);
-    label.appendChild(htmlToElement(title));
+
+    let img = htmlToElement(
+        `<img src='${data.thumb}' width='44' height='44' />`);
+    img.setAttribute('alt', `${data.title}'s Logo`);
+    label.appendChild(img);
+
+    label.appendChild(document.createTextNode(data.t));
     input.addEventListener('change', toggleChannel);
-    return label;
+    return root;
 }
 
 /**
@@ -348,18 +380,6 @@ function renderVideo(vid, ch) {
 
     let vidURL = `https://www.youtube.com/watch?v=${vid.id}`;
     let chURL = `https://www.youtube.com/channel/${ch.id}`;
-
-    let thumbLink = htmlToElement(`<a href='${vidURL}' target='_blank'></a>`);
-    thumbLink.setAttribute('data-video-id', vid.id);
-    thumbLink.addEventListener('click', loadPlayer);
-    vidEl.appendChild(thumbLink);
-    let thumb = htmlToElement(`
-        <img
-            data-src='https://i.ytimg.com/vi/${vid.id}/mqdefault.jpg'
-            class="lazyload thumb" width='320' height='180' />`)
-    thumb.setAttribute('alt', vid.t);
-    thumb.setAttribute('title', vid.t);
-    thumbLink.appendChild(thumb);
 
     let title = htmlToElement(`
         <h3>
@@ -390,6 +410,18 @@ function renderVideo(vid, ch) {
 
     
     vidEl.appendChild(title);
+
+    let thumbLink = htmlToElement(`<a href='${vidURL}' target='_blank'></a>`);
+    thumbLink.setAttribute('data-video-id', vid.id);
+    thumbLink.addEventListener('click', loadPlayer);
+    vidEl.appendChild(thumbLink);
+    let thumb = htmlToElement(`
+        <img
+            data-src='https://i.ytimg.com/vi/${vid.id}/mqdefault.jpg'
+            class="lazyload thumb" width='320' height='180' />`)
+    thumb.setAttribute('alt', vid.t);
+    thumb.setAttribute('title', vid.t);
+    thumbLink.appendChild(thumb);
 
     vidEl.addEventListener('mouseenter', videoShowMoreLess);
     vidEl.addEventListener('mouseleave', videoHideMoreLess);

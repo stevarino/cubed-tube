@@ -3,6 +3,7 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
         <title>HermitBook</title>
+        <link rel="shortcut icon" href="/static/favicon.png"> 
         <link rel="stylesheet" href="/static/style.css" />
         <!-- Global site tag (gtag.js) - Google Analytics -->
         <script async src="https://www.googletagmanager.com/gtag/js?id=UA-177412705-1"></script>
@@ -13,13 +14,15 @@
             gtag('js', new Date());
             gtag('config', 'UA-177412705-1');
         </script>
-
     </head>
     <body>
         <div id='wrap'>
             <div id='header'>
                 <h1><a href='/'>HermitBook</a></h1>
                 <ul id='menu'>
+                    <li><a href='/' id='channel_dropdown'>Channels</a>
+                    <ul id='channels' aria-label='submenu'></ul>
+                </li>
                     <li><a href='/'>Seasons</a>
                         <ul id="seasons" aria-label='submenu'></ul>
                     </li>
