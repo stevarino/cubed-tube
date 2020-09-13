@@ -87,7 +87,6 @@ def check_order(data: Dict, attempt=0):
         key=lambda k: k['ts'])
 
     if not attempt:
-        print('... trying again.')
         return check_order(data, 1)
     return vids
 
@@ -174,8 +173,10 @@ def main():
         config = yaml.safe_load(fp)
 
     if not args.quick:
-        shutil.rmtree('output/')
+        if os.path.exists('output'):
+            shutil.rmtree('output/')
         os.makedirs('output/data', exist_ok=True)
+        os.makedirs('output/static', exist_ok=True)
 
         for series in config['series']:
             print(f'Processing {series["slug"]}')
