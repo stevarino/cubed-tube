@@ -47,6 +47,14 @@ window.onload = function () {
             saveToStorage('state', STATE);
         }, 300);
     });
+    window.addEventListener('resize', function() {
+        if (scrollTimeout !== null) {
+            window.clearTimeout(scrollTimeout)
+        }
+        scrollTimeout = window.setTimeout(function() {
+            updateScrollPos();
+        }, 300);
+    });
     loadSeries();
 }
 
@@ -276,9 +284,7 @@ function renderSeries(data) {
         toggleVideos(ch_id, false);
     });
 
-    updateTimeline();
-    let offsetY = setScrollPos();
-    window.scrollTo(0, offsetY);
+    updateScrollPos();
     lazyload();
     loadDescriptions();
 }
@@ -485,7 +491,8 @@ function getScrollPos(pos) {
 
         let prev = scrollToEpoch[i-1];
         let offset = (pos - prev.pos) / (current.pos - prev.pos);
-        return offset * (current.ts - prev.ts) + prev.ts;
+        let ts = offset * (current.ts - prev.ts) + prev.ts;
+        return ts;
     }
     return scrollToEpoch[scrollToEpoch.length-1].ts;
 }
@@ -502,7 +509,8 @@ function setScrollPos() {
 
         let prev = scrollToEpoch[i-1];
         let offset = (ts - prev.ts) / (current.ts - prev.ts);
-        return offset * (current.pos - prev.pos) + prev.pos;
+        let px = offset * (current.pos - prev.pos) + prev.pos;
+        return px;
     }
     return current.pos;
 }
@@ -512,7 +520,7 @@ function setScrollPos() {
  */
 function updateScrollPos() {
     updateTimeline();
-    setScrollPos();
+    window.scrollTo(0, setScrollPos());
 }
 
 /**

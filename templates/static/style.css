@@ -1,5 +1,7 @@
-:root {
+root {
     --size: auto; /* 600px */
+    --fsize: calc(0.25vw + 0.25vh + 1vmin);
+    font-size: calc(2 * var(--fsize));
 }
 
 body {
@@ -9,6 +11,10 @@ body {
 
 a {
     color: #000;
+}
+
+#wrap {
+    margin: 0 1rem;
 }
 
 #header {
@@ -61,6 +67,10 @@ h1 a {
     display: inline-block;
 }
 
+#menu li ul a {
+    text-decoration: none;
+}
+
 #menu li:hover,
 #menu li:focus-within {
     cursor: pointer;
@@ -87,7 +97,7 @@ h1 a {
 }
 #menu li ul li {
     box-sizing: border-box;
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.95);
     font-size: 1.5rem;
 }
 
@@ -162,7 +172,7 @@ h1 a {
 
 #videos .video.expanded {
     overflow: visible;
-    min-height: 180px;
+    min-height: 184px;
     height: auto;
 }
 
@@ -177,8 +187,8 @@ h1 a {
     border: 2px solid #000;
     display: block;
     margin: 0 auto;
-    width: 320px;
-    height: 180px;
+    width: 80%;
+    height: calc(80vw * 9 / 16);
 }
 
 #videos h3 {
@@ -230,7 +240,7 @@ h1 a {
     top: 0;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: -100%;
     background: rgba(0, 0, 0, 0.9);
     z-index: 100;
 }
@@ -242,6 +252,7 @@ h1 a {
 
 @media only screen and (min-width: 62rem) { /* 992px */
     :root {
+        font-size: 16px;
         --size: 56rem; /* 896px */
     }
     #menu {
@@ -266,7 +277,7 @@ h1 a {
     }
     #menu li ul#channels {
         position: fixed;
-        top: 7rem;
+        top: 5rem;
         bottom: 0;
         left: 50%;
         margin-left: calc(var(--size) /  -2);
@@ -288,13 +299,15 @@ h1 a {
     }
     #videos .video {
         padding-left: 340px;
-        height: 180px;
+        height: 184px;
         overflow: hidden;
     }
     #videos .thumb {
         position: absolute;
         left: 0;
         top: 0;
+        width: 320px;
+        height: 180px;
     }
     #videos p {
         display: block;

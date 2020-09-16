@@ -9,6 +9,7 @@ import json
 import os
 import re
 import socket
+import sys
 import time
 import traceback
 from typing import Dict, List
@@ -180,13 +181,13 @@ def process_series(ctx: Context, channels: List[Dict[str,str]]):
         except Exception:
             traceback.print_exc()
 
-def main():
+def main(argv=None):
     ctx = Context()
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--series', '-s', nargs='*')
     parser.add_argument('--channel', '-c', nargs='*')
-    args = parser.parse_args()
+    args = parser.parse_args(sys.argv[1:] if argv is None else argv)
 
     ctx.channels = args.channel
 

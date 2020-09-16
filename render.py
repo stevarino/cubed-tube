@@ -13,6 +13,7 @@ import json
 import os
 import re
 import shutil
+import sys
 from typing import Dict, List
 import yaml
 
@@ -162,11 +163,11 @@ def copytree(src, dst, symlinks=False, ignore=None):
         else:
             shutil.copy2(s, d)
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--series', '-s', nargs='*')
     parser.add_argument('--quick', '-q', action='store_true')
-    args = parser.parse_args()
+    args = parser.parse_args(sys.argv[1:] if argv is None else argv)
 
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     with open('playlists.yaml') as fp:
