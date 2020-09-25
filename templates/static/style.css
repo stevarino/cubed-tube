@@ -1,4 +1,4 @@
-root {
+:root {
     --size: auto; /* 600px */
     --fsize: calc(0.25vw + 0.25vh + 1vmin);
     font-size: calc(2 * var(--fsize));
