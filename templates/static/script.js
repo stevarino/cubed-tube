@@ -5,6 +5,20 @@ const MONTHS = [
 
 // Selected channels and scroll posstion by series (added channels are hidden)
 var STATE = {}
+/**
+ * {
+ *      series (hc7) = [
+ *          {
+ *              'profile' = str
+ *              'profileActive' = Date()
+ *              'channels' = [
+ *                  'channelIdStr'
+ *              ],
+ *              'scroll' = int
+*           }
+ *      ]
+ * }
+ */
 
 // scroll tracker timeout timer, to prevent hundreds of actions per scroll
 var scrollTimeout = null
@@ -20,8 +34,8 @@ var PLAYER = {
     state: null,
     ready: false,
     controls: {
-    'Escape': closePlayer,
-    ' ': pausePlayer,
+        'Escape': closePlayer,
+        ' ': pausePlayer,
     },
     video: null
 };
@@ -43,8 +57,9 @@ window.onload = function () {
         }
         var pos = window.scrollY;
         scrollTimeout = window.setTimeout(function() {
-            STATE[window.series].scroll = getScrollPos(pos);
+            getProfile().scroll = getScrollPos(pos);
             saveToStorage('state', STATE);
+            markVideoActive(pos);
         }, 300);
     });
     window.addEventListener('resize', function() {
@@ -56,6 +71,25 @@ window.onload = function () {
         }, 300);
     });
     loadSeries();
+}
+
+function markVideoActive(pos) {
+    let lim = document.getElementById('header').getBoundingClientRect().bottom;
+    var offset = document.body.getBoundingClientRect().top;
+    let found = false;
+    let start = new Date();
+    let active = null;
+    var actives = document.getElementsByClassName('activevid');
+    for (var i=0; i<actives.length; i++) {
+        actives[i].classList.remove('activevid');
+    }
+    for (var i in scrollToEpoch) {
+        if ((scrollToEpoch[i].pos + offset) >= lim && !found) {
+            active = scrollToEpoch[i];
+            found = true;
+        }
+    }
+    active.video.classList.add('activevid');
 }
 
 function onYouTubeIframeAPIReady() {
@@ -83,9 +117,45 @@ function loadSettings() {
 }
 
 /**
+ * Adds/removes/toggles menu list-item class for hovering effects.
+ * 
+ * @param {Event} e 
+ */
+function modifyMenu(e, action) {
+    e.preventDefault();
+    console.log(e.type, action);
+    let el = e.target;
+    if (el.tagName.toLowerCase() == 'a') {
+        el = el.parentElement;
+    }
+    document.querySelectorAll('#menu > li').forEach((li) => {
+        if (li != el) {
+            console.log(li.firstChild.innerText);
+            li.classList.remove('active');
+        }
+    })
+    el.classList[action]('active');
+    return false;
+}
+
+/**
  * Initialize series selector dropdown.
  */
 function initDropdown() {
+    document.querySelectorAll("#menu > li").forEach((menu) => {
+        menu.childNodes.forEach((el) => {
+            if (el.nodeType == 1 && el.tagName.toLowerCase() == 'a') {
+                el.addEventListener('click', (e) => modifyMenu(e, 'toggle'));
+                el.addEventListener('keydown', (e) => {
+                    if (e.key == ' ' || e.key.toLowerCase() == 'enter') {
+                        return modifyMenu(e, 'toggle')
+                    }
+                });
+            }
+        });
+        menu.addEventListener('mouseenter', (e) => modifyMenu(e, 'add'));
+        menu.addEventListener('mouseleave', (e) => modifyMenu(e, 'remove'));
+    });
     let dropdown = document.getElementById('seasons');
     window.all_series.forEach((s) => {
         let li = document.createElement('li');
@@ -147,16 +217,21 @@ function loadFromStorage(key) {
  * Loads a series from the server.
  */
 function loadSeries() {
-    let series = loadFromStorage('series');
-    if (series === null) {
-        series = window.series;
-    } else {
-        window.series = series;
-    }
+    let series = getSeries();
     console.log('Loading', series);
     if (!(series in STATE)) {
-        STATE[series] = {'channels': [], 'scroll': 0};
+        STATE[series] = [{
+            'profile': 'default',
+            'accessed': new Date().getTime(),
+            'channels': [], 
+            'scroll': 0,
+        }];
         saveToStorage('state', STATE);
+    } else if (! (STATE[series] instanceof Array)) {
+        // one time migrate code
+        STATE[series]['profile'] = 'default';
+        STATE[series]['accessed'] = 0;
+        STATE[series] = [STATE['series']];
     }
 
     var req = new XMLHttpRequest();
@@ -172,6 +247,33 @@ function loadSeries() {
         }
     };
     req.send();
+}
+
+/**
+ * Returns the currently active series (hc7).
+ */
+function getSeries() {
+    let series = loadFromStorage('series');
+    if (series === null) {
+        series = window.series;
+    } else {
+        window.series = series;
+    }
+    return series;
+}
+
+/**
+ * Returns the currently active profile.
+ */
+function getProfile() {
+    let active = null;
+    for (let profile in STATE[window.series]) {
+        if (active == null  || active.accessed < profile.accessed) {
+            active = profile;
+        }
+    }
+    console.log('profile:', active);
+    return active;
 }
 
 /**
@@ -195,12 +297,13 @@ function toggleVideos(ch_id, visible) {
 function toggleChannel(e) {
     let ch_id = e.target.getAttribute('data-channel');
     let visible = e.target.checked;
+    let profile = getProfile();
     toggleVideos(ch_id, visible);
-    let index = STATE[window.series].channels.indexOf(ch_id);
+    let index = profile.channels.indexOf(ch_id);
     if (visible && index != -1) {
-        STATE[window.series].channels.splice(index, 1);
+        profile.channels.splice(index, 1);
     } else if (!visible && index == -1) {
-        STATE[window.series].channels.push(ch_id);
+        profile.channels.push(ch_id);
     }
     updateCheckbox(e.target);
     updateScrollPos();
@@ -280,7 +383,7 @@ function renderSeries(data) {
         videos.appendChild(renderVideo(vid, series.channels[vid.ch]));
     }
     
-    STATE[window.series].channels.forEach((ch_id) => {
+    getProfile().channels.forEach((ch_id) => {
         toggleVideos(ch_id, false);
     });
 
@@ -346,7 +449,7 @@ function renderChannels(seriesChannels) {
  * @param {str} title 
  */
 function renderChannelCheckbox(id, data) {
-    let active = STATE[window.series].channels.indexOf(id) == -1;
+    let active = getProfile().channels.indexOf(id) == -1;
     let checked = active ? 'checked="checked"' : '';
     let root = htmlToElement('<li></li>');
     if (active) {
@@ -501,7 +604,7 @@ function getScrollPos(pos) {
  * Converts stored timestamp to scroll position.
  */
 function setScrollPos() {
-    let ts = STATE[window.series].scroll;
+    let ts = getProfile().scroll;
     for (var i=0; i<scrollToEpoch.length; i++) {
         var current = scrollToEpoch[i];
         if (current.ts < ts) continue;
@@ -537,7 +640,8 @@ function updateTimeline() {
         }
         scrollToEpoch.push({
             'ts': parseInt(el.getAttribute('data-timestamp')),
-            'pos': el.getBoundingClientRect().top - offset
+            'pos': el.getBoundingClientRect().top - offset,
+            'video': el,
         });
     }
     console.log('updateTimeLine:', scrollToEpoch.length)
@@ -631,6 +735,7 @@ function loadPlayer(e) {
             'onStateChange': onPlayerStateChange
         }
     });
+    PLAYER.obj.getIframe().focus();
     e.preventDefault();
     return false;
 }
