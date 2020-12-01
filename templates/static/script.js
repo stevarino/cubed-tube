@@ -10,7 +10,7 @@ var STATE = {}
  *      series (hc7) = [
  *          {
  *              'profile' = str
- *              'profileActive' = Date()
+ *              'accessed' = new Date().getTime()
  *              'channels' = [
  *                  'channelIdStr'
  *              ],
@@ -44,6 +44,7 @@ window.onload = function () {
     loadSettings();
     initDropdown()
     if (document.getElementById('loading') === null) {
+        document.getElementById('channels').style.display = 'none';
         return;
     }
     STATE = loadFromStorage('state');
@@ -70,7 +71,47 @@ window.onload = function () {
             updateScrollPos();
         }, 300);
     });
+    renderProfileMenu();
     loadSeries();
+}
+
+function renderProfileMenu() {
+    let menu = document.getElementById("settings");
+    let items = Array.from(document.getElementsByClassName('profile_item'));
+    for (let i=0; i<items.length; i++) {
+        items[i].parentElement.removeChild(items[i]);
+    }
+    let profiles = listProfiles();
+    profiles.forEach(profile => {
+        let li = htmlToElement("<li class='profile_item'><a href='#'></a></li>");
+        let link = li.childNodes[0];
+        link.innerText = profile.profile;
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            profile.accessed = new Date().getTime();
+            console.log("Changing profile to ", profile);
+            saveToStorage('state', STATE);
+            changeProfile();
+            return false;
+        });
+        menu.appendChild(li);
+    });
+}
+
+/**
+ * Reloads the profile on change, updating profile order and selecting channels.
+ */
+function changeProfile() {
+    renderProfileMenu();
+    let profile = getProfile();
+    document.querySelectorAll('#channels input').forEach((el) => {
+        let new_val = !profile.channels.includes(el.getAttribute('data-channel'));
+        let old_val = el.checked;
+        if (new_val != old_val) {
+            el.checked = new_val;
+            toggleChannels();
+        }
+    });
 }
 
 function markVideoActive(pos) {
@@ -122,15 +163,19 @@ function loadSettings() {
  * @param {Event} e 
  */
 function modifyMenu(e, action) {
-    e.preventDefault();
-    console.log(e.type, action);
     let el = e.target;
+    console.log(el, el.tagName, el.href);
     if (el.tagName.toLowerCase() == 'a') {
         el = el.parentElement;
+        if (el.getElementsByTagName('ul').length == 0) {
+            return true;
+        }
+    }
+    e.preventDefault();
+    if (el.tagName.toLowerCase() == 'a') {
     }
     document.querySelectorAll('#menu > li').forEach((li) => {
         if (li != el) {
-            console.log(li.firstChild.innerText);
             li.classList.remove('active');
         }
     })
@@ -177,6 +222,19 @@ function initDropdown() {
             return false;
         };
     });
+
+    // doc-id/callback list of buttons.
+    let buttons = {
+        profile_new: createProfile,
+        profile_rename: renameProfile,
+        profile_delete: deleteProfile,
+    };
+    for (const [id, callback] of Object.entries(buttons)) {
+        document.getElementById(id).addEventListener('click', (e) => {
+            e.preventDefault();
+            callback();
+        });
+    }
 }
 
 /**
@@ -263,17 +321,60 @@ function getSeries() {
 }
 
 /**
+ * Returns a list of profiles in order of last accessed (current first).
+ */
+function listProfiles() {
+    let profiles = [...STATE[window.series]];
+    profiles.sort((a, b) => b.accessed - a.accessed);
+    return profiles;
+}
+
+/**
  * Returns the currently active profile.
  */
 function getProfile() {
-    let active = null;
-    for (let profile in STATE[window.series]) {
-        if (active == null  || active.accessed < profile.accessed) {
-            active = profile;
+    return listProfiles()[0];
+}
+
+function createProfile() {
+    let name = prompt("New profile name:", "");
+    if (name === null) {
+        return;
+    }
+    let profile = JSON.parse(JSON.stringify(getProfile()));
+    profile.profile = name;
+    profile.accessed = new Date().getTime();
+    STATE[window.series].push(profile);
+    saveToStorage('state', STATE);
+    changeProfile();
+}
+
+function deleteProfile() {
+    let profile = getProfile();
+    if (listProfiles().length > 1) {
+        let profiles = STATE[window.series];
+        let i = profiles.indexOf(profile);
+        console.log('deleting', i, JSON.parse(JSON.stringify(profiles)));
+        if (i == -1) {
+            console.error("Profile not found.", profile, profiles);
+        } else {
+            profiles.splice(i, 1);
+            saveToStorage('state', STATE);
+            changeProfile();
         }
     }
-    console.log('profile:', active);
-    return active;
+}
+
+function renameProfile() {
+    let profile = getProfile();
+    let name = prompt("New profile name:", profile.profile);
+    if (name === null) {
+        return;
+    }
+    profile.profile = name;
+    changeProfile();
+    saveToStorage('state', STATE);
+
 }
 
 /**
@@ -325,7 +426,7 @@ function updateCheckbox(el) {
 function toggleChannels() {
     let channel_map = {};
     document.querySelectorAll('#channels input').forEach((el) => {
-        channel_map[getAttribute('data-channel')] = el.checked;
+        channel_map[el.getAttribute('data-channel')] = el.checked;
         updateCheckbox(el);
     });
     let vids = document.getElementsByClassName('video');
@@ -363,7 +464,6 @@ function renderSeries(data) {
     videos.setAttribute('id', 'videos');
     content.appendChild(videos);
 
-    document.querySelectorAll('#channels input')
     prevDate = '';
     for (let i=0; i<series.videos.length; i++) {
         let vid = series.videos[i];
@@ -382,14 +482,24 @@ function renderSeries(data) {
 
         videos.appendChild(renderVideo(vid, series.channels[vid.ch]));
     }
+    setSeriesState();
+    loadDescriptions();
+}
+
+function renderDate(ts) {
     
+}
+
+/**
+ * Sets the series/videos as visible.
+ */
+function setSeriesState() {
     getProfile().channels.forEach((ch_id) => {
         toggleVideos(ch_id, false);
     });
 
     updateScrollPos();
     lazyload();
-    loadDescriptions();
 }
 
 /**
@@ -615,7 +725,6 @@ function setScrollPos() {
         let px = offset * (current.pos - prev.pos) + prev.pos;
         return px;
     }
-    return current.pos;
 }
 
 /**
@@ -673,32 +782,50 @@ function loadDescriptions() {
  * @param {str} jsonText 
  */
 function renderDescriptions(jsonText) {
-    let descs = JSON.parse(jsonText);   
+    let descs = JSON.parse(jsonText);
     let videos = document.getElementsByClassName('video');
-    for (var i=0; i<videos.length; i++) {
-        let vid = videos[i];
-        let desc = descs[vid.getAttribute('data-video-id')]
+    let i = 0;
 
-        para = document.createElement('p');
-        desc.split(/(?:\r\n|\r|\n)/).forEach((text) => {
-            // there are so many problems with this, but its good enough.
-            // probably...
-            text.split(/(https?:\/\/[^\s]+)/).forEach((part) => {
-                if (part.startsWith('http')) {
-                    let link = htmlToElement(
-                        `<a href="${part}" target='blank'>${part}</a>`);
-                    para.appendChild(link);
-                } else {
-                    para.appendChild(document.createTextNode(part));
+    (function loop() {
+        setTimeout(function() {
+            let done = false;
+            for (var j=0; j<10; j++) {
+                if (i == videos.length) {
+                    done = true;
+                    break;
                 }
-            })
-            para.appendChild(document.createElement('br'));
-        });
-        while (para.lastChild.nodeName.toLowerCase() == 'br') {
-            para.removeChild(para.lastChild);
-        }
-        vid.appendChild(para);
+                let vid = videos[i];
+                let desc = descs[vid.getAttribute('data-video-id')]
+                vid.appendChild(renderDescription(desc));
+                i += 1;
+            }
+            if (!done) {
+                loop();
+            }
+       }, 10);
+     })();
+}
+
+function renderDescription(desc) {
+    para = document.createElement('p');
+    desc.split(/(?:\r\n|\r|\n)/).forEach((text) => {
+        // there are so many problems with this, but its good enough.
+        // probably...
+        text.split(/(https?:\/\/[^\s]+)/).forEach((part) => {
+            if (part.startsWith('http')) {
+                let link = htmlToElement(
+                    `<a href="${part}" target='blank'>${part}</a>`);
+                para.appendChild(link);
+            } else {
+                para.appendChild(document.createTextNode(part));
+            }
+        })
+        para.appendChild(document.createElement('br'));
+    });
+    while (para.lastChild.nodeName.toLowerCase() == 'br') {
+        para.removeChild(para.lastChild);
     }
+    return para;
 }
 
 /**

@@ -63,7 +63,7 @@ h1 a {
 #menu > li {
     list-style: none;
     margin: 0;
-    border: 1px transparent;
+    border: 1px solid rgba(0, 0, 0, 0);
     position: relative;
     transition-duration: 0.5s;
     z-index: 20;
@@ -101,16 +101,34 @@ h1 a {
     position: fixed;
     top: 8rem;
     bottom: 0;
-    left: 0;
+    left: -1px;
     right: 0;
     overflow-y: scroll;
     text-align: left;
 }
+
 #menu li ul li {
     box-sizing: border-box;
     border: 1px solid rgba(255, 255, 255, 0);
     background: rgba(255, 255, 255, 0.95);
+    border-left-color: #000;
+    border-right-color: #000;
     font-size: 1.5rem;
+}
+
+#menu li ul li:first-child {
+    border-top-color: #000;
+}
+
+#menu li ul li:last-child {
+    border-bottom-color: #000;
+}
+
+#menu li ul li.hr {
+    box-sizing: border-box;
+    border: 1px solid rgb(122, 122, 122);
+    border-width: 1px 0 0 0;
+    background: rgba(255, 255, 255, 0.95);
 }
 
 #menu li ul li > * {
@@ -121,13 +139,7 @@ h1 a {
 #menu li.active > ul {
     visibility: visible;
     display: block;
-    height: auto;
     transition-duration: 0.5s;
-}
-  
-#menu li ul li {
-    clear: both;
-    width: 100%;
 }
 
 #menu li #channels li label {
@@ -278,7 +290,7 @@ h1 a {
         min-width: 15rem;
         position: absolute;
         top: 3rem;
-        left: 0;
+        left: -1px;
         height: auto;
         overflow: visible;
     }
