@@ -512,7 +512,6 @@ function setScrollPos() {
         let px = offset * (current.pos - prev.pos) + prev.pos;
         return px;
     }
-    return current.pos;
 }
 
 /**

@@ -39,7 +39,8 @@ def process_html(filename: str, context: Dict[str, str]):
 def render_html(default_series: str, series_list: List[Dict[str, str]]):
     context = {
         'default_series': json.dumps(default_series),
-        'series_list': json.dumps(series_list)
+        'series_list': json.dumps(series_list),
+        'now': str(int(datetime.datetime.now().timestamp())),
     }
     for html_file in glob('templates/**/*.html', recursive=True):
         out_file = "output" + html_file[9:]
