@@ -49,51 +49,6 @@ def render_html(default_series: str, series_list: List[Dict[str, str]]):
         with open(out_file, 'w') as fp:
             fp.write(process_html(html_file, context))
 
-def check_order(data: Dict, attempt=0):
-    """
-    Validates that videos are sorted by position and attempts to fix any errors
-    found by reordering by video published time and playlist added time (see
-    giant note below...).
-    """
-    videos = data['videos']
-    vids_by_ch = defaultdict(list)
-    for video in videos:
-        vids_by_ch[video['ch']].append(video)
-    
-    for ch, vids in vids_by_ch.items():
-        prev = {}
-        for vid in vids:
-            if vid['position'] is None:
-                continue
-            # position is absolutely trustable, but has no meaning when joined
-            # across playlists/channels. Video publish timestamp (aliased as
-            # timestamp by default) is usually trustworthy, except when someone
-            # adds a several year-old Bieber video (or a video is republished).
-            # In this case, we use playlist added date, but that's less
-            # overall reliable. So far there have been no videos where both 
-            # times are inaccurate. If this does happen, maybe we can take the
-            # average of surrounding videos (assuming we an identify the
-            # problem video)
-            if prev and prev['position'] > vid['position']:
-                if prev['ts'] > vid['playlist_at']:
-                    vid['ts'] = vid['playlist_at']
-                elif prev['playlist_at'] > vid['ts']:
-                    prev['ts'] = prev['playlist_at']
-                # elif attempt:
-                #     print(
-                #         f"  WARNINNG: {data['channels'][ch]['name']} "
-                #         f"{prev['position']} < {vid['position']}")
-            prev = vid
-
-    vids = sorted(
-        itertools.chain(*vids_by_ch.values()),
-        key=lambda k: k['ts'])
-
-    if not attempt:
-        return check_order(data, 1)
-    return vids
-
-
 def render_series(series: Dict):
     videos = (Video.select()
         .join(Playlist)
@@ -107,22 +62,27 @@ def render_series(series: Dict):
     channels = {}
     channel_lookup = {}
     descs = {}
+    overrides = {}
     for video in videos:
-        if video.playlist.channel.name not in channels: 
+        ch_name = video.playlist.channel.name
+        if ch_name not in channels: 
             thumb = {}
             if video.playlist.channel.thumbnails:
                 thumbs = json.loads(video.playlist.channel.thumbnails)
                 thumb = thumbs['default']['url']
-            channels[video.playlist.channel.name] = {
+            channels[ch_name] = {
                 'id': video.playlist.channel.channel_id,
-                'name': video.playlist.channel.name,
+                'name': ch_name,
                 't': video.playlist.channel.tag,
                 # 'url': video.playlist.channel.custom_url,
                 'thumb': thumb,
                 'count': 1,
             }
+            for channel in series['channels']:
+                if channel['name'] == video.playlist.channel.tag:
+                    overrides[ch_name] = channel.get('overrides', {})
         else:
-            channels[video.playlist.channel.name]['count'] += 1
+            channels[ch_name]['count'] += 1
     channel_names = sorted(
         channels.keys(), key=lambda k: channels[k]['count'], reverse=True)
     for i, name in enumerate(channel_names):
@@ -131,6 +91,12 @@ def render_series(series: Dict):
         channel_lookup[name] = i
 
     for video in videos:
+        if video.video_id in overrides.get(video.playlist.channel.name, {}):
+            override = overrides[video.playlist.channel.name][video.video_id]
+            if override == 0:
+                continue
+            else:
+                video.published_at = override
         if video.title is None:
             continue
         descs[video.video_id] = video.description
@@ -144,8 +110,6 @@ def render_series(series: Dict):
             'ch': channel_lookup[video.playlist.channel.name],
         })
 
-    data['videos'] = check_order(data)
-    
     for vid in data['videos']:
         for key in 'published_at playlist_at position'.split():
             del vid[key]

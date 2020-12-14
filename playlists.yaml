@@ -23,6 +23,13 @@ series:
       playlist: https://www.youtube.com/playlist?list=PLriprjos26pvLjj5SRhOJPdPBTDcXYHiB
     - name: iJevin
       playlist: https://www.youtube.com/playlist?list=PL9heRuhTVdQRDh9SNvhSv-AxlW5DPqTDB
+      overrides:
+        Ca1i6DZC3iY: 0
+        1uj0u6TlOR4: 0
+        PkUg89kLLBE: 0
+        kWvQyPI7A-M: 0
+        2xG1Umugpxs: 0
+        JE-Uea1aLhM: 0
     - name: impulseSV
       playlist: https://www.youtube.com/playlist?list=PL0Z8otuXXj_3paGa74e-CDWLJHcepCV67
     - name: iskall85
