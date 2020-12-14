@@ -187,6 +187,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--series', '-s', nargs='*')
     parser.add_argument('--channel', '-c', nargs='*')
+    parser.add_argument('--full', '-f', action='store_true')
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
 
     ctx.channels = args.channel
@@ -203,7 +204,7 @@ def main(argv=None):
         for series in config['series']:
             if args.series and series['slug'] not in args.series:
                 continue
-            if not args.series and not series.get('active', True):
+            if not args.series and not args.full and not series.get('active', True):
                 continue
             series_, _ = Series.get_or_create(
                     slug=series['slug'],
