@@ -71,8 +71,8 @@ window.onload = function () {
             updateScrollPos();
         }, 300);
     });
-    renderProfileMenu();
     loadSeries();
+    renderProfileMenu();
 }
 
 function renderProfileMenu() {
