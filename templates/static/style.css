@@ -13,6 +13,12 @@ a {
     color: #000;
 }
 
+a:focus,
+input:focus {
+    outline: 4px solid rgba(255, 255, 0, 0.7);
+    outline-offset: 4px;
+}
+
 #wrap {
     margin: 0 1rem;
 }
@@ -49,14 +55,18 @@ h1 a {
     text-align: right;
 }
 
+#menu a, 
+#menu label {
+    cursor: pointer;
+}
+
 #menu > li {
     list-style: none;
     margin: 0;
-    padding: 0;
+    border: 1px solid rgba(0, 0, 0, 0);
     position: relative;
     transition-duration: 0.5s;
     z-index: 20;
-    border: 1px solid rgba(255, 255, 255, 0.9);
     display: inline-block;
 }
 
@@ -84,21 +94,41 @@ h1 a {
 #menu li ul {
     margin: 0;
     padding: 0;
+    list-style: none;
     visibility: hidden;
     transition: all 0.5s ease;
     display: none;
     position: fixed;
     top: 8rem;
     bottom: 0;
-    left: 0;
+    left: -1px;
     right: 0;
     overflow-y: scroll;
     text-align: left;
 }
+
 #menu li ul li {
     box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, 0);
     background: rgba(255, 255, 255, 0.95);
+    border-left-color: #000;
+    border-right-color: #000;
     font-size: 1.5rem;
+}
+
+#menu li ul li:first-child {
+    border-top-color: #000;
+}
+
+#menu li ul li:last-child {
+    border-bottom-color: #000;
+}
+
+#menu li ul li.hr {
+    box-sizing: border-box;
+    border: 1px solid rgb(122, 122, 122);
+    border-width: 1px 0 0 0;
+    background: rgba(255, 255, 255, 0.95);
 }
 
 #menu li ul li > * {
@@ -106,22 +136,10 @@ h1 a {
     display: block;
 }
   
-#menu li:hover > ul,
-#menu li:focus-within > ul,
-#menu li ul:hover,
-#menu li ul:focus {
+#menu li.active > ul {
     visibility: visible;
     display: block;
-    height: auto;
     transition-duration: 0.5s;
-}
-  
-#menu li ul li {
-    clear: both;
-    width: 100%;
-}
-
-#channels {
 }
 
 #menu li #channels li label {
@@ -168,6 +186,10 @@ h1 a {
 #videos .video {
     margin: 0 0 2em 0;
     position: relative;
+}
+
+#videos .activevid {
+    box-shadow: 0 0 8px 2px black;
 }
 
 #videos .video.expanded {
@@ -268,7 +290,7 @@ h1 a {
         min-width: 15rem;
         position: absolute;
         top: 3rem;
-        left: 0;
+        left: -1px;
         height: auto;
         overflow: visible;
     }

@@ -5,6 +5,20 @@ const MONTHS = [
 
 // Selected channels and scroll posstion by series (added channels are hidden)
 var STATE = {}
+/**
+ * {
+ *      series (hc7) = [
+ *          {
+ *              'profile' = str
+ *              'accessed' = new Date().getTime()
+ *              'channels' = [
+ *                  'channelIdStr'
+ *              ],
+ *              'scroll' = int
+*           }
+ *      ]
+ * }
+ */
 
 // scroll tracker timeout timer, to prevent hundreds of actions per scroll
 var scrollTimeout = null
@@ -20,8 +34,8 @@ var PLAYER = {
     state: null,
     ready: false,
     controls: {
-    'Escape': closePlayer,
-    ' ': pausePlayer,
+        'Escape': closePlayer,
+        ' ': pausePlayer,
     },
     video: null
 };
@@ -30,6 +44,7 @@ window.onload = function () {
     loadSettings();
     initDropdown()
     if (document.getElementById('loading') === null) {
+        document.getElementById('channels').style.display = 'none';
         return;
     }
     STATE = loadFromStorage('state');
@@ -43,8 +58,9 @@ window.onload = function () {
         }
         var pos = window.scrollY;
         scrollTimeout = window.setTimeout(function() {
-            STATE[window.series].scroll = getScrollPos(pos);
+            getProfile().scroll = getScrollPos(pos);
             saveToStorage('state', STATE);
+            markVideoActive(pos);
         }, 300);
     });
     window.addEventListener('resize', function() {
@@ -55,7 +71,66 @@ window.onload = function () {
             updateScrollPos();
         }, 300);
     });
+    renderProfileMenu();
     loadSeries();
+}
+
+function renderProfileMenu() {
+    let menu = document.getElementById("settings");
+    let items = Array.from(document.getElementsByClassName('profile_item'));
+    for (let i=0; i<items.length; i++) {
+        items[i].parentElement.removeChild(items[i]);
+    }
+    let profiles = listProfiles();
+    profiles.forEach(profile => {
+        let li = htmlToElement("<li class='profile_item'><a href='#'></a></li>");
+        let link = li.childNodes[0];
+        link.innerText = profile.profile;
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            profile.accessed = new Date().getTime();
+            console.log("Changing profile to ", profile);
+            saveToStorage('state', STATE);
+            changeProfile();
+            return false;
+        });
+        menu.appendChild(li);
+    });
+}
+
+/**
+ * Reloads the profile on change, updating profile order and selecting channels.
+ */
+function changeProfile() {
+    renderProfileMenu();
+    let profile = getProfile();
+    document.querySelectorAll('#channels input').forEach((el) => {
+        let new_val = !profile.channels.includes(el.getAttribute('data-channel'));
+        let old_val = el.checked;
+        if (new_val != old_val) {
+            el.checked = new_val;
+            toggleChannels();
+        }
+    });
+}
+
+function markVideoActive(pos) {
+    let lim = document.getElementById('header').getBoundingClientRect().bottom;
+    var offset = document.body.getBoundingClientRect().top;
+    let found = false;
+    let start = new Date();
+    let active = null;
+    var actives = document.getElementsByClassName('activevid');
+    for (var i=0; i<actives.length; i++) {
+        actives[i].classList.remove('activevid');
+    }
+    for (var i in scrollToEpoch) {
+        if ((scrollToEpoch[i].pos + offset) >= lim && !found) {
+            active = scrollToEpoch[i];
+            found = true;
+        }
+    }
+    active.video.classList.add('activevid');
 }
 
 function onYouTubeIframeAPIReady() {
@@ -83,9 +158,49 @@ function loadSettings() {
 }
 
 /**
+ * Adds/removes/toggles menu list-item class for hovering effects.
+ * 
+ * @param {Event} e 
+ */
+function modifyMenu(e, action) {
+    let el = e.target;
+    console.log(el, el.tagName, el.href);
+    if (el.tagName.toLowerCase() == 'a') {
+        el = el.parentElement;
+        if (el.getElementsByTagName('ul').length == 0) {
+            return true;
+        }
+    }
+    e.preventDefault();
+    if (el.tagName.toLowerCase() == 'a') {
+    }
+    document.querySelectorAll('#menu > li').forEach((li) => {
+        if (li != el) {
+            li.classList.remove('active');
+        }
+    })
+    el.classList[action]('active');
+    return false;
+}
+
+/**
  * Initialize series selector dropdown.
  */
 function initDropdown() {
+    document.querySelectorAll("#menu > li").forEach((menu) => {
+        menu.childNodes.forEach((el) => {
+            if (el.nodeType == 1 && el.tagName.toLowerCase() == 'a') {
+                el.addEventListener('click', (e) => modifyMenu(e, 'toggle'));
+                el.addEventListener('keydown', (e) => {
+                    if (e.key == ' ' || e.key.toLowerCase() == 'enter') {
+                        return modifyMenu(e, 'toggle')
+                    }
+                });
+            }
+        });
+        menu.addEventListener('mouseenter', (e) => modifyMenu(e, 'add'));
+        menu.addEventListener('mouseleave', (e) => modifyMenu(e, 'remove'));
+    });
     let dropdown = document.getElementById('seasons');
     window.all_series.forEach((s) => {
         let li = document.createElement('li');
@@ -107,6 +222,19 @@ function initDropdown() {
             return false;
         };
     });
+
+    // doc-id/callback list of buttons.
+    let buttons = {
+        profile_new: createProfile,
+        profile_rename: renameProfile,
+        profile_delete: deleteProfile,
+    };
+    for (const [id, callback] of Object.entries(buttons)) {
+        document.getElementById(id).addEventListener('click', (e) => {
+            e.preventDefault();
+            callback();
+        });
+    }
 }
 
 /**
@@ -147,16 +275,21 @@ function loadFromStorage(key) {
  * Loads a series from the server.
  */
 function loadSeries() {
-    let series = loadFromStorage('series');
-    if (series === null) {
-        series = window.series;
-    } else {
-        window.series = series;
-    }
+    let series = getSeries();
     console.log('Loading', series);
     if (!(series in STATE)) {
-        STATE[series] = {'channels': [], 'scroll': 0};
+        STATE[series] = [{
+            'profile': 'default',
+            'accessed': new Date().getTime(),
+            'channels': [], 
+            'scroll': 0,
+        }];
         saveToStorage('state', STATE);
+    } else if (! (STATE[series] instanceof Array)) {
+        // one time migrate code
+        STATE[series]['profile'] = 'default';
+        STATE[series]['accessed'] = 0;
+        STATE[series] = [STATE['series']];
     }
 
     var req = new XMLHttpRequest();
@@ -172,6 +305,76 @@ function loadSeries() {
         }
     };
     req.send();
+}
+
+/**
+ * Returns the currently active series (hc7).
+ */
+function getSeries() {
+    let series = loadFromStorage('series');
+    if (series === null) {
+        series = window.series;
+    } else {
+        window.series = series;
+    }
+    return series;
+}
+
+/**
+ * Returns a list of profiles in order of last accessed (current first).
+ */
+function listProfiles() {
+    let profiles = [...STATE[window.series]];
+    profiles.sort((a, b) => b.accessed - a.accessed);
+    return profiles;
+}
+
+/**
+ * Returns the currently active profile.
+ */
+function getProfile() {
+    return listProfiles()[0];
+}
+
+function createProfile() {
+    let name = prompt("New profile name:", "");
+    if (name === null) {
+        return;
+    }
+    let profile = JSON.parse(JSON.stringify(getProfile()));
+    profile.profile = name;
+    profile.accessed = new Date().getTime();
+    STATE[window.series].push(profile);
+    saveToStorage('state', STATE);
+    changeProfile();
+}
+
+function deleteProfile() {
+    let profile = getProfile();
+    if (listProfiles().length > 1) {
+        let profiles = STATE[window.series];
+        let i = profiles.indexOf(profile);
+        console.log('deleting', i, JSON.parse(JSON.stringify(profiles)));
+        if (i == -1) {
+            console.error("Profile not found.", profile, profiles);
+        } else {
+            profiles.splice(i, 1);
+            saveToStorage('state', STATE);
+            changeProfile();
+        }
+    }
+}
+
+function renameProfile() {
+    let profile = getProfile();
+    let name = prompt("New profile name:", profile.profile);
+    if (name === null) {
+        return;
+    }
+    profile.profile = name;
+    changeProfile();
+    saveToStorage('state', STATE);
+
 }
 
 /**
@@ -195,12 +398,13 @@ function toggleVideos(ch_id, visible) {
 function toggleChannel(e) {
     let ch_id = e.target.getAttribute('data-channel');
     let visible = e.target.checked;
+    let profile = getProfile();
     toggleVideos(ch_id, visible);
-    let index = STATE[window.series].channels.indexOf(ch_id);
+    let index = profile.channels.indexOf(ch_id);
     if (visible && index != -1) {
-        STATE[window.series].channels.splice(index, 1);
+        profile.channels.splice(index, 1);
     } else if (!visible && index == -1) {
-        STATE[window.series].channels.push(ch_id);
+        profile.channels.push(ch_id);
     }
     updateCheckbox(e.target);
     updateScrollPos();
@@ -222,7 +426,7 @@ function updateCheckbox(el) {
 function toggleChannels() {
     let channel_map = {};
     document.querySelectorAll('#channels input').forEach((el) => {
-        channel_map[getAttribute('data-channel')] = el.checked;
+        channel_map[el.getAttribute('data-channel')] = el.checked;
         updateCheckbox(el);
     });
     let vids = document.getElementsByClassName('video');
@@ -260,7 +464,6 @@ function renderSeries(data) {
     videos.setAttribute('id', 'videos');
     content.appendChild(videos);
 
-    document.querySelectorAll('#channels input')
     prevDate = '';
     for (let i=0; i<series.videos.length; i++) {
         let vid = series.videos[i];
@@ -279,14 +482,24 @@ function renderSeries(data) {
 
         videos.appendChild(renderVideo(vid, series.channels[vid.ch]));
     }
+    setSeriesState();
+    loadDescriptions();
+}
+
+function renderDate(ts) {
     
-    STATE[window.series].channels.forEach((ch_id) => {
+}
+
+/**
+ * Sets the series/videos as visible.
+ */
+function setSeriesState() {
+    getProfile().channels.forEach((ch_id) => {
         toggleVideos(ch_id, false);
     });
 
     updateScrollPos();
     lazyload();
-    loadDescriptions();
 }
 
 /**
@@ -346,7 +559,7 @@ function renderChannels(seriesChannels) {
  * @param {str} title 
  */
 function renderChannelCheckbox(id, data) {
-    let active = STATE[window.series].channels.indexOf(id) == -1;
+    let active = getProfile().channels.indexOf(id) == -1;
     let checked = active ? 'checked="checked"' : '';
     let root = htmlToElement('<li></li>');
     if (active) {
@@ -501,7 +714,7 @@ function getScrollPos(pos) {
  * Converts stored timestamp to scroll position.
  */
 function setScrollPos() {
-    let ts = STATE[window.series].scroll;
+    let ts = getProfile().scroll;
     for (var i=0; i<scrollToEpoch.length; i++) {
         var current = scrollToEpoch[i];
         if (current.ts < ts) continue;
@@ -536,7 +749,8 @@ function updateTimeline() {
         }
         scrollToEpoch.push({
             'ts': parseInt(el.getAttribute('data-timestamp')),
-            'pos': el.getBoundingClientRect().top - offset
+            'pos': el.getBoundingClientRect().top - offset,
+            'video': el,
         });
     }
     console.log('updateTimeLine:', scrollToEpoch.length)
@@ -568,32 +782,50 @@ function loadDescriptions() {
  * @param {str} jsonText 
  */
 function renderDescriptions(jsonText) {
-    let descs = JSON.parse(jsonText);   
+    let descs = JSON.parse(jsonText);
     let videos = document.getElementsByClassName('video');
-    for (var i=0; i<videos.length; i++) {
-        let vid = videos[i];
-        let desc = descs[vid.getAttribute('data-video-id')]
+    let i = 0;
 
-        para = document.createElement('p');
-        desc.split(/(?:\r\n|\r|\n)/).forEach((text) => {
-            // there are so many problems with this, but its good enough.
-            // probably...
-            text.split(/(https?:\/\/[^\s]+)/).forEach((part) => {
-                if (part.startsWith('http')) {
-                    let link = htmlToElement(
-                        `<a href="${part}" target='blank'>${part}</a>`);
-                    para.appendChild(link);
-                } else {
-                    para.appendChild(document.createTextNode(part));
+    (function loop() {
+        setTimeout(function() {
+            let done = false;
+            for (var j=0; j<10; j++) {
+                if (i == videos.length) {
+                    done = true;
+                    break;
                 }
-            })
-            para.appendChild(document.createElement('br'));
-        });
-        while (para.lastChild.nodeName.toLowerCase() == 'br') {
-            para.removeChild(para.lastChild);
-        }
-        vid.appendChild(para);
+                let vid = videos[i];
+                let desc = descs[vid.getAttribute('data-video-id')]
+                vid.appendChild(renderDescription(desc));
+                i += 1;
+            }
+            if (!done) {
+                loop();
+            }
+       }, 10);
+     })();
+}
+
+function renderDescription(desc) {
+    para = document.createElement('p');
+    desc.split(/(?:\r\n|\r|\n)/).forEach((text) => {
+        // there are so many problems with this, but its good enough.
+        // probably...
+        text.split(/(https?:\/\/[^\s]+)/).forEach((part) => {
+            if (part.startsWith('http')) {
+                let link = htmlToElement(
+                    `<a href="${part}" target='blank'>${part}</a>`);
+                para.appendChild(link);
+            } else {
+                para.appendChild(document.createTextNode(part));
+            }
+        })
+        para.appendChild(document.createElement('br'));
+    });
+    while (para.lastChild.nodeName.toLowerCase() == 'br') {
+        para.removeChild(para.lastChild);
     }
+    return para;
 }
 
 /**
@@ -630,6 +862,7 @@ function loadPlayer(e) {
             'onStateChange': onPlayerStateChange
         }
     });
+    PLAYER.obj.getIframe().focus();
     e.preventDefault();
     return false;
 }

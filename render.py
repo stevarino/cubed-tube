@@ -7,6 +7,7 @@ from models import Video, Playlist, Channel, Series
 
 import argparse
 from collections import defaultdict
+import datetime
 from glob import glob
 import itertools
 import json
