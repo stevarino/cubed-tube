@@ -3,12 +3,13 @@ Reads from the database and produces html files.
 """
 
 import common
-from models import Video, Playlist, Channel, Series
+from models import Video, Playlist, Channel, Series, Misc
 
 import argparse
 from collections import defaultdict
 import datetime
 from glob import glob
+import html
 import itertools
 import json
 import os
@@ -21,18 +22,47 @@ import yaml
 def process_html(filename: str, context: Dict[str, str]):
     """Poor man's html-includes, because I miss php apparently."""
     with open(filename, 'r') as fp:
-        html = fp.read()
-    parts = re.split(r'(<%.+%>)', html)
+        contents = fp.read()
+    parts = re.split(r'(<%.+?%>)', contents)
     for i, part in enumerate(parts):
         if not part.startswith('<%'):
             continue
-        tag_type, data = re.match(r'<%\s*(\w+)\s*(.*?)\s*%>', part).groups()
+        tag_parts = re.match(r'<%(=?)\s*(\w+)(\s*)(.*?)\s*%>', part).groups()
+        if tag_parts[0] == '=':
+            tag_type, data = ('print', ''.join(tag_parts[1:]).strip())
+        else:
+            tag_type, data = (tag_parts[1], tag_parts[3])
+
         if tag_type == 'include':
             assert '..' not in data, "lazy path escaping"
             parts[i] = process_html('templates/'+ data, context)
         elif tag_type == 'print':
             assert data in context, f"Missing context {data} - {filename}"
             parts[i] = context[data]
+        elif tag_type == 'pprint':
+            assert data in context, f"Missing context {data} - {filename}"
+            parts[i] = html.escape(context[data])
+            for old, new in [('\n', '<br />'), ('  ', ' &nbsp;')]:
+                parts[i] = parts[i].replace(old, new)
+        elif tag_type == 'table':
+            assert data in context, f"Missing context {data} - {filename}"
+            table_data = json.loads(context[data])
+            columns = []
+            for row in sorted(table_data.keys()):
+                for col in table_data[row].keys():
+                    if col not in columns:
+                        columns.append(col)
+            output = ['<table><thead><tr><td></td>']
+            [output.append(f'<th>{col}</th>') for col in columns]
+            output.append('</tr></thead>')
+            for row in sorted(table_data.keys()):
+                table_row = table_data[row]
+                output.append(f'<tr><th>{row}</th>')
+                cols = '</td><td>'.join([
+                    str(table_row.get(c, '')) for c in columns])
+                output.append(f'<td>{cols}</td></tr>')
+            output.append('</table>')
+            parts[i] = ''.join(output)
         else:
             raise ValueError(f"Unrecognized tag_type: {tag_type}")
     return ''.join(parts)
@@ -43,6 +73,8 @@ def render_html(default_series: str, series_list: List[Dict[str, str]]):
         'series_list': json.dumps(series_list),
         'now': str(int(datetime.datetime.now().timestamp())),
     }
+    for data in Misc.select():
+        context[data.key] = data.value
     for html_file in glob('templates/**/*.html', recursive=True):
         out_file = "output" + html_file[9:]
         os.makedirs(os.path.dirname(out_file), exist_ok=True)

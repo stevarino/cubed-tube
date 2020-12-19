@@ -1,7 +1,7 @@
 
 
 from common import Context
-from models import Series, Channel, Playlist, Video, pw, db
+from models import Misc, Series, Channel, Playlist, Video, pw, db
 
 import argparse
 import datetime
@@ -181,6 +181,40 @@ def process_series(ctx: Context, channels: List[Dict[str,str]]):
         except Exception:
             traceback.print_exc()
 
+def get_misc(key, default=None):
+    rec, _ = Misc.get_or_create(key=key, defaults={'value': default})
+    return rec.value
+
+def set_misc(key, val):
+    rec, _ = Misc.get_or_create(key=key)
+    rec.value = val
+    rec.save()
+
+def update_stats(api_cost):
+    now = datetime.datetime.now()
+    set_misc('last_scan_api', api_cost)
+    set_misc('last_scan_time', now.strftime('%Y-%m-%d %H:%M:%S'))
+
+    dailies = json.loads(get_misc('dailies', '{}'))
+    ymd = now.strftime('%Y-%m-%d')
+    dailies[ymd] = dailies.get(ymd, {'api': 0, 'scans': 0})
+    dailies[ymd]['api'] += api_cost
+    dailies[ymd]['scans'] += 1
+    set_misc('dailies', json.dumps(dailies, sort_keys=True, indent=2))
+
+    latest = (Video.select()
+        .join(Playlist)
+        .join(Channel)
+        .order_by(Video.published_at.desc())
+        .get()
+    )
+
+    set_misc('latest_id', latest.video_id)
+    set_misc('latest_dt', latest.published_at)
+    set_misc('latest_title', latest.title)
+    set_misc('latest_channel_title', latest.playlist.channel.tag)
+    set_misc('latest_channel_id', latest.playlist.channel.channel_id)
+
 def main(argv=None):
     ctx = Context()
 
@@ -215,6 +249,7 @@ def main(argv=None):
             c_ctx = ctx.copy(series=series_)
             process_series(c_ctx, series['channels'])
     finally:
+        update_stats(ctx.cost.value)
         print('api cost:', ctx.cost.value)
 
 if __name__ == "__main__":

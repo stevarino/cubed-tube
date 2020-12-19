@@ -19,6 +19,10 @@ class BaseModel(pw.Model):
     class Meta:
         database = db
 
+class Misc(BaseModel):
+    key = pw.CharField(primary_key=True, unique=True)
+    value = pw.CharField(null=True)
+
 class Channel(BaseModel):
     name = pw.CharField(primary_key=True, unique=True)
     title = pw.CharField(null=True)
@@ -31,8 +35,7 @@ class Channel(BaseModel):
     subscriber_count = pw.IntegerField(null=True)
     video_count = pw.IntegerField(null=True)
     view_count = pw.IntegerField(null=True)
-    # Minecraft gamer tag from wiki, because vintagebeef is an unrecognizable
-    # Sian Dent and tfc is "TinfoilChef's Gaming Channel". creatives... ;-)
+    # Canonical name for use on site (from playlists.yaml)
     tag = pw.IntegerField(null=True)
 
 class Series(BaseModel):
@@ -63,4 +66,4 @@ class Video(BaseModel):
             (('video_type', 'video_id'), True),
         )
 
-db.create_tables([Channel, Series, Playlist, Video])
+db.create_tables([Misc, Channel, Series, Playlist, Video])
