@@ -132,7 +132,7 @@ def render_series(series: Dict):
         del data['channels'][i]['count']
         channel_lookup[name] = i
 
-    for video in videos[:-5]:
+    for video in videos:
         if video.video_id in overrides.get(video.playlist.channel.name, {}):
             override = overrides[video.playlist.channel.name][video.video_id]
             if override == 0:
