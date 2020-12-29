@@ -9,6 +9,7 @@ import argparse
 from collections import defaultdict
 import datetime
 from glob import glob
+import hashlib
 import html
 import itertools
 import json
@@ -16,8 +17,12 @@ import os
 import re
 import shutil
 import sys
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import yaml
+
+def sha1(value: str) -> str:
+    """Convenience function to convert a string into a sha1 hex string"""
+    return hashlib.sha1(value.encode('utf-8')).hexdigest()
 
 def process_html(filename: str, context: Dict[str, str]):
     """Poor man's html-includes, because I miss php apparently."""
@@ -29,6 +34,7 @@ def process_html(filename: str, context: Dict[str, str]):
             continue
         tag_parts = re.match(r'<%(=?)\s*(\w+)(\s*)(.*?)\s*%>', part).groups()
         if tag_parts[0] == '=':
+            # <%= foo %> convenience syntax for printing
             tag_type, data = ('print', ''.join(tag_parts[1:]).strip())
         else:
             tag_type, data = (tag_parts[1], tag_parts[3])
@@ -67,8 +73,13 @@ def process_html(filename: str, context: Dict[str, str]):
             raise ValueError(f"Unrecognized tag_type: {tag_type}")
     return ''.join(parts)
 
-def render_html(default_series: str, series_list: List[Dict[str, str]]):
+def render_html(config: Dict):
+    defaults = [s['slug'] for s in config['series'] if s.get('default')]
+    assert len(defaults) == 0, 'Only one series should be marked default'
+    default_series = defaults[0]
+    series_list = [[s['slug'], s['title']] for s in config['series']]
     context = {
+        'title': config['title'],
         'default_series': json.dumps(default_series),
         'series_list': json.dumps(series_list),
         'now': str(int(datetime.datetime.now().timestamp())),
@@ -106,7 +117,6 @@ def render_series(series: Dict):
                 'id': video.playlist.channel.channel_id,
                 'name': ch_name,
                 't': video.playlist.channel.tag,
-                # 'url': video.playlist.channel.custom_url,
                 'thumb': thumb,
                 'count': 1,
             }
@@ -135,21 +145,50 @@ def render_series(series: Dict):
         data['videos'].append({
             'id': video.video_id,
             'ts': video.published_at,
-            'published_at': video.published_at,
-            'playlist_at': video.playlist_at,
-            'position': video.position,
             't': video.title,
             'ch': channel_lookup[video.playlist.channel.name],
         })
-
-    for vid in data['videos']:
-        for key in 'published_at playlist_at position'.split():
-            del vid[key]
 
     with open(f'output/data/{series["slug"]}.json', 'w') as fp:
         fp.write(json.dumps(data))
     with open(f'output/data/{series["slug"]}.desc.json', 'w') as fp:
         fp.write(json.dumps(descs))
+
+def render_updates(all_series: List[str]):
+    """Renders json files for the last 10 videos published."""
+    for series in all_series:
+        vid_hash, vid_id = render_updates_for_series(series)
+        with open(f'output/data/updates/{series}.json', 'w') as f:
+            f.write(json.dumps({
+                'id': vid_id,
+                'hash': vid_hash,
+                'promos': [] # TODO....
+            }))
+
+def render_updates_for_series(series: str) -> Tuple[str, str]:
+    """Generates the hashed update files, returning the last one."""
+    prev = None
+    videos = (Video.select()
+        .join(Playlist)
+        .join(Channel)
+        .join_from(Video, Series)
+        .where(Video.series.slug == series)
+        .order_by(Video.published_at.desc())
+    )
+    for vid in reversed(videos[0:10]):
+        vid_data = {
+            'id': vid.video_id,
+            'ts': vid.published_at,
+            't': vid.title,
+            'chn': vid.playlist.channel.name,
+            'd': vid.description,
+            'next': prev,
+        }
+        vid_hash = sha1(f'{series}/{vid.video_id}')
+        with open(f'output/data/updates/{vid_hash}.json', 'w') as f:
+            f.write(json.dumps(vid_data))
+        prev = vid_hash
+    return vid_hash, vid.video_id
 
 def copytree(src, dst, symlinks=False, ignore=None):
     """https://stackoverflow.com/a/12514470"""
@@ -174,8 +213,8 @@ def main(argv=None):
     if not args.quick:
         if os.path.exists('output'):
             shutil.rmtree('output/')
-        os.makedirs('output/data', exist_ok=True)
-        os.makedirs('output/static', exist_ok=True)
+        for d in ['output/data', 'output/data/updates', 'output/static']:
+            os.makedirs(d, exist_ok=True)
 
         for series in config['series']:
             print(f'Processing {series["slug"]}')
@@ -183,9 +222,9 @@ def main(argv=None):
                 continue
             render_series(series)
 
-    render_html(
-        [s['slug'] for s in config['series'] if s.get('default')][0],
-        [[s['slug'], s['title']] for s in config['series']])
+    render_html(config)
+
+    render_updates([s['slug'] for s in config['series'] if s.get('active', True)])
     copytree('templates/static', 'output/static')
 
 if __name__ == "__main__":
