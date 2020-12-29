@@ -164,7 +164,6 @@ function loadSettings() {
  */
 function modifyMenu(e, action) {
     let el = e.target;
-    console.log(el, el.tagName, el.href);
     if (el.tagName.toLowerCase() == 'a') {
         el = el.parentElement;
         if (el.getElementsByTagName('ul').length == 0) {
@@ -761,13 +760,17 @@ function updateTimeline() {
  * latency.
  */
 function loadDescriptions() {
-    var req = new XMLHttpRequest();
+    getDescriptions(0)
+}
+
+function getDescriptions(i) {
+    let req = new XMLHttpRequest();
     req.overrideMimeType("application/json");
-    req.open('GET', '/data/' + series + '.desc.json', true);
+    req.open('GET', `/data/${window.series}.desc.${i}.json`, true);
     req.onreadystatechange = function () {
         if (req.readyState == 4) {
             if (req.status == "200") {
-                renderDescriptions(req.responseText);
+                renderDescriptions(i, req.responseText);
             } else {
                 console.log('Error during request:', req);
             }
@@ -781,29 +784,18 @@ function loadDescriptions() {
  * video descriptions.
  * @param {str} jsonText 
  */
-function renderDescriptions(jsonText) {
+function renderDescriptions(i, jsonText) {
     let descs = JSON.parse(jsonText);
-    let videos = document.getElementsByClassName('video');
-    let i = 0;
-
-    (function loop() {
-        setTimeout(function() {
-            let done = false;
-            for (var j=0; j<10; j++) {
-                if (i == videos.length) {
-                    done = true;
-                    break;
-                }
-                let vid = videos[i];
-                let desc = descs[vid.getAttribute('data-video-id')]
-                vid.appendChild(renderDescription(desc));
-                i += 1;
-            }
-            if (!done) {
-                loop();
-            }
-       }, 10);
-     })();
+    for (const [vid_id, desc] of Object.entries(descs.videos)) {
+        let vid = document.querySelector(`.video[data-video-id="${vid_id}"]`);
+        if (vid === null) {
+            console.error("Unrecognized video id: ", vid_id);
+        }
+        vid.appendChild(renderDescription(desc)); 
+    }
+    if (descs.done == 0) {
+        getDescriptions(i + 1);
+    }
 }
 
 function renderDescription(desc) {
@@ -846,7 +838,6 @@ function loadPlayer(e) {
     wrap.addEventListener('click', closePlayer);
     wrap.appendChild(htmlToElement('<div id="player"></div>'));
     document.body.addEventListener('keydown', (e) => {
-        console.log(e);
         if (e.key in PLAYER.controls) {
             PLAYER.controls[e.key](e);
         }

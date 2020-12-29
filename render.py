@@ -151,8 +151,30 @@ def render_series(series: Dict):
 
     with open(f'output/data/{series["slug"]}.json', 'w') as fp:
         fp.write(json.dumps(data))
-    with open(f'output/data/{series["slug"]}.desc.json', 'w') as fp:
-        fp.write(json.dumps(descs))
+    render_descriptions(series["slug"], descs)
+
+        
+def render_descriptions(slug: str, descs: Dict[str, str]):
+    """Writes out chunks of descriptions."""
+    stack = {}
+    i = 0
+    def _write(done: bool):
+        with open(f'output/data/{slug}.desc.{i}.json', 'w') as fp:
+            fp.write(json.dumps({
+                'videos': stack,
+                'done': int(done)
+            }))
+    for j, (vid, desc) in enumerate(descs.items()):
+        stack[vid] = desc
+        # TODO: a better approach is a max file size, but how big?
+        if len(stack) < 100:
+            continue
+        _write(j == len(descs) - 1)
+        stack = {}
+        i += 1
+    if stack:
+        _write(True)
+
 
 def render_updates(all_series: List[str]):
     """Renders json files for the last 10 videos published."""
