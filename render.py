@@ -74,6 +74,7 @@ def process_html(filename: str, context: Dict[str, str]):
     return ''.join(parts)
 
 def render_static(config: Dict):
+    os.makedirs( 'output/static', exist_ok=True)
     defaults = [s['slug'] for s in config['series'] if s.get('default')]
     assert len(defaults) == 1, 'Only one series should be marked default'
     default_series = defaults[0]
@@ -108,7 +109,7 @@ def render_series(series: Dict):
     overrides = {}
     for video in videos:
         ch_name = video.playlist.channel.name
-        if ch_name not in channels: 
+        if ch_name not in channels:
             thumb = {}
             if video.playlist.channel.thumbnails:
                 thumbs = json.loads(video.playlist.channel.thumbnails)
@@ -148,8 +149,8 @@ def render_series(series: Dict):
             't': video.title,
             'ch': channel_lookup[video.playlist.channel.name],
         })
-
-    with open(f'output/data/{series["slug"]}.json', 'w') as fp:
+    os.makedirs(f'output/data/{series["slug"]}/desc', exist_ok=True)
+    with open(f'output/data/{series["slug"]}/index.json', 'w') as fp:
         fp.write(json.dumps(data))
     render_descriptions(series["slug"], descs)
 
@@ -159,7 +160,7 @@ def render_descriptions(slug: str, descs: Dict[str, str]):
     stack = {}
     i = 0
     def _write(done: bool):
-        with open(f'output/data/{slug}.desc.{i}.json', 'w') as fp:
+        with open(f'output/data/{slug}/desc/{i}.json', 'w') as fp:
             fp.write(json.dumps({
                 'videos': stack,
                 'done': int(done)
@@ -179,8 +180,9 @@ def render_descriptions(slug: str, descs: Dict[str, str]):
 def render_updates(all_series: List[str]):
     """Renders json files for the last 10 videos published."""
     for series in all_series:
+        os.makedirs(f'output/data/{series}/updates', exist_ok=True)
         vid_hash, vid_id = render_updates_for_series(series)
-        with open(f'output/data/updates/{series}.json', 'w') as f:
+        with open(f'output/data/{series}/updates.json', 'w') as f:
             f.write(json.dumps({
                 'id': vid_id,
                 'hash': vid_hash,
@@ -189,7 +191,8 @@ def render_updates(all_series: List[str]):
 
 def render_updates_for_series(series: str) -> Tuple[str, str]:
     """Generates the hashed update files, returning the last one."""
-    prev = None
+    prev_hash = None
+    prev_id = None
     videos = (Video.select()
         .join(Playlist)
         .join(Channel)
@@ -197,19 +200,23 @@ def render_updates_for_series(series: str) -> Tuple[str, str]:
         .where(Video.series.slug == series)
         .order_by(Video.published_at.desc())
     )
-    for vid in reversed(videos[0:10]):
+    for vid in reversed(videos[0:30]):
         vid_data = {
             'id': vid.video_id,
             'ts': vid.published_at,
             't': vid.title,
-            'chn': vid.playlist.channel.name,
+            'ch': vid.playlist.channel.name,
             'd': vid.description,
-            'next': prev,
+            'next': {
+                'hash': prev_hash,
+                'id': prev_id,
+            },
         }
         vid_hash = sha1(f'{series}/{vid.video_id}')
-        with open(f'output/data/updates/{vid_hash}.json', 'w') as f:
+        with open(f'output/data/{series}/updates/{vid_hash}.json', 'w') as f:
             f.write(json.dumps(vid_data))
-        prev = vid_hash
+        prev_hash = vid_hash
+        prev_id = vid.video_id
     return vid_hash, vid.video_id
 
 def copytree(src, dst, symlinks=False, ignore=None):
@@ -235,8 +242,6 @@ def main(argv=None):
     if not args.quick:
         if os.path.exists('output'):
             shutil.rmtree('output/')
-        for d in ['output/data', 'output/data/updates', 'output/static']:
-            os.makedirs(d, exist_ok=True)
 
         for series in config['series']:
             print(f'Processing {series["slug"]}')
@@ -245,8 +250,7 @@ def main(argv=None):
             render_series(series)
 
     render_static(config)
-
-    render_updates([s['slug'] for s in config['series'] if s.get('active', True)])
+    render_updates([s['slug'] for s in config['series']])
     copytree('templates/static', 'output/static')
 
 if __name__ == "__main__":
