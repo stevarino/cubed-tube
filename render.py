@@ -73,9 +73,9 @@ def process_html(filename: str, context: Dict[str, str]):
             raise ValueError(f"Unrecognized tag_type: {tag_type}")
     return ''.join(parts)
 
-def render_html(config: Dict):
+def render_static(config: Dict):
     defaults = [s['slug'] for s in config['series'] if s.get('default')]
-    assert len(defaults) == 0, 'Only one series should be marked default'
+    assert len(defaults) == 1, 'Only one series should be marked default'
     default_series = defaults[0]
     series_list = [[s['slug'], s['title']] for s in config['series']]
     context = {
@@ -132,7 +132,7 @@ def render_series(series: Dict):
         del data['channels'][i]['count']
         channel_lookup[name] = i
 
-    for video in videos:
+    for video in videos[:-5]:
         if video.video_id in overrides.get(video.playlist.channel.name, {}):
             override = overrides[video.playlist.channel.name][video.video_id]
             if override == 0:
@@ -222,7 +222,7 @@ def main(argv=None):
                 continue
             render_series(series)
 
-    render_html(config)
+    render_static(config)
 
     render_updates([s['slug'] for s in config['series'] if s.get('active', True)])
     copytree('templates/static', 'output/static')
