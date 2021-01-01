@@ -41,7 +41,8 @@ var PLAYER = {
 };
 
 // cached channel lookup metadata, keyed by name and index
-var CHANNELS = {}
+var CHANNELS_BY_NAME = {}
+var CHANNELS_BY_INDEX = {}
 
 // timer object used for series. Needs to be cleared on series update.
 var UPDATE_TIMER = 0;
@@ -136,7 +137,9 @@ function markVideoActive(pos) {
             found = true;
         }
     }
-    active.video.classList.add('activevid');
+    if (active !== null) {
+        active.video.classList.add('activevid');
+    }
 }
 
 function onYouTubeIframeAPIReady() {
@@ -511,11 +514,16 @@ function htmlToElement(html) {
  * @param {Array} seriesChannels The series channels
  */
 function renderChannels(seriesChannels) {
-    Object.keys(CHANNELS).forEach(function(key) { delete CHANNELS[key]; });
+    function clearObject(obj) {
+        Object.keys(obj).forEach(function(key) { delete obj[key]; });
+    }
+    clearObject(CHANNELS_BY_NAME);
+    clearObject(CHANNELS_BY_INDEX);
     for (let i=0; i<seriesChannels.length; i++) {
         let ch = seriesChannels[i];
-        CHANNELS[ch.name] = ch;
-        CHANNELS[i] = ch;
+        ch.index = i;
+        CHANNELS_BY_NAME[ch.name] = ch;
+        CHANNELS_BY_INDEX[i] = ch;
     }
     var channels = document.getElementById('channels');
     channels.appendChild(htmlToElement(`
@@ -538,9 +546,8 @@ function renderChannels(seriesChannels) {
         e.preventDefault();
         return false;
     })
-    Object.keys(CHANNELS).sort().forEach(function(key) {
-        channels.appendChild(renderChannelCheckbox(
-            key, CHANNELS[key]));
+    Object.keys(CHANNELS_BY_NAME).sort().forEach(function(key) {
+        channels.appendChild(renderChannelCheckbox(key, CHANNELS_BY_NAME[key]));
     });
 }
 
@@ -604,7 +611,7 @@ function renderDate(videos, vid) {
  */
 function renderVideo(videos, vid) {
     renderDate(videos, vid);
-    let ch = CHANNELS[vid.ch];
+    let ch = CHANNELS_BY_INDEX[vid.ch];
     if (ch === undefined) {
         console.error(`channel not found: ${vid.ch}`)
     }
@@ -1050,6 +1057,7 @@ function renderUpdate(stack) {
     let videos = document.getElementById('videos')
     stack.forEach(update => {
         console.log(`Adding ${update.id}`);
+        update.ch = CHANNELS_BY_NAME[update.chn].index
         renderVideo(videos, update)
     });
     lazyload();

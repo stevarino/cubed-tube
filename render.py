@@ -205,7 +205,7 @@ def render_updates_for_series(series: str) -> Tuple[str, str]:
             'id': vid.video_id,
             'ts': vid.published_at,
             't': vid.title,
-            'ch': vid.playlist.channel.name,
+            'chn': vid.playlist.channel.name,
             'd': vid.description,
             'next': {
                 'hash': prev_hash,
