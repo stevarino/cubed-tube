@@ -1,12 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Slabo+27px&display=swap');
+
 :root {
     --size: auto; /* 600px */
     --fsize: calc(0.25vw + 0.25vh + 1vmin);
+    --bg-color: #f7f0de;
+    --bold-color: #3f0a00;
+    --accent-color: #224a64;
+    --bg-alpha: rgba(247, 240, 222, 0.95);
     font-size: calc(2 * var(--fsize));
 }
 
 body {
     font-family: sans-serif;
     margin: 0;
+    color: #151400;
+    background: #f7f0de
 }
 
 a {
@@ -30,7 +38,7 @@ input:focus {
     z-index: 10;
     margin: 0 auto;
     width: var(--size);
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--bg-alpha);
 }
 
 h1 {
@@ -41,6 +49,14 @@ h1 {
 }
 h1 a {
     text-decoration: none;
+    color: var(--bold-color);
+    text-shadow: 
+        -2px -2px 0 var(--bg-color), 
+        2px -2px 0 var(--bg-color), 
+        -2px 2px 0 var(--bg-color), 
+        2px 2px 0 var(--bg-color);
+    filter: drop-shadow(0px 4px 0 var(--accent-color));
+    letter-spacing: 8px;
 }
 
 /* https://css-tricks.com/solved-with-css-dropdown-menus/ */
@@ -58,6 +74,7 @@ h1 a {
 #menu a, 
 #menu label {
     cursor: pointer;
+    color: var(--bold-color)
 }
 
 #menu > li {
@@ -79,6 +96,10 @@ h1 a {
 
 #menu li ul a {
     text-decoration: none;
+}
+
+#menu > li > a {
+    font-weight: bold;
 }
 
 #menu li:hover,
@@ -110,7 +131,7 @@ h1 a {
 #menu li ul li {
     box-sizing: border-box;
     border: 1px solid rgba(255, 255, 255, 0);
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--bg-alpha);
     border-left-color: #000;
     border-right-color: #000;
     font-size: 1.5rem;
@@ -201,8 +222,9 @@ h1 a {
 #videos h2 {
     margin: 0 0 1em 0;
     text-align: center;
-    background: #000;
-    color: #fff;
+    color: var(--accent-color);
+    border: 6px double var(--accent-color);
+    border-width: 6px 0;
 }
 
 #videos .thumb {
