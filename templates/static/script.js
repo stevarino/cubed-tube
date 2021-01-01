@@ -636,6 +636,12 @@ function renderVideo(videos, vid) {
             </a>
         </h3>
     `);
+    
+    title.appendChild(htmlToElement(`
+        <a href='${chURL}?sub_confirmation=1' target='_blank'
+            class='channel_subscribe'>Subscribe</a>
+    `));
+
     let vidLink = htmlToElement(`<a href='${vidURL}' target='_blank'></a>`);
     vidLink.setAttribute('data-video-id', vid.id);
     vidLink.addEventListener('click', loadPlayer);
