@@ -4,8 +4,8 @@
     --size: auto; /* 600px */
     --fsize: calc(0.25vw + 0.25vh + 1vmin);
     --bg-color: #f7f0de;
-    --bold-color: #3f0a00;
-    --accent-color: #224a64;
+    --bold-color: #541003;
+    --accent-color: #09405e;
     --bg-alpha: rgba(247, 240, 222, 0.95);
     font-size: calc(2 * var(--fsize));
 }
@@ -46,17 +46,54 @@ h1 {
     opacity: 1;
     margin: 0 1rem;
     padding: 1rem 0 1rem 0;
+    font-variant: small-caps;
 }
-h1 a {
+h1 a .logo {
     text-decoration: none;
     color: var(--bold-color);
-    text-shadow: 
-        -2px -2px 0 var(--bg-color), 
-        2px -2px 0 var(--bg-color), 
-        -2px 2px 0 var(--bg-color), 
-        2px 2px 0 var(--bg-color);
-    filter: drop-shadow(0px 4px 0 var(--accent-color));
-    letter-spacing: 8px;
+    letter-spacing: -2px;
+    display:inline-block;
+}
+h1 a .play {
+  display: inline-block;
+  font-size: 0.7em;
+  position: relative;
+  top: -0.1em;
+  width: 0.8em;
+  height: 1.1em;
+  margin-right: -0.1em;
+  transform-origin: 0.3em 0.5em;
+}
+
+h1 a .outline {
+  background: var(--bold-color);
+  color: var(--bg-color);
+  border-radius: 0.2em;
+  padding:0 0.2em;
+  margin-left: 0.1em;
+}
+
+h1 a .outline .logo {
+  color: var(--bg-color);
+}
+
+h1 a .logo::first-letter {
+  display: inline-block;
+  margin-right: -0.05em;
+}
+
+h1 a:hover .play {
+  animation-name: weee;  
+  animation-duration: 0.5s;
+}
+
+@keyframes weee {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(359deg);
+  }
 }
 
 /* https://css-tricks.com/solved-with-css-dropdown-menus/ */
