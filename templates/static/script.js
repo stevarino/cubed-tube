@@ -1012,9 +1012,10 @@ function findNextVideo(videoId) {
  * Polls the server for updates and promos available.
  */
 function fetchUpdate() {
+    let d = Date().getTime();
     let req = new XMLHttpRequest();
     req.overrideMimeType("application/json");
-    req.open('GET', `/data/${window.series}/updates.json`, true);
+    req.open('GET', `/data/${window.series}/updates.json?d`, true);
     req.onreadystatechange = function() {
         if (req.readyState == 4) {
             if (req.status == "200") {
