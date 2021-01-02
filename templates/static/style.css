@@ -385,7 +385,7 @@ h1 a .outline .logo::first-letter {
 }
 
 #videos {
-    padding-bottom: 20rem;
+    padding-bottom: 100%;
 }
 
 #videos .video {
@@ -538,7 +538,7 @@ h1 a .outline .logo::first-letter {
     #menu li ul {
         min-width: 15rem;
         position: absolute;
-        top: 3rem;
+        top: calc(3rem + 2px);
         left: -1px;
         height: auto;
     }
