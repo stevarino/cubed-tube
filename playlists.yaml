@@ -4,6 +4,17 @@ series:
   - title: Hermitcraft Season 7
     slug: hc7
     default: true
+    start: 1582900000
+    ignore_video_ids:
+     - 2PxJJTI7qBI
+     - Ca1i6DZC3iY
+     - 1uj0u6TlOR4
+     - PkUg89kLLBE
+     - kWvQyPI7A-M
+     - 2xG1Umugpxs
+     - JE-Uea1aLhM
+     - RFqnVH5uMXQ
+     - swa2ni6DjlA
     channels:
     # https://hermitcraft.fandom.com/wiki/Season_7
     - name: BdoubleO100
@@ -12,8 +23,6 @@ series:
       playlist: https://www.youtube.com/playlist?list=PLoH7Sjb8-XEga029q9zamdRqt_dncTSTT
     - name: docm77
       playlist: https://www.youtube.com/playlist?list=PLvh8CGg6LWwqd3lUvFStCVP6yO_daqUe-
-      overrides:
-        2PxJJTI7qBI: 0
     - name: EthosLab
       playlist: https://www.youtube.com/playlist?list=PLaAVDbMg_XAoTkSw42KSc-pl7rG9Hr95v
     - name: FalseSymmetry
@@ -26,15 +35,6 @@ series:
       playlist: https://www.youtube.com/playlist?list=PLriprjos26pvLjj5SRhOJPdPBTDcXYHiB
     - name: iJevin
       playlist: https://www.youtube.com/playlist?list=PL9heRuhTVdQRDh9SNvhSv-AxlW5DPqTDB
-      overrides:
-        Ca1i6DZC3iY: 0
-        1uj0u6TlOR4: 0
-        PkUg89kLLBE: 0
-        kWvQyPI7A-M: 0
-        2xG1Umugpxs: 0
-        JE-Uea1aLhM: 0
-        RFqnVH5uMXQ: 0
-        swa2ni6DjlA: 0
     - name: impulseSV
       playlist: https://www.youtube.com/playlist?list=PL0Z8otuXXj_3paGa74e-CDWLJHcepCV67
     - name: iskall85

@@ -2,7 +2,7 @@
 Reads from the database and produces html files.
 """
 
-import common
+from common import Context
 from models import Video, Playlist, Channel, Series, Misc
 
 import argparse
@@ -93,12 +93,13 @@ def render_static(config: Dict):
         with open(out_file, 'w') as fp:
             fp.write(process_html(html_file, context))
 
-def render_series(series: Dict):
+def render_series(context: Context):
+    slug = context.series_config['slug']
     videos = (Video.select()
         .join(Playlist)
         .join(Channel)
         .join_from(Video, Series)
-        .where(Video.series.slug == series['slug'])
+        .where(Video.series.slug == slug)
         .order_by(Video.published_at)
     )
     data = {'channels': [], 'videos': []}
@@ -106,7 +107,6 @@ def render_series(series: Dict):
     channels = {}
     channel_lookup = {}
     descs = {}
-    overrides = {}
     for video in videos:
         ch_name = video.playlist.channel.name
         if ch_name not in channels:
@@ -121,9 +121,6 @@ def render_series(series: Dict):
                 'thumb': thumb,
                 'count': 1,
             }
-            for channel in series['channels']:
-                if channel['name'] == video.playlist.channel.tag:
-                    overrides[ch_name] = channel.get('overrides', {})
         else:
             channels[ch_name]['count'] += 1
     channel_names = sorted(
@@ -134,13 +131,7 @@ def render_series(series: Dict):
         channel_lookup[name] = i
 
     for video in videos:
-        if video.video_id in overrides.get(video.playlist.channel.name, {}):
-            override = overrides[video.playlist.channel.name][video.video_id]
-            if override == 0:
-                continue
-            else:
-                video.published_at = override
-        if video.title is None:
+        if context.filter_video(video):
             continue
         descs[video.video_id] = video.description
         data['videos'].append({
@@ -149,10 +140,11 @@ def render_series(series: Dict):
             't': video.title,
             'ch': channel_lookup[video.playlist.channel.name],
         })
-    os.makedirs(f'output/data/{series["slug"]}/desc', exist_ok=True)
-    with open(f'output/data/{series["slug"]}/index.json', 'w') as fp:
+    os.makedirs(f'output/data/{slug}/desc', exist_ok=True)
+    with open(f'output/data/{slug}/index.json', 'w') as fp:
         fp.write(json.dumps(data))
-    render_descriptions(series["slug"], descs)
+    render_descriptions(slug, descs)
+    render_updates(context)
 
         
 def render_descriptions(slug: str, descs: Dict[str, str]):
@@ -177,29 +169,31 @@ def render_descriptions(slug: str, descs: Dict[str, str]):
         _write(True)
 
 
-def render_updates(all_series: List[str]):
+def render_updates(context: Context):
     """Renders json files for the last 10 videos published."""
-    for series in all_series:
-        os.makedirs(f'output/data/{series}/updates', exist_ok=True)
-        vid_hash, vid_id = render_updates_for_series(series)
-        with open(f'output/data/{series}/updates.json', 'w') as f:
-            f.write(json.dumps({
-                'id': vid_id,
-                'hash': vid_hash,
-                'promos': [] # TODO....
-            }))
+    slug = context.series_config['slug']
+    os.makedirs(f'output/data/{slug}/updates', exist_ok=True)
+    vid_hash, vid_id = render_updates_for_series(context)
+    with open(f'output/data/{slug}/updates.json', 'w') as f:
+        f.write(json.dumps({
+            'id': vid_id,
+            'hash': vid_hash,
+            'promos': [] # TODO....
+        }))
 
-def render_updates_for_series(series: str) -> Tuple[str, str]:
+def render_updates_for_series(context: Context) -> Tuple[str, str]:
     """Generates the hashed update files, returning the last one."""
+    slug = context.series_config['slug']
     prev_hash = None
     prev_id = None
     videos = (Video.select()
         .join(Playlist)
         .join(Channel)
         .join_from(Video, Series)
-        .where(Video.series.slug == series)
+        .where(Video.series.slug == slug)
         .order_by(Video.published_at.desc())
     )
+    videos = [v for v in videos if not context.filter_video(v)]
     for vid in reversed(videos[0:30]):
         vid_data = {
             'id': vid.video_id,
@@ -212,8 +206,8 @@ def render_updates_for_series(series: str) -> Tuple[str, str]:
                 'id': prev_id,
             },
         }
-        vid_hash = sha1(f'{series}/{vid.video_id}')
-        with open(f'output/data/{series}/updates/{vid_hash}.json', 'w') as f:
+        vid_hash = sha1(f'{slug}/{vid.video_id}')
+        with open(f'output/data/{slug}/updates/{vid_hash}.json', 'w') as f:
             f.write(json.dumps(vid_data))
         prev_hash = vid_hash
         prev_id = vid.video_id
@@ -247,10 +241,9 @@ def main(argv=None):
             print(f'Processing {series["slug"]}')
             if args.series and series['slug'] not in args.series:
                 continue
-            render_series(series)
+            render_series(Context(series_config=series))
 
     render_static(config)
-    render_updates([s['slug'] for s in config['series']])
     copytree('templates/static', 'output/static')
 
 if __name__ == "__main__":

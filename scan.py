@@ -157,6 +157,8 @@ def process_yt_playlist(ctx: Context, p_id: str):
         vid.position = video['snippet']['position']
         vid.description = video['snippet']['description']
         vid.thumbnails = json.dumps(video['snippet']['thumbnails'])
+        if ctx.filter_video(vid):
+            continue
         vid.save()
     print(f'    Playlist ID {p_id} ({i+1})')
 
@@ -246,7 +248,7 @@ def main(argv=None):
             if series_.title != series['title']:
                 series_.title = series['title']
                 series_.save()
-            c_ctx = ctx.copy(series=series_)
+            c_ctx = ctx.copy(series=series_, series_config=series)
             process_series(c_ctx, series['channels'])
     finally:
         update_stats(ctx.cost.value)
