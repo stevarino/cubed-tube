@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Slabo+27px&display=swap');
-
 :root {
-    --size: auto; /* 600px */
+    --size: auto;
+    /* 600px */
     --fsize: calc(0.25vw + 0.25vh + 1vmin);
     --bg-color: #f7f0de;
     --bold-color: #541003;
@@ -47,6 +47,74 @@ h1 {
     margin: 0 1rem;
     padding: 1rem 0 1rem 0;
     font-variant: small-caps;
+    letter-spacing: -2px;
+    text-decoration: none;
+}
+
+h1 span {
+    display: inline-block;
+    color: var(--bold-color);
+}
+
+h1 a span.play {
+    font-size: 0.7em;
+    position: relative;
+    top: -0.1em;
+    width: 0.8em;
+    height: 1.1em;
+    margin-right: -0.1em;
+    transform-origin: 0.3em 0.5em;
+}
+
+h1 a .outline {
+    background: var(--accent-color);
+    /*background: var(--bold-color);*/
+    color: var(--bg-color);
+    border-radius: 0.2em;
+    padding: 0 0.2em;
+    margin-left: 0.1em;
+}
+
+h1 a .outline span {
+    color: var(--bg-color);
+}
+
+h1 a .logo::first-letter {
+    display: inline-block;
+    margin-right: -0.05em;
+}
+
+h1 a:hover .play {
+    animation-name: weee;
+    animation-duration: 0.5s;
+}
+
+@keyframes weee {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(359deg);
+    }
+}
+
+
+/** Alt Logo: http://www.cssdesk.com/kYVrP
+
+<h1><a href='#'>
+<span
+  class='logo'>Hermit</span><span
+  class='outline'><span
+   class='logo'>Tube</span><span class='dot'>|</span><span class='dot dot2'>|</span>
+   </span>
+</a></h1>
+
+h1 {
+    font-size: 3rem;
+    opacity: 1;
+    margin: 0 1rem;
+    padding: 1rem 0 1rem 0;
+    font-variant: small-caps;
 }
 h1 a .logo {
     text-decoration: none;
@@ -70,11 +138,41 @@ h1 a .outline {
   color: var(--bg-color);
   border-radius: 0.2em;
   padding:0 0.2em;
+  padding-left: 0.4em;
   margin-left: 0.1em;
+  margin-right: 1em;
+  position: relative;
+}
+
+h1 a .dot {
+    position: absolute;
+    top: 1.1em;
+    left: 0.5em;
+    font-size: 0.2em;
+    transform: rotate(-45deg);
+    color: var(--bold-color);
+    background: var(--bg-color);
+    border-radius: 50%;
+    width: 1.1em;
+    height: 1.1em;
+    line-height: 1em;
+    text-align: center;
+}
+
+h1 a .dot2 {
+  top: 2.5em;
+  transform: rotate(-10deg);
+}
+
+h1 a .dot3 {
+  top: 2.78em;
+    transform: rotate(0deg);
 }
 
 h1 a .outline .logo {
   color: var(--bg-color);
+  text-transform: uppercase;
+  letter-spacing: -0.1em;
 }
 
 h1 a .logo::first-letter {
@@ -82,60 +180,122 @@ h1 a .logo::first-letter {
   margin-right: -0.05em;
 }
 
-h1 a:hover .play {
-  animation-name: weee;  
-  animation-duration: 0.5s;
+h1 a .outline .logo::first-letter {
+  margin-right: 0.05em;
 }
 
-@keyframes weee {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(359deg);
-  }
+*/
+
+
+/* https://dev.to/emmaadesile/how-to-create-a-hamburger-menu-icon-with-css-and-javascript-1kgd */
+
+.menu-button {
+    position: absolute;
+    top: 1em;
+    right: 0;
 }
+
+.menu-icon {
+    display: grid;
+    place-items: center;
+    height: 3.3em;
+    width: 3em;
+    position: relative;
+    cursor: pointer;
+}
+
+.menu-icon>span {
+    width: 3em;
+    height: 0.4em;
+    background: var(--bold-color);
+    display: block;
+    transition: all 0.3s ease-in-out;
+}
+
+.menu-icon:hover span:nth-child(1) {
+    width: 1.8em;
+}
+
+.menu-icon:hover span:nth-child(2) {
+    width: 2.2em;
+}
+
+.menu_active .menu-icon span:nth-child(1) {
+    transform-origin: center center;
+    transform: rotate(-45deg) translate(-0.74em, 0.7em);
+    width: 3.3em;
+}
+
+.menu_active .menu-icon span:nth-child(2) {
+    transform: translateX(0.6em);
+    opacity: 0;
+}
+
+.menu_active .menu-icon span:nth-child(3) {
+    transform-origin: center center;
+    transform: rotate(45deg) translate(-0.9em, -0.84em);
+    width: 3.3em;
+}
+
+.menu-icon .line-1 {
+    width: 2.2em;
+    justify-self: end;
+}
+
+.menu-icon .line-2 {
+    width: 1.8em;
+    justify-self: end;
+}
+
 
 /* https://css-tricks.com/solved-with-css-dropdown-menus/ */
 
 #menu {
-    margin: 0 1rem 0 auto;
+    margin: 0;
     list-style: none;
     padding: 0;
-    height: 3.5rem;
-    white-space: nowrap;
-    overflow-x: scroll;
-    text-align: right;
+    display: none;
+    position: fixed;
+    top: 5rem;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    overflow-y: scroll;
+    background: var(--bg-alpha);
+    font-size: 1.5rem;
 }
 
-#menu a, 
+.menu_active #menu {
+    display: block;
+}
+
+#menu a,
 #menu label {
     cursor: pointer;
     color: var(--bold-color)
 }
 
-#menu > li {
+#menu>li {
     list-style: none;
     margin: 0;
     border: 1px solid rgba(0, 0, 0, 0);
     position: relative;
     transition-duration: 0.5s;
     z-index: 20;
-    display: inline-block;
 }
 
-#menu > li > * {
-    color: #000; 
+#menu li>* {
+    color: #000;
     text-decoration: none;
     padding: 1rem;
-    display: inline-block;
+    display: block;
 }
 
 #menu li ul a {
     text-decoration: none;
 }
 
-#menu > li > a {
+#menu>li>a {
     font-weight: bold;
 }
 
@@ -144,11 +304,11 @@ h1 a:hover .play {
     cursor: pointer;
     border: 1px solid #000;
 }
-  
+
 #menu li:focus-within a {
     outline: none;
 }
-  
+
 #menu li ul {
     margin: 0;
     padding: 0;
@@ -156,13 +316,6 @@ h1 a:hover .play {
     visibility: hidden;
     transition: all 0.5s ease;
     display: none;
-    position: fixed;
-    top: 8rem;
-    bottom: 0;
-    left: -1px;
-    right: 0;
-    overflow-y: scroll;
-    text-align: left;
 }
 
 #menu li ul li {
@@ -171,7 +324,6 @@ h1 a:hover .play {
     background: var(--bg-alpha);
     border-left-color: #000;
     border-right-color: #000;
-    font-size: 1.5rem;
 }
 
 #menu li ul li:first-child {
@@ -189,12 +341,7 @@ h1 a:hover .play {
     background: rgba(255, 255, 255, 0.95);
 }
 
-#menu li ul li > * {
-    padding: 1rem;
-    display: block;
-}
-  
-#menu li.active > ul {
+#menu li.active_click>ul {
     visibility: visible;
     display: block;
     transition-duration: 0.5s;
@@ -244,6 +391,8 @@ h1 a:hover .play {
 #videos .video {
     margin: 0 0 2em 0;
     position: relative;
+    padding-top: 5px;
+    padding-bottom: 5px;
 }
 
 #videos .activevid {
@@ -259,7 +408,7 @@ h1 a:hover .play {
 #videos h2 {
     margin: 0 0 1em 0;
     text-align: center;
-    color: var(--accent-color);
+    color: var(--bold-color);
     border: 6px double var(--accent-color);
     border-width: 6px 0;
 }
@@ -276,7 +425,7 @@ h1 a:hover .play {
     position: relative;
     min-height: 50px;
     margin: 0;
-    padding: 0 0 0 50px;
+    padding: 0 0 0 110px;
 }
 
 #videos h3 a {
@@ -286,7 +435,9 @@ h1 a:hover .play {
 #videos h3 img {
     position: absolute;
     top: 0;
-    left: 0;
+    left: 5px;
+    width: 100px;
+    height: 100px;
 }
 
 #videos h3 .channel_link {
@@ -308,19 +459,24 @@ h1 a:hover .play {
 
 #videos .showmoreless {
     position: absolute;
-    bottom: 0;
-    right: 0;
-    background: #fff;
-    opacity: 0.95;
+    bottom: 5px;
+    right: 5px;
+    background: var(--accent-color);
+    color: #fff;
+    border-radius: 0.3em;
+    padding: 0.8em 1em;
     cursor: pointer;
+    font-weight: bold;
+    font-size: 0.7em;
+    text-transform: uppercase;
+    border: 1px solid var(--bg-color);
 }
 
 #videos a.channel_subscribe {
-    border-width: 0.1em 1em;
     font-weight: bold;
     font-size: 0.6em;
     padding: 0.8em 1em;
-    margin: 0 1em;
+    margin: 0 5px 0 1em;
     float: right;
     border-radius: 0.3em;
     color: white;
@@ -328,7 +484,7 @@ h1 a:hover .play {
     text-transform: uppercase;
 }
 
-#videos a.channel_subscribe:hover {
+#videos .video:hover a.channel_subscribe {
     background: #f00;
     color: #fff;
 }
@@ -349,16 +505,32 @@ h1 a:hover .play {
     display: block;
 }
 
-@media only screen and (min-width: 62rem) { /* 992px */
-    :root {
+@media only screen and (min-width: 62rem) {
+    /* 992px */
+     :root {
         font-size: 16px;
-        --size: 56rem; /* 896px */
+        --size: 56rem;
+        /* 896px */
+    }
+    .menu-button {
+        display: none;
     }
     #menu {
         overflow: visible;
+        display: block;
         position: absolute;
+        height: 3.5rem;
+        top: auto;
+        left: auto;
         bottom: 0;
         right: 0;
+        font-size: 1rem;
+        text-align: right;
+        background: transparent;
+    }
+    #menu>li {
+        display: inline-block;
+        text-align: left;
     }
     #menu li a#channel_dropdown {
         display: none;
@@ -369,18 +541,24 @@ h1 a:hover .play {
         top: 3rem;
         left: -1px;
         height: auto;
-        overflow: visible;
     }
-    #menu li ul li {
-        font-size: 1rem;
+    #menu li.active_hover>ul {
+        visibility: visible;
+        display: block;
+        transition-duration: 0.5s;
+    }
+    #menu:first-child {
+        display: none;
+        border: none !important;
     }
     #menu li ul#channels {
         position: fixed;
         top: 5rem;
         bottom: 0;
         left: 50%;
-        margin-left: calc(var(--size) /  -2);
-        width: 12.5rem; /* 200px */
+        margin-left: calc(var(--size) / -2);
+        width: 12.5rem;
+        /* 200px */
         overflow-y: scroll;
         visibility: visible;
         height: auto;
@@ -394,17 +572,27 @@ h1 a:hover .play {
         border: 0;
     }
     #videos {
-        margin: 0 0 0 15rem; /* 240px; */
+        margin: 0 0 0 15rem;
+        /* 240px; */
     }
     #videos .video {
         padding-left: 340px;
         height: 184px;
         overflow: hidden;
+        margin-left: 5px;
+    }
+    #videos h3 {
+        padding-left: 50px;
+    }
+    #videos h3 img {
+        left: 0;
+        width: 44px;
+        height: 44px;
     }
     #videos .thumb {
         position: absolute;
-        left: 0;
-        top: 0;
+        left: 5px;
+        top: 5px;
         width: 320px;
         height: 180px;
     }
@@ -413,8 +601,10 @@ h1 a:hover .play {
     }
 }
 
-@media only screen and (min-width: 80rem) { /* 1280px */
-    :root {
-        --size: 75rem; /* 1200px */
+@media only screen and (min-width: 80rem) {
+    /* 1280px */
+     :root {
+        --size: 75rem;
+        /* 1200px */
     }
 }

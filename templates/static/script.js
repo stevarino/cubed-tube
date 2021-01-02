@@ -5,23 +5,24 @@ const MONTHS = [
 
 // Selected channels and scroll posstion by series (added channels are hidden)
 var STATE = {}
-/**
- * {
- *      series (hc7) = [
- *          {
- *              'profile' = str
- *              'accessed' = new Date().getTime()
- *              'channels' = [
- *                  'channelIdStr'
- *              ],
- *              'scroll' = int
-*           }
- *      ]
- * }
- */
+    /**
+     * {
+     *      series (hc7) = [
+     *          {
+     *              'profile' = str
+     *              'accessed' = new Date().getTime()
+     *              'channels' = [
+     *                  'channelIdStr'
+     *              ],
+     *              'scroll' = int
+     *           }
+     *      ]
+     * }
+     */
 
 // scroll tracker timeout timer, to prevent hundreds of actions per scroll
 var scrollTimeout = null
+
 // scroll to epoch data structure.
 var scrollToEpoch = []
 
@@ -40,6 +41,12 @@ var PLAYER = {
     video: null
 };
 
+var BROWSE_CONTROLS = {
+    'ArrowLeft': browsePrevVideo,
+    'ArrowRight': browseNextVideo,
+    ' ': browsePlayVideo,
+}
+
 // cached channel lookup metadata, keyed by name and index
 var CHANNELS_BY_NAME = {}
 var CHANNELS_BY_INDEX = {}
@@ -47,7 +54,7 @@ var CHANNELS_BY_INDEX = {}
 // timer object used for series. Needs to be cleared on series update.
 var UPDATE_TIMER = 0;
 
-window.onload = function () {
+window.onload = function() {
     loadSettings();
     initDropdown()
     if (document.getElementById('loading') === null) {
@@ -78,6 +85,19 @@ window.onload = function () {
             updateScrollPos();
         }, 300);
     });
+    document.body.addEventListener('keydown', (e) => {
+        if (PLAYER.obj !== null && e.key in PLAYER.controls) {
+            PLAYER.controls[e.key](e);
+            e.preventDefault();
+            return false;
+        } else if (PLAYER.obj === null && e.key in BROWSE_CONTROLS) {
+            BROWSE_CONTROLS[e.key](e);
+            e.preventDefault();
+            return false;
+        } else {
+            // console.log(e.key);
+        }
+    });
     loadSeries();
     renderProfileMenu();
 }
@@ -85,7 +105,7 @@ window.onload = function () {
 function renderProfileMenu() {
     let menu = document.getElementById("settings");
     let items = Array.from(document.getElementsByClassName('profile_item'));
-    for (let i=0; i<items.length; i++) {
+    for (let i = 0; i < items.length; i++) {
         items[i].parentElement.removeChild(items[i]);
     }
     let profiles = listProfiles();
@@ -128,8 +148,8 @@ function markVideoActive(pos) {
     let start = new Date();
     let active = null;
     var actives = document.getElementsByClassName('activevid');
-    for (var i=0; i<actives.length; i++) {
-        actives[i].classList.remove('activevid');
+    while (actives.length > 0) {
+        actives[0].classList.remove('activevid');
     }
     for (var i in scrollToEpoch) {
         if ((scrollToEpoch[i].pos + offset) >= lim && !found) {
@@ -147,9 +167,9 @@ function onYouTubeIframeAPIReady() {
 }
 
 function loadSettings() {
-    SETTINGS = this.loadFromStorage('settings')
+    SETTINGS = this.loadFromStorage('settings');
     if (SETTINGS === null) {
-        SETTINGS = {player: true, autoplay: true};
+        SETTINGS = { player: true, autoplay: true };
         this.saveToStorage('settings', SETTINGS);
     }
     document.getElementById('opt_player').checked = SETTINGS.player;
@@ -171,7 +191,7 @@ function loadSettings() {
  * 
  * @param {Event} e 
  */
-function modifyMenu(e, action) {
+function modifyMenu(e, action, className) {
     let el = e.target;
     if (el.tagName.toLowerCase() == 'a') {
         el = el.parentElement;
@@ -180,14 +200,13 @@ function modifyMenu(e, action) {
         }
     }
     e.preventDefault();
-    if (el.tagName.toLowerCase() == 'a') {
-    }
+    if (el.tagName.toLowerCase() == 'a') {}
     document.querySelectorAll('#menu > li').forEach((li) => {
         if (li != el) {
-            li.classList.remove('active');
+            li.classList.remove(`active_${className}`);
         }
     })
-    el.classList[action]('active');
+    el.classList[action](`active_${className}`);
     return false;
 }
 
@@ -195,19 +214,24 @@ function modifyMenu(e, action) {
  * Initialize series selector dropdown.
  */
 function initDropdown() {
+    let mainMenu = document.querySelector('.menu-icon');
+    mainMenu.addEventListener('click', (e) => {
+        console.log('click!');
+        document.body.classList.toggle('menu_active');
+    });
     document.querySelectorAll("#menu > li").forEach((menu) => {
         menu.childNodes.forEach((el) => {
             if (el.nodeType == 1 && el.tagName.toLowerCase() == 'a') {
-                el.addEventListener('click', (e) => modifyMenu(e, 'toggle'));
+                el.addEventListener('click', (e) => modifyMenu(e, 'toggle', 'click'));
                 el.addEventListener('keydown', (e) => {
                     if (e.key == ' ' || e.key.toLowerCase() == 'enter') {
-                        return modifyMenu(e, 'toggle')
+                        return modifyMenu(e, 'toggle', 'click')
                     }
                 });
             }
         });
-        menu.addEventListener('mouseenter', (e) => modifyMenu(e, 'add'));
-        menu.addEventListener('mouseleave', (e) => modifyMenu(e, 'remove'));
+        menu.addEventListener('mouseenter', (e) => modifyMenu(e, 'add', 'hover'));
+        menu.addEventListener('mouseleave', (e) => modifyMenu(e, 'remove', 'hover'));
     });
     let dropdown = document.getElementById('seasons');
     window.all_series.forEach((s) => {
@@ -289,11 +313,11 @@ function loadSeries() {
         STATE[series] = [{
             'profile': 'default',
             'accessed': new Date().getTime(),
-            'channels': [], 
+            'channels': [],
             'scroll': 0,
         }];
         saveToStorage('state', STATE);
-    } else if (! (STATE[series] instanceof Array)) {
+    } else if (!(STATE[series] instanceof Array)) {
         // one time migrate code
         STATE[series]['profile'] = 'default';
         STATE[series]['accessed'] = 0;
@@ -303,7 +327,7 @@ function loadSeries() {
     var req = new XMLHttpRequest();
     req.overrideMimeType("application/json");
     req.open('GET', '/data/' + series + '/index.json', true);
-    req.onreadystatechange = function () {
+    req.onreadystatechange = function() {
         if (req.readyState == 4) {
             if (req.status == "200") {
                 renderSeries(req.responseText);
@@ -313,11 +337,11 @@ function loadSeries() {
         }
     };
     req.send();
-    
+
     if (UPDATE_TIMER !== 0) {
         clearInterval(UPDATE_TIMER);
     }
-    UPDATE_TIMER = setInterval(fetchUpdate, 300000);  // 5 minutes
+    UPDATE_TIMER = setInterval(fetchUpdate, 300000); // 5 minutes
 }
 
 /**
@@ -398,7 +422,7 @@ function renameProfile() {
  */
 function toggleVideos(ch_id, visible) {
     let vids = document.getElementsByClassName(`channel_${ch_id}`);
-    for (let i=0; i<vids.length; i++) {
+    for (let i = 0; i < vids.length; i++) {
         vids[i].style.display = (visible ? 'block' : 'none');
     }
 }
@@ -443,7 +467,7 @@ function toggleChannels() {
         updateCheckbox(el);
     });
     let vids = document.getElementsByClassName('video');
-    for (let i=0; i<vids.length; i++) {
+    for (let i = 0; i < vids.length; i++) {
         let visible = channel_map[vids[i].getAttribute('data-channel')];
         vids[i].style.display = (visible ? 'block' : 'none');
     }
@@ -477,7 +501,7 @@ function renderSeries(data) {
     videos.setAttribute('id', 'videos');
     content.appendChild(videos);
 
-    for (let i=0; i<series.videos.length; i++) {
+    for (let i = 0; i < series.videos.length; i++) {
         series.channel
         renderVideo(videos, series.videos[i]);
     }
@@ -519,7 +543,7 @@ function renderChannels(seriesChannels) {
     }
     clearObject(CHANNELS_BY_NAME);
     clearObject(CHANNELS_BY_INDEX);
-    for (let i=0; i<seriesChannels.length; i++) {
+    for (let i = 0; i < seriesChannels.length; i++) {
         let ch = seriesChannels[i];
         ch.index = i;
         CHANNELS_BY_NAME[ch.name] = ch;
@@ -530,18 +554,18 @@ function renderChannels(seriesChannels) {
         <li><span>Select <a id='selectall' href='#'>All</a> | 
         <a id='selectnone' href='#'>None</a></span></li>
     `));
-    document.getElementById('selectall').addEventListener('click', (e)=> {
+    document.getElementById('selectall').addEventListener('click', (e) => {
         document.querySelectorAll('#channels input').forEach((el) => {
             el.checked = true;
-            toggleChannel({target: el});
+            toggleChannel({ target: el });
         });
         e.preventDefault();
         return false;
     })
-    document.getElementById('selectnone').addEventListener('click', (e)=> {
+    document.getElementById('selectnone').addEventListener('click', (e) => {
         document.querySelectorAll('#channels input').forEach((el) => {
             el.checked = false;
-            toggleChannel({target: el})
+            toggleChannel({ target: el })
         });
         e.preventDefault();
         return false;
@@ -636,7 +660,7 @@ function renderVideo(videos, vid) {
             </a>
         </h3>
     `);
-    
+
     title.appendChild(htmlToElement(`
         <a href='${chURL}?sub_confirmation=1' target='_blank'
             class='channel_subscribe'>Subscribe</a>
@@ -655,12 +679,12 @@ function renderVideo(videos, vid) {
 
     let d = new Date(0);
     d.setUTCSeconds(vid.ts);
-    let month = MONTHS[d.getMonth()].substr(0,3);
+    let month = MONTHS[d.getMonth()].substr(0, 3);
     title.appendChild(htmlToElement(`
         <span class='date'>${month} ${d.getDate()} ${d.getFullYear()}</span>
     `));
 
-    
+
     vidEl.appendChild(title);
 
     let thumbLink = htmlToElement(`<a href='${vidURL}' target='_blank'></a>`);
@@ -693,8 +717,8 @@ function videoShowMoreLess(e) {
         return;
     }
     let paraRect = para.getBoundingClientRect();
-    let text = vid.classList.contains('expanded') ? 'Less': 'More';
-    
+    let text = vid.classList.contains('expanded') ? 'Less' : 'More';
+
     let show = htmlToElement(`
         <span class="showmoreless">
             Show ${text}
@@ -716,7 +740,7 @@ function videoExpand(e) {
     var vid = e.target.parentElement;
     vid.classList.toggle('expanded');
     updateScrollPos();
-    let text = vid.classList.contains('expanded') ? 'Less': 'More';
+    let text = vid.classList.contains('expanded') ? 'Less' : 'More';
     let span = vid.getElementsByClassName('showmoreless');
     if (span.length == 0) {
         return;
@@ -734,17 +758,17 @@ function getScrollPos(pos) {
     if (pos == 0) {
         return 0;
     }
-    for (var i=0; i<scrollToEpoch.length; i++) {
+    for (var i = 0; i < scrollToEpoch.length; i++) {
         let current = scrollToEpoch[i];
         if (current.pos < pos) continue;
         if (i == 0) return 0;
 
-        let prev = scrollToEpoch[i-1];
+        let prev = scrollToEpoch[i - 1];
         let offset = (pos - prev.pos) / (current.pos - prev.pos);
         let ts = offset * (current.ts - prev.ts) + prev.ts;
         return ts;
     }
-    return scrollToEpoch[scrollToEpoch.length-1].ts;
+    return scrollToEpoch[scrollToEpoch.length - 1].ts;
 }
 
 /**
@@ -752,12 +776,12 @@ function getScrollPos(pos) {
  */
 function setScrollPos() {
     let ts = getProfile().scroll;
-    for (var i=0; i<scrollToEpoch.length; i++) {
+    for (var i = 0; i < scrollToEpoch.length; i++) {
         var current = scrollToEpoch[i];
         if (current.ts < ts) continue;
-        if (i == 0) return  0;
+        if (i == 0) return 0;
 
-        let prev = scrollToEpoch[i-1];
+        let prev = scrollToEpoch[i - 1];
         let offset = (ts - prev.ts) / (current.ts - prev.ts);
         let px = offset * (current.pos - prev.pos) + prev.pos;
         return px;
@@ -770,6 +794,7 @@ function setScrollPos() {
 function updateScrollPos() {
     updateTimeline();
     window.scrollTo(0, setScrollPos());
+    markVideoActive(setScrollPos())
 }
 
 /**
@@ -779,7 +804,7 @@ function updateTimeline() {
     var offset = document.body.getBoundingClientRect().top;
     scrollToEpoch.length = 0;
     var els = document.getElementsByClassName('video');
-    for (var i=0; i<els.length; i++) {
+    for (var i = 0; i < els.length; i++) {
         el = els[i];
         if (el.style.display == 'none') {
             continue;
@@ -805,7 +830,7 @@ function getDescriptions(i) {
     let req = new XMLHttpRequest();
     req.overrideMimeType("application/json");
     req.open('GET', `/data/${window.series}/desc/${i}.json`, true);
-    req.onreadystatechange = function () {
+    req.onreadystatechange = function() {
         if (req.readyState == 4) {
             if (req.status == "200") {
                 renderDescriptions(i, req.responseText);
@@ -829,7 +854,7 @@ function renderDescriptions(i, jsonText) {
         if (vid === null) {
             console.error("Unrecognized video id: ", vid_id);
         }
-        vid.appendChild(renderDescription(desc)); 
+        vid.appendChild(renderDescription(desc));
     }
     if (descs.done == 0) {
         getDescriptions(i + 1);
@@ -875,11 +900,6 @@ function loadPlayer(e) {
     wrap.style.display = 'block';
     wrap.addEventListener('click', closePlayer);
     wrap.appendChild(htmlToElement('<div id="player"></div>'));
-    document.body.addEventListener('keydown', (e) => {
-        if (e.key in PLAYER.controls) {
-            PLAYER.controls[e.key](e);
-        }
-    });
     PLAYER.video = link.getAttribute('data-video-id');
     console.log('playing video ', PLAYER.video);
     PLAYER.obj = new YT.Player('player', {
@@ -933,7 +953,7 @@ function onPlayerStateChange(e) {
         return;
     }
     PLAYER.video = videoId;
-    PLAYER.obj.loadVideoById({'videoId': videoId});
+    PLAYER.obj.loadVideoById({ 'videoId': videoId });
 }
 
 /**
@@ -961,8 +981,6 @@ function pausePlayer(e) {
     } else {
         PLAYER.obj.pauseVideo();
     }
-    e.preventDefault();
-    return false;
 }
 
 /**
@@ -972,7 +990,7 @@ function pausePlayer(e) {
 function findNextVideo(videoId) {
     let videos = document.getElementsByClassName('video');
     found = false;
-    for(let i=0; i<videos.length; i++) {
+    for (let i = 0; i < videos.length; i++) {
         let other_id = videos[i].getAttribute('data-video-id');
         if (other_id == videoId) {
             found = true;
@@ -986,7 +1004,7 @@ function findNextVideo(videoId) {
         }
         return other_id;
     }
-    return null; 
+    return null;
 }
 
 
@@ -997,7 +1015,7 @@ function fetchUpdate() {
     let req = new XMLHttpRequest();
     req.overrideMimeType("application/json");
     req.open('GET', `/data/${window.series}/updates.json`, true);
-    req.onreadystatechange = function () {
+    req.onreadystatechange = function() {
         if (req.readyState == 4) {
             if (req.status == "200") {
                 let update = JSON.parse(req.responseText);
@@ -1040,7 +1058,7 @@ function processUpdate(next, stack) {
     let req = new XMLHttpRequest();
     req.overrideMimeType("application/json");
     req.open('GET', `/data/${window.series}/updates/${next.hash}.json`, true);
-    req.onreadystatechange = function () {
+    req.onreadystatechange = function() {
         if (req.readyState == 4) {
             if (req.status == "200") {
                 let update = JSON.parse(req.responseText);
@@ -1067,4 +1085,42 @@ function renderUpdate(stack) {
         renderVideo(videos, update)
     });
     lazyload();
+}
+
+
+function findAdjacentVideo(reverse) {
+    let vid = document.querySelector('.activevid');
+    let next = reverse ? 'previousElementSibling' : 'nextElementSibling';
+    if (vid === null) return null;
+    while (true) {
+        vid = vid[next];
+        if (vid === null) break;
+        if (!vid.classList.contains('video')) continue;
+        if (vid.style.display == 'none') continue;
+
+        let header = document.getElementById('header').getBoundingClientRect().bottom;
+        let scrollBy = vid.getBoundingClientRect().top - header - 10;
+        console.log(
+            'scrolling to ',
+            vid.attributes['data-video-id'].value,
+            scrollBy);
+
+        window.scrollBy(0, scrollBy);
+        break;
+    }
+}
+
+function scrollToVideo(vid) {}
+
+function browseNextVideo() {
+    findAdjacentVideo(false);
+}
+
+function browsePrevVideo() {
+    findAdjacentVideo(true);
+}
+
+function browsePlayVideo() {
+    let vid = document.querySelector('.activevid');
+    loadPlayer({ target: vid.querySelector('.thumb').parentElement });
 }
