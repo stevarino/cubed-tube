@@ -184,18 +184,28 @@ function loadSettings() {
         SETTINGS = { player: true, autoplay: true };
         this.saveToStorage('settings', SETTINGS);
     }
+    if (SETTINGS.player_mobile === undefined) {
+        SETTINGS.player_mobile = false;
+        this.saveToStorage('settings', SETTINGS)
+    }
     document.getElementById('opt_player').checked = SETTINGS.player;
     document.getElementById('opt_player').addEventListener('change', (e) => {
         SETTINGS.player = document.getElementById('opt_player').checked;
         console.log(SETTINGS);
         this.saveToStorage('settings', SETTINGS);
-    })
+    });
+    document.getElementById('opt_player_mobile').checked = SETTINGS.player_mobile;
+    document.getElementById('opt_player_mobile').addEventListener('change', (e) => {
+        SETTINGS.player = document.getElementById('opt_player_mobile').checked;
+        console.log(SETTINGS);
+        this.saveToStorage('settings', SETTINGS);
+    });
     document.getElementById('opt_autoplay').checked = SETTINGS.autoplay;
     document.getElementById('opt_autoplay').addEventListener('change', (e) => {
         SETTINGS.autoplay = document.getElementById('opt_autoplay').checked;
         console.log(SETTINGS);
         this.saveToStorage('settings', SETTINGS);
-    })
+    });
 }
 
 /**
@@ -228,7 +238,6 @@ function modifyMenu(e, action, className) {
 function initDropdown() {
     let mainMenu = document.querySelector('.menu-icon');
     mainMenu.addEventListener('click', (e) => {
-        console.log('click!');
         document.body.classList.toggle('menu_active');
     });
     document.querySelectorAll("#menu > li").forEach((menu) => {
@@ -959,7 +968,11 @@ function renderDescription(desc) {
  * @param {Object} e onclick triggering event
  */
 function loadPlayer(e) {
-    if (!SETTINGS.player || !PLAYER.ready) {
+    let menuButton = document.getElementsByClassName('menu-button')[0];
+    let isMobile = window.getComputedStyle(menuButton).display == 'block';
+    let usePlayer = isMobile ? SETTINGS.player_mobile : SETTINGS.player;
+    console.log('usePlayer', usePlayer, 'isMobile', isMobile, 'ready', PLAYER.ready);
+    if (!usePlayer || !PLAYER.ready) {
         return true;
     }
     let link = e.target;
