@@ -1,7 +1,7 @@
-
 title: HermitTube
+version: '20200102'
 series:
-  - title: Hermitcraft Season 7
+  - title: HermitCraft Season 7
     slug: hc7
     default: true
     start: 1582900000
@@ -65,7 +65,7 @@ series:
       playlist: https://www.youtube.com/playlist?list=PLaURolsKD_VEbQEXMOLaM7P761YIb1URU
     - name: ZombieCleo
       playlist: https://www.youtube.com/playlist?list=PLVO4L4qtJmBonAKh9Zcb7yyfjVsG4U9CR
-  - title: Hermitcraft Season 6
+  - title: HermitCraft Season 6
     slug: hc6
     active: false
     channels:
@@ -118,7 +118,7 @@ series:
       playlist: https://www.youtube.com/playlist?list=PLaURolsKD_VHk5m1tvQxIOnQCI7Al2ZCW
     - name: ZombieCleo
       playlist: https://www.youtube.com/playlist?list=PLVO4L4qtJmBqLb7UZmGE7QWf1j3pJJaOE
-  - title: Hermitcraft Season 5
+  - title: HermitCraft Season 5
     slug: hc5
     active: false
     channels:
@@ -166,7 +166,7 @@ series:
       playlist: https://www.youtube.com/playlist?list=PLaURolsKD_VGE8OJZMYU88pRfVFwU4FQq
     - name: ZombieCleo
       playlist: https://www.youtube.com/playlist?list=PLVO4L4qtJmBoBpkiE86G9vyV9FC2nCjdy
-  - title: Hermitcraft Season 4
+  - title: HermitCraft Season 4
     slug: hc4
     active: false
     channels:
@@ -216,7 +216,7 @@ series:
       playlist: https://www.youtube.com/playlist?list=PLVO4L4qtJmBrfdaqWwN4l1lD_jb5TCz0Q
     - name: Zueljin
       playlist: https://www.youtube.com/playlist?list=PLk6W1KxWnn5ALRcVInqaBsW8oK_3R8wur
-  - title: Hermitcraft Season 3
+  - title: HermitCraft Season 3
     slug: hc3
     active: false
     channels:
@@ -265,7 +265,7 @@ series:
       playlist: https://www.youtube.com/playlist?list=PLVO4L4qtJmBqUpKtnQ9FkEwZV5tgDt1Cg
     - name: Zueljin
       playlist: https://www.youtube.com/playlist?list=PLk6W1KxWnn5ANivDF0m4fpc0YKlzIYU74
-  - title: Hermitcraft Season 2
+  - title: HermitCraft Season 2
     slug: hc2
     active: false
     channels:
@@ -326,7 +326,7 @@ series:
       playlist: https://www.youtube.com/playlist?list=PLVO4L4qtJmBqbEDDL_J8oMSSSrVkPNlfe
     - name: Zueljin
       playlist: https://www.youtube.com/playlist?list=PLk6W1KxWnn5D9Y5zmoPbvFrjtJ5T_HVNp
-  - title: Hermitcraft Season 1
+  - title: HermitCraft Season 1
     slug: hc1
     active: false
     channels:

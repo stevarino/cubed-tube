@@ -852,7 +852,8 @@ function renderDescriptions(i, jsonText) {
     for (const [vid_id, desc] of Object.entries(descs.videos)) {
         let vid = document.querySelector(`.video[data-video-id="${vid_id}"]`);
         if (vid === null) {
-            console.error("Unrecognized video id: ", vid_id);
+            console.error(`Unrecognized video id ${vid_id} (${i})`);
+            continue;
         }
         vid.appendChild(renderDescription(desc));
     }
@@ -966,6 +967,10 @@ function closePlayer() {
     PLAYER.video = null;
     PLAYER.state = null;
     document.getElementById('player_wrap').innerHTML = '';
+
+    if (window.__REFRESH__ !== undefined) {
+        window.location.reload();
+    }
 }
 
 /**
@@ -1012,16 +1017,24 @@ function findNextVideo(videoId) {
  * Polls the server for updates and promos available.
  */
 function fetchUpdate() {
-    let d = Date().getTime();
+    let d = new Date().getTime();
     let req = new XMLHttpRequest();
     req.overrideMimeType("application/json");
-    req.open('GET', `/data/${window.series}/updates.json?d`, true);
+    req.open('GET', `/data/${window.series}/updates.json?${d}`, true);
     req.onreadystatechange = function() {
         if (req.readyState == 4) {
             if (req.status == "200") {
                 let update = JSON.parse(req.responseText);
+                console.log('update received:', update);
                 let vid = document.querySelector(
                     `.video[data-video-id="${update.id}"]`);
+                if (window.backend_version != update.version) {
+                    if (PLAYER.obj === null) {
+                        window.location.reload();
+                    } else {
+                        window.__REFRESH__ = 1;
+                    }
+                }
                 if (vid === null) {
                     processUpdate(update, []);
                 }
@@ -1092,7 +1105,7 @@ function renderUpdate(stack) {
 function findAdjacentVideo(reverse) {
     let vid = document.querySelector('.activevid');
     let next = reverse ? 'previousElementSibling' : 'nextElementSibling';
-    if (vid === null) return null;
+    if (vid === null) return;
     while (true) {
         vid = vid[next];
         if (vid === null) break;
@@ -1107,7 +1120,7 @@ function findAdjacentVideo(reverse) {
             scrollBy);
 
         window.scrollBy(0, scrollBy);
-        break;
+        return;
     }
 }
 

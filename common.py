@@ -17,6 +17,7 @@ class Cost():
 class Context:
     """A dataclass of convenience fields, useful for branching contexts."""
     api_key: str = ''
+    config: Dict = None
     cost: Cost  = field(default_factory=Cost)
     series: Series = None
     series_config: Dict = None

@@ -84,6 +84,7 @@ def render_static(config: Dict):
         'default_series': json.dumps(default_series),
         'series_list': json.dumps(series_list),
         'now': str(int(datetime.datetime.now().timestamp())),
+        'version': config['version'],
     }
     for data in Misc.select():
         context[data.key] = data.value
@@ -178,6 +179,7 @@ def render_updates(context: Context):
         f.write(json.dumps({
             'id': vid_id,
             'hash': vid_hash,
+            'version': context.config['version'],
             'promos': [] # TODO....
         }))
 
@@ -223,6 +225,20 @@ def copytree(src, dst, symlinks=False, ignore=None):
         else:
             shutil.copy2(s, d)
 
+def clear_directory(dir_name):
+    """Deletes files/subdirectories in a given directory."""
+    # https://stackoverflow.com/a/185941
+    if os.path.exists(dir_name):
+        for file_name in os.listdir(dir_name):
+            file_path = os.path.join(dir_name, file_name)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                print(f'Failed to delete {file_path}. Reason: {e}')
+
 def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--series', '-s', nargs='*')
@@ -233,15 +249,18 @@ def main(argv=None):
     with open('playlists.yaml') as fp:
         config = yaml.safe_load(fp)
 
-    if not args.quick:
-        if os.path.exists('output'):
-            shutil.rmtree('output/')
+    if args.quick:
+        for series in config['series']:
+            context = Context(config=config, series_config=series)
+            render_updates(context)
+    else:
+        clear_directory('output')
 
         for series in config['series']:
             print(f'Processing {series["slug"]}')
             if args.series and series['slug'] not in args.series:
                 continue
-            render_series(Context(series_config=series))
+            render_series(Context(config=config, series_config=series))
 
     render_static(config)
     copytree('templates/static', 'output/static')
