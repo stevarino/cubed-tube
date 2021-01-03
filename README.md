@@ -5,12 +5,12 @@ you to follow your select hermits in order!
 
 ## Motivation
 
-The first reason I created this site was I wanted to watch a HermitCraft easily
-season in order and bounce between series.
+The first reason I created this site was I wanted to easily watch a HermitCraft 
+season in order while bouncing between series.
 
 The second was I wanted to build a low-dependency, simple and understandable
-web page. I decided to make the actual content static to simplify hosting and
-as a challenge. But this is built with minimal requirements, particularly
+web page. I decided to make the actual content static to simplify hosting (and
+as an extra challenge). But this is built with minimal requirements, consisting of
 [peewee](https://github.com/coleifer/peewee) as a database ORM (needed after
 I got bored writing CRUD queries over and over) and a dynamic image-loader
 javascript library to make sure we don't ddos YouTube.
