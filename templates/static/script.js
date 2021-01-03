@@ -196,7 +196,7 @@ function loadSettings() {
     });
     document.getElementById('opt_player_mobile').checked = SETTINGS.player_mobile;
     document.getElementById('opt_player_mobile').addEventListener('change', (e) => {
-        SETTINGS.player = document.getElementById('opt_player_mobile').checked;
+        SETTINGS.player_mobile = document.getElementById('opt_player_mobile').checked;
         console.log(SETTINGS);
         this.saveToStorage('settings', SETTINGS);
     });
