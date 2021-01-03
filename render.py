@@ -14,6 +14,7 @@ import html
 import itertools
 import json
 import os
+import peewee as pw
 import re
 import shutil
 import sys
@@ -54,6 +55,10 @@ def process_html(filename: str, context: Dict[str, str]):
             assert data in context, f"Missing context {data} - {filename}"
             table_data = json.loads(context[data])
             columns = []
+            skip_row_label = False
+            if isinstance(table_data, list):
+                table_data = {i: row for i, row in enumerate(table_data)}
+                skip_row_label = True
             for row in sorted(table_data.keys()):
                 for col in table_data[row].keys():
                     if col not in columns:
@@ -61,9 +66,11 @@ def process_html(filename: str, context: Dict[str, str]):
             output = ['<table><thead><tr><td></td>']
             [output.append(f'<th>{col}</th>') for col in columns]
             output.append('</tr></thead>')
-            for row in sorted(table_data.keys()):
+            for row in table_data.keys():
                 table_row = table_data[row]
-                output.append(f'<tr><th>{row}</th>')
+                output.append(f'<tr>')
+                if not skip_row_label:
+                    output.append(f'<th>{row}</th>')
                 cols = '</td><td>'.join([
                     str(table_row.get(c, '')) for c in columns])
                 output.append(f'<td>{cols}</td></tr>')
@@ -86,6 +93,7 @@ def render_static(config: Dict):
         'now': str(int(datetime.datetime.now().timestamp())),
         'version': config['version'],
     }
+    context['hermit_counts'] = json.dumps(get_videos_by_hermit())
     for data in Misc.select():
         context[data.key] = data.value
     for html_file in glob('templates/**/*.html', recursive=True):
@@ -93,6 +101,38 @@ def render_static(config: Dict):
         os.makedirs(os.path.dirname(out_file), exist_ok=True)
         with open(out_file, 'w') as fp:
             fp.write(process_html(html_file, context))
+
+def get_videos_by_hermit():
+    vids = (
+        Video.select(
+            Video.series, 
+            Video.playlist.channel, 
+            pw.fn.COUNT(Video.video_id).alias('cnt'))
+        .join(Playlist)
+        .join(Channel)
+        .group_by(Video.series, Video.playlist.channel)
+        .order_by(pw.fn.Lower(Video.playlist.channel.tag))
+    )
+    seasons = set()
+    data = defaultdict(dict)
+    for v in vids:
+        seasons.add(v.series.slug)
+        data[v.playlist.channel.tag][v.series.slug] = v.cnt
+    seasons = sorted(seasons)
+    totals = {}
+    for ch in data:
+        data[ch] = {s: data[ch].get(s, 0) for s in seasons}
+        data[ch]['total'] = sum(data[ch][s] for s in seasons)
+    for season in seasons:
+        totals[season] = sum(data[ch].get(season, 0) for ch in data.keys())
+    totals['total'] = sum(totals.values())
+    data['total'] = totals
+    for ch in data:
+        for season in data[ch]:
+            if not data[ch][season]:
+                data[ch][season] = ''
+    return data
+
 
 def render_series(context: Context):
     slug = context.series_config['slug']
