@@ -27,6 +27,12 @@ input:focus {
     outline-offset: 4px;
 }
 
+#loading {
+    text-align: center;
+    margin: 1em 0;
+    font-size: 2em;
+}
+
 #wrap {
     margin: 0 1rem;
 }

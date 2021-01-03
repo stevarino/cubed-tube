@@ -1,11 +1,13 @@
             </div>
         </div>
+        <script async src="https://www.youtube.com/iframe_api"></script>
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.2/pako.min.js" integrity="sha512-IjkvjWp4tSkhkQRb9gFwCcMhBWZLPKc7Zo8ifb6qxORyehV072QgRVG3F0fwAaJh0fnEFNLc2+XggoC5wvW24g==" crossorigin="anonymous"></script>
         <script>
             window.series=<%= default_series %>;
             window.all_series=<%= series_list %>;
             window.backend_version='<%= version %>';
         </script>
-        <script src='/static/script.js?20210101'></script>
-        <script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.js"></script>
+        <script async src='/static/script.js?20210103'></script>
+        <script async src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.js"></script>
     </body>
 </html>
