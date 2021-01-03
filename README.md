@@ -12,8 +12,9 @@ The second was I wanted to build a low-dependency, simple and understandable
 web page. I decided to make the actual content static to simplify hosting (and
 as an extra challenge). But this is built with minimal requirements, consisting of
 [peewee](https://github.com/coleifer/peewee) as a database ORM (needed after
-I got bored writing CRUD queries over and over) and a dynamic image-loader
-javascript library to make sure we don't ddos YouTube.
+I got bored writing CRUD queries over and over), the awesome
+[Pako](https://nodeca.github.io/pako/) library for some data compression magic,
+and a dynamic image-loader javascript library to make sure we don't DDOS YouTube.
 
 ## Project Structure
 

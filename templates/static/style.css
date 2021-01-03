@@ -347,6 +347,7 @@ h1 a .outline .logo::first-letter {
     transition-duration: 0.5s;
 }
 
+#menu li #channels li>a,
 #menu li #channels li label {
     padding: 0.5rem;
     position: relative;
@@ -354,6 +355,7 @@ h1 a .outline .logo::first-letter {
     color: #999;
 }
 
+#menu li #channels li>a:hover,
 #menu li #channels li.checked label {
     color: #000;
 }

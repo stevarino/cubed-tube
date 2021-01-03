@@ -50,9 +50,14 @@ var BROWSE_CONTROLS = {
 // cached channel lookup metadata, keyed by name and index
 var CHANNELS_BY_NAME = {}
 var CHANNELS_BY_INDEX = {}
+var ELEMENT_BY_VIDEO_ID = {}
 
 // timer object used for series. Needs to be cleared on series update.
 var UPDATE_TIMER = 0;
+
+function clearObject(obj) {
+    Object.keys(obj).forEach(function(key) { delete obj[key]; });
+}
 
 window.onload = function() {
     loadSettings();
@@ -72,9 +77,7 @@ window.onload = function() {
         }
         var pos = window.scrollY;
         scrollTimeout = window.setTimeout(function() {
-            getProfile().scroll = getScrollPos(pos);
-            saveToStorage('state', STATE);
-            markVideoActive(pos);
+            onScrollEvent(pos);
         }, 300);
     });
     window.addEventListener('resize', function() {
@@ -102,6 +105,12 @@ window.onload = function() {
     renderProfileMenu();
 }
 
+function onScrollEvent(pos) {
+    getProfile().scroll = getScrollPos(pos);
+    saveToStorage('state', STATE);
+    markVideoActive(pos);
+}
+
 function renderProfileMenu() {
     let menu = document.getElementById("settings");
     let items = Array.from(document.getElementsByClassName('profile_item'));
@@ -110,9 +119,10 @@ function renderProfileMenu() {
     }
     let profiles = listProfiles();
     profiles.forEach(profile => {
-        let li = htmlToElement("<li class='profile_item'><a href='#'></a></li>");
-        let link = li.childNodes[0];
-        link.innerText = profile.profile;
+        let link = makeElement('a', {
+            href: '#',
+            innerText: profile.profile
+        });
         link.addEventListener('click', (e) => {
             e.preventDefault();
             profile.accessed = new Date().getTime();
@@ -121,7 +131,9 @@ function renderProfileMenu() {
             changeProfile();
             return false;
         });
-        menu.appendChild(li);
+        menu.appendChild(
+            makeElement('li', {class: 'profile_item'}, link)
+        );
     });
 }
 
@@ -422,6 +434,7 @@ function renameProfile() {
  */
 function toggleVideos(ch_id, visible) {
     let vids = document.getElementsByClassName(`channel_${ch_id}`);
+    console.log(`setting ${ch_id} to ${visible} (${vids.length})`);
     for (let i = 0; i < vids.length; i++) {
         vids[i].style.display = (visible ? 'block' : 'none');
     }
@@ -494,6 +507,7 @@ function renderSeries(data) {
     var series = JSON.parse(data);
     document.getElementById('loading').style.display = 'none';
     var content = document.getElementById('content');
+    clearObject(ELEMENT_BY_VIDEO_ID);
 
     renderChannels(series.channels);
 
@@ -502,34 +516,35 @@ function renderSeries(data) {
     content.appendChild(videos);
 
     for (let i = 0; i < series.videos.length; i++) {
-        series.channel
         renderVideo(videos, series.videos[i]);
     }
-    setSeriesState();
-    loadDescriptions();
-}
-
-/**
- * Sets the series/videos as visible.
- */
-function setSeriesState() {
-    getProfile().channels.forEach((ch_id) => {
-        toggleVideos(ch_id, false);
-    });
-
     updateScrollPos();
     lazyload();
+    loadDescriptions(series.descriptions);
 }
 
 /**
- * String to HTML Element convenience function.
- * 
- * @param {str} html 
+ * Element Creation convenience function. Should be fast.
+ * @param {String} tagName 
+ * @param {Object} properties 
+ * @param  {...Element} children 
  */
-function htmlToElement(html) {
-    var template = document.createElement('template');
-    template.innerHTML = html.trim();
-    return template.content.firstChild;
+function makeElement(tagName, properties, ...children) {
+    let el = document.createElement(tagName);
+    Object.keys(properties).forEach((k) => {
+        if (k == 'innerText') {
+            el.innerText = properties[k];
+        } else if (k == 'innerHTML') {
+            el.innerHTML = properties[k];
+        } else {
+            el.setAttribute(k, properties[k]);
+        }
+    });
+
+    children.forEach(child => {
+        el.appendChild(child)
+    });
+    return el;
 }
 
 /**
@@ -538,9 +553,6 @@ function htmlToElement(html) {
  * @param {Array} seriesChannels The series channels
  */
 function renderChannels(seriesChannels) {
-    function clearObject(obj) {
-        Object.keys(obj).forEach(function(key) { delete obj[key]; });
-    }
     clearObject(CHANNELS_BY_NAME);
     clearObject(CHANNELS_BY_INDEX);
     for (let i = 0; i < seriesChannels.length; i++) {
@@ -550,11 +562,20 @@ function renderChannels(seriesChannels) {
         CHANNELS_BY_INDEX[i] = ch;
     }
     var channels = document.getElementById('channels');
-    channels.appendChild(htmlToElement(`
-        <li><span>Select <a id='selectall' href='#'>All</a> | 
-        <a id='selectnone' href='#'>None</a></span></li>
-    `));
-    document.getElementById('selectall').addEventListener('click', (e) => {
+    let selectall = makeElement('a', {
+        href: '#',
+        id: 'selectall',
+        innerText: 'Select All'
+    });
+    let selectnone = makeElement('a', {
+        href: '#',
+        id: 'selectnone',
+        innerText: 'Clear Selection',
+    });
+    channels.appendChild(makeElement('li', {}, selectall));
+    channels.appendChild(makeElement('li', {}, selectnone));
+    
+    selectall.addEventListener('click', (e) => {
         document.querySelectorAll('#channels input').forEach((el) => {
             el.checked = true;
             toggleChannel({ target: el });
@@ -562,14 +583,14 @@ function renderChannels(seriesChannels) {
         e.preventDefault();
         return false;
     })
-    document.getElementById('selectnone').addEventListener('click', (e) => {
+    selectnone.addEventListener('click', (e) => {
         document.querySelectorAll('#channels input').forEach((el) => {
             el.checked = false;
             toggleChannel({ target: el })
         });
         e.preventDefault();
         return false;
-    })
+    });
     Object.keys(CHANNELS_BY_NAME).sort().forEach(function(key) {
         channels.appendChild(renderChannelCheckbox(key, CHANNELS_BY_NAME[key]));
     });
@@ -585,22 +606,26 @@ function renderChannels(seriesChannels) {
  */
 function renderChannelCheckbox(id, data) {
     let active = getProfile().channels.indexOf(id) == -1;
-    let checked = active ? 'checked="checked"' : '';
-    let root = htmlToElement('<li></li>');
+    let root = document.createElement('li');
+    let label = makeElement('label', {for: `channel_${id}`});
+    root.appendChild(label);
+    let input = makeElement('input', {
+        type: 'checkbox',
+        id: `channel_${id}`,
+        'data-channel': id,
+    });
     if (active) {
+        input.setAttribute('checked', 'checked')
         root.classList.add('checked');
     }
-    let label = htmlToElement(`<label for='channel_${id}'></label>`);
-    root.appendChild(label);
-    let input = htmlToElement(`
-        <input type='checkbox' ${checked} id='channel_${id}'
-            data-channel='${id}' />`);
     label.appendChild(input);
 
-    let img = htmlToElement(
-        `<img src='${data.thumb}' width='44' height='44' />`);
-    img.setAttribute('alt', `${data.title}'s Logo`);
-    label.appendChild(img);
+    label.appendChild(makeElement('img', {
+        src: data.thumb,
+        width: '44',
+        height: '44',
+        alt: `${data.title}'s Logo`,
+    }));
 
     label.appendChild(document.createTextNode(data.t));
     input.addEventListener('change', toggleChannel);
@@ -619,10 +644,10 @@ function renderDate(videos, vid) {
     d.setUTCSeconds(vid.ts);
     let dateId = `date_${d.getFullYear()}${d.getMonth()}`;
     if (document.getElementById(dateId) === null) {
-        let dateEl = document.createElement('h2');
-        dateEl.setAttribute('id', `date_${d.getFullYear()}${d.getMonth()}`)
-        dateEl.innerText = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;;
-        videos.appendChild(dateEl);
+        videos.appendChild(makeElement('h2', {
+            id: dateId,
+            innerText: `${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+        }));
     }
 }
 
@@ -640,73 +665,90 @@ function renderVideo(videos, vid) {
         console.error(`channel not found: ${vid.ch}`)
     }
 
-    let vidEl = htmlToElement(`
-        <div
-            class='video channel_${ch.name}'
-            data-timestamp='${vid.ts}'
-            data-video-id='${vid.id}'
-            data-channel='${ch.name}'>
-    `);
+    let vidEl = makeElement('div', {
+        'class': `video channel_${ch.name}`,
+        'data-timestamp': vid.ts,
+        'data-video-id': vid.id,
+        'data-channel': ch.name,
+    });
 
     let vidURL = `https://www.youtube.com/watch?v=${vid.id}`;
     let chURL = `https://www.youtube.com/channel/${ch.id}`;
 
-    let title = htmlToElement(`
-        <h3>
-            <a href='${chURL}' target='_blank'>
-                <img data-src='${ch.thumb}' width='44' height='44'
-                    title='${ch.t}' alt='${ch.t}'
-                    class="lazyload" />
-            </a>
-        </h3>
-    `);
+    let title = makeElement('h3', {},
+        makeElement('a', {href: chURL},
+            makeElement('img', {
+                'data-src': ch.thumb,
+                title: ch.t,
+                alt: ch.t,
+                class: 'lazyload',
+            })
+        ), makeElement('a', {
+            href: `${chURL}?sub_confirmation=1`,
+            target: '_blank',
+            class: 'channel_subscribe',
+            innerText: 'Subscribe'
+        })
+    );
 
-    title.appendChild(htmlToElement(`
-        <a href='${chURL}?sub_confirmation=1' target='_blank'
-            class='channel_subscribe'>Subscribe</a>
-    `));
-
-    let vidLink = htmlToElement(`<a href='${vidURL}' target='_blank'></a>`);
-    vidLink.setAttribute('data-video-id', vid.id);
+    let vidLink = makeElement('a', {
+        href: vidURL, 
+        target: '_blank',
+        'data-video-id': vid.id,
+        innerText: vid.t,
+    });
     vidLink.addEventListener('click', loadPlayer);
-    vidLink.innerText = vid.t;
     title.appendChild(vidLink);
     title.appendChild(document.createElement('br'));
-    title.appendChild(htmlToElement(`
-        <a href='${chURL}' target='_blank' title='${ch.t} channel'
-            class='channel_link'>${ch.t}</a>
-    `))
+    title.appendChild(makeElement('a', {
+        href: chURL,
+        target: '_blank',
+        title: ch.t + ' channel',
+        class: 'channel_link',
+        innerText: ch.t,
+    }));
 
     let d = new Date(0);
     d.setUTCSeconds(vid.ts);
     let month = MONTHS[d.getMonth()].substr(0, 3);
-    title.appendChild(htmlToElement(`
-        <span class='date'>${month} ${d.getDate()} ${d.getFullYear()}</span>
-    `));
+    title.appendChild(makeElement('span', {
+        class: 'date',
+        innerText: `${month} ${d.getDate()} ${d.getFullYear()}`
+    }));
 
 
     vidEl.appendChild(title);
 
-    let thumbLink = htmlToElement(`<a href='${vidURL}' target='_blank'></a>`);
-    thumbLink.setAttribute('data-video-id', vid.id);
+    let thumbLink = makeElement('a', {
+        href: vidURL,
+        target: '_blank',
+        'data-video-id': vid.id,
+    });
     thumbLink.addEventListener('click', loadPlayer);
     vidEl.appendChild(thumbLink);
-    let thumb = htmlToElement(`
-        <img
-            data-src='https://i.ytimg.com/vi/${vid.id}/mqdefault.jpg'
-            class="lazyload thumb" width='320' height='180' />`)
-    thumb.setAttribute('alt', vid.t);
-    thumb.setAttribute('title', vid.t);
+    let thumb = makeElement('img', {
+        'data-src': `https://i.ytimg.com/vi/${vid.id}/mqdefault.jpg`,
+        class: 'lazyload thumb',
+        width: '320',
+        height: '180',
+        alt: vid.t,
+        title: vid.t,
+    });
     thumbLink.appendChild(thumb);
 
     vidEl.addEventListener('mouseenter', videoShowMoreLess);
     vidEl.addEventListener('mouseleave', videoHideMoreLess);
+
+    if (getProfile().channels.includes(ch.name)) {
+        vidEl.style.display = 'none'
+    }
 
     videos.appendChild(vidEl);
 
     if (vid.hasOwnProperty('d')) {
         vidEl.appendChild(renderDescription(vid.d));
     }
+    ELEMENT_BY_VIDEO_ID[vid.id] = vidEl;
 }
 
 function videoShowMoreLess(e) {
@@ -719,10 +761,10 @@ function videoShowMoreLess(e) {
     let paraRect = para.getBoundingClientRect();
     let text = vid.classList.contains('expanded') ? 'Less' : 'More';
 
-    let show = htmlToElement(`
-        <span class="showmoreless">
-            Show ${text}
-        </span>`);
+    let show = makeElement('span', {
+        class: "showmoreless",
+        innerText: `Show ${text}`
+    });
     show.addEventListener('click', videoExpand);
     vid.appendChild(show);
 }
@@ -815,25 +857,46 @@ function updateTimeline() {
             'video': el,
         });
     }
-    console.log('updateTimeLine:', scrollToEpoch.length)
 }
 
 /**
  * Asynchronously load video descriptions. This saves >90% of playlist loading
  * latency.
  */
-function loadDescriptions() {
-    getDescriptions(0)
+function loadDescriptions(hashes) {
+    if (hashes !== undefined) {
+        fetchDescriptionsByHash(hashes)
+    } else {
+        getDescriptions(0, new Date().getTime());
+    }
 }
 
-function getDescriptions(i) {
+function fetchDescriptionsByHash(hashes) {
+    if (hashes.length == 0) {
+        return;
+    }
+    let hash = hashes.shift()
+    let req = new XMLHttpRequest();
+    req.responseType = 'arraybuffer';
+    req.open('GET', `/data/${window.series}/desc/${hash}.json.gz`, true);
+    req.onload = function() {
+        let start = new Date().getTime();
+        renderDescriptionObject(JSON.parse(
+            pako.inflate(req.response, { to: 'string' })
+        ));
+        fetchDescriptionsByHash(hashes)
+    };
+    req.send();
+}
+
+function getDescriptions(i, d) {
     let req = new XMLHttpRequest();
     req.overrideMimeType("application/json");
-    req.open('GET', `/data/${window.series}/desc/${i}.json`, true);
+    req.open('GET', `/data/${window.series}/desc/${i}.json?${d}`, true);
     req.onreadystatechange = function() {
         if (req.readyState == 4) {
             if (req.status == "200") {
-                renderDescriptions(i, req.responseText);
+                renderDescriptions(i, d, req.responseText);
             } else {
                 console.log('Error during request:', req);
             }
@@ -847,18 +910,26 @@ function getDescriptions(i) {
  * video descriptions.
  * @param {str} jsonText 
  */
-function renderDescriptions(i, jsonText) {
+function renderDescriptions(i, d, jsonText) {
     let descs = JSON.parse(jsonText);
-    for (const [vid_id, desc] of Object.entries(descs.videos)) {
-        let vid = document.querySelector(`.video[data-video-id="${vid_id}"]`);
+    renderDescriptionObject(descs.videos);
+    if (descs.done == 0) {
+        getDescriptions(i + 1, d);
+    } else {
+        let diff = new Date().getTime() - d;
+        console.log(`Completed loading descriptions in ${diff}`)
+    }
+}
+
+function renderDescriptionObject(descSet) {
+    for (const [vid_id, desc] of Object.entries(descSet)) {
+        // let vid = document.querySelector(`.video[data-video-id="${vid_id}"]`);
+        let vid = ELEMENT_BY_VIDEO_ID[vid_id];
         if (vid === null) {
             console.error(`Unrecognized video id ${vid_id} (${i})`);
             continue;
         }
         vid.appendChild(renderDescription(desc));
-    }
-    if (descs.done == 0) {
-        getDescriptions(i + 1);
     }
 }
 
@@ -869,8 +940,10 @@ function renderDescription(desc) {
         // probably...
         text.split(/(https?:\/\/[^\s]+)/).forEach((part) => {
             if (part.startsWith('http')) {
-                let link = htmlToElement(
-                    `<a href="${part}" target='blank'>${part}</a>`);
+                let link = makeElement('a', {
+                    href: part,
+                    innerText: part
+                });
                 para.appendChild(link);
             } else {
                 para.appendChild(document.createTextNode(part));
@@ -878,9 +951,6 @@ function renderDescription(desc) {
         })
         para.appendChild(document.createElement('br'));
     });
-    while (para.lastChild.nodeName.toLowerCase() == 'br') {
-        para.removeChild(para.lastChild);
-    }
     return para;
 }
 
@@ -900,7 +970,7 @@ function loadPlayer(e) {
     let wrap = document.getElementById('player_wrap');
     wrap.style.display = 'block';
     wrap.addEventListener('click', closePlayer);
-    wrap.appendChild(htmlToElement('<div id="player"></div>'));
+    wrap.appendChild(makeElement('div', {id: "player"}));
     PLAYER.video = link.getAttribute('data-video-id');
     console.log('playing video ', PLAYER.video);
     PLAYER.obj = new YT.Player('player', {
@@ -1120,6 +1190,7 @@ function findAdjacentVideo(reverse) {
             scrollBy);
 
         window.scrollBy(0, scrollBy);
+        onScrollEvent(window.scrollY);
         return;
     }
 }

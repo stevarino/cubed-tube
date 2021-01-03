@@ -9,21 +9,23 @@ import argparse
 from collections import defaultdict
 import datetime
 from glob import glob
+import gzip
 import hashlib
 import html
-import itertools
 import json
 import os
 import peewee as pw
 import re
 import shutil
 import sys
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 import yaml
 
-def sha1(value: str) -> str:
+def sha1(value: Union[str, bytes]) -> str:
     """Convenience function to convert a string into a sha1 hex string"""
-    return hashlib.sha1(value.encode('utf-8')).hexdigest()
+    if isinstance(value, str):
+        value = value.encode('utf-8')
+    return hashlib.sha1(value).hexdigest()
 
 def process_html(filename: str, context: Dict[str, str]):
     """Poor man's html-includes, because I miss php apparently."""
@@ -181,17 +183,42 @@ def render_series(context: Context):
             't': video.title,
             'ch': channel_lookup[video.playlist.channel.name],
         })
-    os.makedirs(f'output/data/{slug}/desc', exist_ok=True)
+    data['descriptions'] = render_descriptions(slug, descs)
     with open(f'output/data/{slug}/index.json', 'w') as fp:
         fp.write(json.dumps(data))
-    render_descriptions(slug, descs)
     render_updates(context)
 
+def render_descriptions_by_hash(slug: str, descs: Dict[str, str]):
+    os.makedirs(f'output/data/{slug}/desc', exist_ok=True)
+    stack = {}
+    sigs = []
+
+    def _write(final=False):
+        if not stack:
+            return
+        stack_bytes = json.dumps(stack).encode('utf-8')
+        if len(stack_bytes) < 500 * 1024 and not final:
+            return
+        sig = sha1(stack_bytes)
+        with open(f'output/data/{slug}/desc/{sig}.json', 'w') as fp:
+            fp.write(json.dumps(stack))
+        with gzip.open(f'output/data/{slug}/desc/{sig}.json.gz', 'wb') as fp:
+            fp.write(stack_bytes)
+        print(f'Hash: {sig} ({len(stack)})')
+        stack.clear()
+        sigs.append(sig)
+
+    for vid, desc in descs.items():
+        stack[vid] = desc
+        _write()
+    _write(True)
+    return sigs
         
 def render_descriptions(slug: str, descs: Dict[str, str]):
     """Writes out chunks of descriptions."""
     stack = {}
     i = 0
+    os.makedirs(f'output/data/{slug}/desc', exist_ok=True)
     def _write(done: bool):
         with open(f'output/data/{slug}/desc/{i}.json', 'w') as fp:
             fp.write(json.dumps({
@@ -208,6 +235,7 @@ def render_descriptions(slug: str, descs: Dict[str, str]):
         i += 1
     if stack:
         _write(True)
+    return render_descriptions_by_hash(slug, descs)
 
 
 def render_updates(context: Context):
