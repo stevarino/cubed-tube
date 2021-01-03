@@ -434,7 +434,6 @@ function renameProfile() {
  */
 function toggleVideos(ch_id, visible) {
     let vids = document.getElementsByClassName(`channel_${ch_id}`);
-    console.log(`setting ${ch_id} to ${visible} (${vids.length})`);
     for (let i = 0; i < vids.length; i++) {
         vids[i].style.display = (visible ? 'block' : 'none');
     }
@@ -1019,6 +1018,7 @@ function onPlayerStateChange(e) {
         return;
     }
     let videoId = findNextVideo(PLAYER.video);
+    scrollToVideo(ELEMENT_BY_VIDEO_ID[videoId]);
     if (videoId == null) {
         closePlayer();
         return;
@@ -1181,21 +1181,22 @@ function findAdjacentVideo(reverse) {
         if (vid === null) break;
         if (!vid.classList.contains('video')) continue;
         if (vid.style.display == 'none') continue;
-
-        let header = document.getElementById('header').getBoundingClientRect().bottom;
-        let scrollBy = vid.getBoundingClientRect().top - header - 10;
-        console.log(
-            'scrolling to ',
-            vid.attributes['data-video-id'].value,
-            scrollBy);
-
-        window.scrollBy(0, scrollBy);
-        onScrollEvent(window.scrollY);
+        scrollToVideo(vid);
         return;
     }
 }
 
-function scrollToVideo(vid) {}
+function scrollToVideo(vid) {
+    let header = document.getElementById('header').getBoundingClientRect().bottom;
+    let scrollBy = vid.getBoundingClientRect().top - header - 10;
+    console.log(
+        'scrolling to ',
+        vid.attributes['data-video-id'].value,
+        scrollBy);
+
+    window.scrollBy(0, scrollBy);
+    onScrollEvent(window.scrollY);
+}
 
 function browseNextVideo() {
     findAdjacentVideo(false);

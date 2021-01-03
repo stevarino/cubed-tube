@@ -21,7 +21,7 @@ import sys
 from typing import Dict, List, Tuple, Union
 import yaml
 
-def sha1(value: Union[str, bytes]) -> str:
+def sha1(value: Union[str, bytes]) -> str:  # pylint: disable=unsubscriptable-object
     """Convenience function to convert a string into a sha1 hex string"""
     if isinstance(value, str):
         value = value.encode('utf-8')
