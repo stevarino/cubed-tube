@@ -191,19 +191,16 @@ function loadSettings() {
     document.getElementById('opt_player').checked = SETTINGS.player;
     document.getElementById('opt_player').addEventListener('change', (e) => {
         SETTINGS.player = document.getElementById('opt_player').checked;
-        console.log(SETTINGS);
         this.saveToStorage('settings', SETTINGS);
     });
     document.getElementById('opt_player_mobile').checked = SETTINGS.player_mobile;
     document.getElementById('opt_player_mobile').addEventListener('change', (e) => {
         SETTINGS.player_mobile = document.getElementById('opt_player_mobile').checked;
-        console.log(SETTINGS);
         this.saveToStorage('settings', SETTINGS);
     });
     document.getElementById('opt_autoplay').checked = SETTINGS.autoplay;
     document.getElementById('opt_autoplay').addEventListener('change', (e) => {
         SETTINGS.autoplay = document.getElementById('opt_autoplay').checked;
-        console.log(SETTINGS);
         this.saveToStorage('settings', SETTINGS);
     });
 }
@@ -412,7 +409,6 @@ function deleteProfile() {
     if (listProfiles().length > 1) {
         let profiles = STATE[window.series];
         let i = profiles.indexOf(profile);
-        console.log('deleting', i, JSON.parse(JSON.stringify(profiles)));
         if (i == -1) {
             console.error("Profile not found.", profile, profiles);
         } else {
@@ -971,7 +967,6 @@ function loadPlayer(e) {
     let menuButton = document.getElementsByClassName('menu-button')[0];
     let isMobile = window.getComputedStyle(menuButton).display == 'block';
     let usePlayer = isMobile ? SETTINGS.player_mobile : SETTINGS.player;
-    console.log('usePlayer', usePlayer, 'isMobile', isMobile, 'ready', PLAYER.ready);
     if (!usePlayer || !PLAYER.ready) {
         return true;
     }
