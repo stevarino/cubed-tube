@@ -1,0 +1,15 @@
+{
+    "background_color": "#09405e",
+    "name": "HermitTube",
+    "short_name": "HermitTube",
+    "description": "Watch HermitCraft videos!",
+    "display": "fullscreen",
+    "icons": [
+      {
+        "src": "static/favvicon128.png",
+        "sizes": "128x128",
+        "type": "image/png"
+      }
+    ],
+    "start_url": "index.html"
+  }
