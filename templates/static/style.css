@@ -404,7 +404,12 @@ h1 a .outline .logo::first-letter {
 }
 
 #videos .activevid {
-    box-shadow: 0 0 8px 2px black;
+    box-shadow: 0.25em 0.25em 0.5em black;
+    animation: raise 0.5s;
+}
+
+@keyframes raise {
+    0% { box-shadow: 0 0 0 0; }
 }
 
 #videos .video.expanded {
