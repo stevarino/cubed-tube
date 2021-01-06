@@ -669,32 +669,20 @@ function renderVideo(videos, vid) {
         console.error(`channel not found: ${vid.ch}`)
     }
 
+    let vidURL = `https://www.youtube.com/watch?v=${vid.id}`;
+    let chURL = `https://www.youtube.com/channel/${ch.id}`;
+    
+    let d = new Date(0);
+    d.setUTCSeconds(vid.ts);
+    let month = MONTHS[d.getMonth()].substr(0, 3);
+
     let vidEl = makeElement('div', {
         'class': `video channel_${ch.name}`,
         'data-timestamp': vid.ts,
         'data-video-id': vid.id,
         'data-channel': ch.name,
     });
-
-    let vidURL = `https://www.youtube.com/watch?v=${vid.id}`;
-    let chURL = `https://www.youtube.com/channel/${ch.id}`;
-
-    let title = makeElement('h3', {},
-        makeElement('a', {href: chURL},
-            makeElement('img', {
-                'data-src': ch.thumb,
-                title: ch.t,
-                alt: ch.t,
-                class: 'lazyload',
-            })
-        ), makeElement('a', {
-            href: `${chURL}?sub_confirmation=1`,
-            target: '_blank',
-            class: 'channel_subscribe',
-            innerText: 'Subscribe'
-        })
-    );
-
+    
     let vidLink = makeElement('a', {
         href: vidURL, 
         target: '_blank',
@@ -702,26 +690,38 @@ function renderVideo(videos, vid) {
         innerText: vid.t,
     });
     vidLink.addEventListener('click', loadPlayer);
-    title.appendChild(vidLink);
-    title.appendChild(document.createElement('br'));
-    title.appendChild(makeElement('a', {
-        href: chURL,
-        target: '_blank',
-        title: ch.t + ' channel',
-        class: 'channel_link',
-        innerText: ch.t,
-    }));
 
-    let d = new Date(0);
-    d.setUTCSeconds(vid.ts);
-    let month = MONTHS[d.getMonth()].substr(0, 3);
-    title.appendChild(makeElement('span', {
-        class: 'date',
-        innerText: `${month} ${d.getDate()} ${d.getFullYear()}`
-    }));
-
-
-    vidEl.appendChild(title);
+    vidEl.appendChild(makeElement('h3', {},
+        makeElement('a', {href: chURL, class: 'vid_ch_logo'},
+            makeElement('img', {
+                'data-src': ch.thumb,
+                title: ch.t,
+                alt: ch.t,
+                class: 'lazyload',
+            })
+        ), 
+        makeElement('span', {class: 'vid_desc'},
+            vidLink,
+            document.createElement('br'),
+            makeElement('a', {
+                href: chURL,
+                target: '_blank',
+                title: ch.t + ' channel',
+                class: 'channel_link',
+                innerText: ch.t,
+            }),
+            makeElement('span', {
+                class: 'date',
+                innerText: `${month} ${d.getDate()} ${d.getFullYear()}`
+            })
+        ),
+        makeElement('a', {
+            href: `${chURL}?sub_confirmation=1`,
+            target: '_blank',
+            class: 'channel_subscribe',
+            innerText: 'Subscribe'
+        })
+    ));
 
     let thumbLink = makeElement('a', {
         href: vidURL,

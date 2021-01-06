@@ -104,95 +104,6 @@ h1 svg.triangle polygon {
     }
 }
 
-
-/** Alt Logo: http://www.cssdesk.com/kYVrP
-
-<h1><a href='#'>
-<span
-  class='logo'>Hermit</span><span
-  class='outline'><span
-   class='logo'>Tube</span><span class='dot'>|</span><span class='dot dot2'>|</span>
-   </span>
-</a></h1>
-
-h1 {
-    font-size: 3rem;
-    opacity: 1;
-    margin: 0 1rem;
-    padding: 1rem 0 1rem 0;
-    font-variant: small-caps;
-}
-h1 a .logo {
-    text-decoration: none;
-    color: var(--bold-color);
-    letter-spacing: -2px;
-    display:inline-block;
-}
-h1 a .play {
-  display: inline-block;
-  font-size: 0.7em;
-  position: relative;
-  top: -0.1em;
-  width: 0.8em;
-  height: 1.1em;
-  margin-right: -0.1em;
-  transform-origin: 0.3em 0.5em;
-}
-
-h1 a .outline {
-  background: var(--bold-color);
-  color: var(--bg-color);
-  border-radius: 0.2em;
-  padding:0 0.2em;
-  padding-left: 0.4em;
-  margin-left: 0.1em;
-  margin-right: 1em;
-  position: relative;
-}
-
-h1 a .dot {
-    position: absolute;
-    top: 1.1em;
-    left: 0.5em;
-    font-size: 0.2em;
-    transform: rotate(-45deg);
-    color: var(--bold-color);
-    background: var(--bg-color);
-    border-radius: 50%;
-    width: 1.1em;
-    height: 1.1em;
-    line-height: 1em;
-    text-align: center;
-}
-
-h1 a .dot2 {
-  top: 2.5em;
-  transform: rotate(-10deg);
-}
-
-h1 a .dot3 {
-  top: 2.78em;
-    transform: rotate(0deg);
-}
-
-h1 a .outline .logo {
-  color: var(--bg-color);
-  text-transform: uppercase;
-  letter-spacing: -0.1em;
-}
-
-h1 a .logo::first-letter {
-  display: inline-block;
-  margin-right: -0.05em;
-}
-
-h1 a .outline .logo::first-letter {
-  margin-right: 0.05em;
-}
-
-*/
-
-
 /* https://dev.to/emmaadesile/how-to-create-a-hamburger-menu-icon-with-css-and-javascript-1kgd */
 
 .menu-button {
@@ -397,19 +308,16 @@ h1 a .outline .logo::first-letter {
 }
 
 #videos .video {
-    margin: 0 0 2em 0;
+    margin: 0 0.5rem 2rem 0;
     position: relative;
     padding-top: 5px;
     padding-bottom: 5px;
+    box-shadow: 0.1rem 0.1rem 0.25rem black;
+    transition: all 0.5s;
 }
 
 #videos .activevid {
-    box-shadow: 0.25em 0.25em 0.5em black;
-    animation: raise 0.5s;
-}
-
-@keyframes raise {
-    0% { box-shadow: 0 0 0 0; }
+    box-shadow: 0.25rem 0.25rem 0.5rem black;
 }
 
 #videos .video.expanded {
@@ -435,22 +343,40 @@ h1 a .outline .logo::first-letter {
 }
 
 #videos h3 {
-    position: relative;
-    min-height: 50px;
+    display: flex;
     margin: 0;
-    padding: 0 0 0 110px;
+    padding: 0;
 }
 
 #videos h3 a {
     text-decoration: none;
 }
 
-#videos h3 img {
-    position: absolute;
-    top: 0;
-    left: 5px;
-    width: 100px;
-    height: 100px;
+.vid_ch_logo {
+    flex: 0;
+    margin-right: 0.5rem;
+}
+
+.vid_ch_logo img {
+    max-width: 3em;
+    max-height: 3em;
+}
+
+.vid_desc {
+    flex: 10;
+}
+
+.channel_subscribe {
+    flex: 0;
+    font-weight: bold;
+    font-size: 0.6em;
+    padding: 0.8em 1em;
+    margin: 0 5px 0 0.5rem;
+    border-radius: 0.3em;
+    color: white;
+    background: #900;
+    text-transform: uppercase;
+    height: 1em;
 }
 
 #videos h3 .channel_link {
@@ -483,18 +409,6 @@ h1 a .outline .logo::first-letter {
     font-size: 0.7em;
     text-transform: uppercase;
     border: 1px solid var(--bg-color);
-}
-
-#videos a.channel_subscribe {
-    font-weight: bold;
-    font-size: 0.6em;
-    padding: 0.8em 1em;
-    margin: 0 5px 0 1em;
-    float: right;
-    border-radius: 0.3em;
-    color: white;
-    background: #900;
-    text-transform: uppercase;
 }
 
 #videos .video:hover a.channel_subscribe {
@@ -593,14 +507,6 @@ h1 a .outline .logo::first-letter {
         height: 184px;
         overflow: hidden;
         margin-left: 5px;
-    }
-    #videos h3 {
-        padding-left: 50px;
-    }
-    #videos h3 img {
-        left: 0;
-        width: 44px;
-        height: 44px;
     }
     #videos .thumb {
         position: absolute;
