@@ -56,42 +56,43 @@ h1 {
     text-decoration: none;
 }
 
-h1 span {
+h1 a {
     display: inline-block;
     color: var(--bold-color);
+    text-decoration: none;
 }
 
-h1 a span.play {
-    font-size: 0.7em;
-    position: relative;
-    top: -0.1em;
-    width: 0.8em;
-    height: 1.1em;
-    margin-right: -0.1em;
-    transform-origin: 0.3em 0.5em;
-}
-
-h1 a .outline {
+h1 .outline {
     background: var(--accent-color);
-    /*background: var(--bold-color);*/
     color: var(--bg-color);
     border-radius: 0.2em;
-    padding: 0 0.2em;
+    padding: 0 0.2em 0 0.1em;
     margin-left: 0.1em;
 }
 
-h1 a .outline span {
-    color: var(--bg-color);
+h1 .outline span {
+    display: inline-block;
 }
 
-h1 a .logo::first-letter {
+h1 a::first-letter,
+h1 a .outline span::first-letter {
     display: inline-block;
     margin-right: -0.05em;
 }
 
-h1 a:hover .play {
+h1 a:hover .triangle {
     animation-name: weee;
     animation-duration: 0.5s;
+}
+
+h1 svg.triangle {
+    display: inline-block;
+    width: 0.6em;
+    height: 0.6em;
+}
+
+h1 svg.triangle polygon {
+    fill: var(--bg-color);
 }
 
 @keyframes weee {
