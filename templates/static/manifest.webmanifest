@@ -6,8 +6,13 @@
     "display": "fullscreen",
     "icons": [
       {
-        "src": "static/favicon128.png",
+        "src": "/static/favicon_disc128.png",
         "sizes": "128x128",
+        "type": "image/png"
+      },
+      {
+        "src": "/static/favicon_disc196.png",
+        "sizes": "196x196",
         "type": "image/png"
       }
     ],
