@@ -210,7 +210,7 @@ function loadSettings() {
  * 
  * @param {Event} e 
  */
-function modifyMenu(e, action, className) {
+function modifyMenu(e, action, actionType) {
     let el = e.target;
     if (el.tagName.toLowerCase() == 'a') {
         el = el.parentElement;
@@ -218,15 +218,24 @@ function modifyMenu(e, action, className) {
             return true;
         }
     }
-    e.preventDefault();
+    e.stopPropagation();
     if (el.tagName.toLowerCase() == 'a') {}
-    document.querySelectorAll('#menu > li').forEach((li) => {
-        if (li != el) {
-            li.classList.remove(`active_${className}`);
-        }
-    })
-    el.classList[action](`active_${className}`);
+    closeMenus([actionType]);
+    el.classList[action](`active_${actionType}`);
     return false;
+}
+
+function closeMenus(actionTypes) {
+    if (actionTypes === undefined) {
+        actionTypes = ['click', 'hover'];
+    }
+    actionTypes.forEach(actionType => {
+        document.querySelectorAll('#menu > li').forEach((li) => {
+            if (li != el) {
+                li.classList.remove(`active_${actionType}`);
+            }
+        });
+    });
 }
 
 /**
@@ -235,12 +244,20 @@ function modifyMenu(e, action, className) {
 function initDropdown() {
     let mainMenu = document.querySelector('.menu-icon');
     mainMenu.addEventListener('click', (e) => {
+        if (document.body.classList.contains('menu_active')) {
+            closeMenus();
+        }
         document.body.classList.toggle('menu_active');
+    });
+    document.body.addEventListener('click', (e) => {
+        closeMenus();
     });
     document.querySelectorAll("#menu > li").forEach((menu) => {
         menu.childNodes.forEach((el) => {
             if (el.nodeType == 1 && el.tagName.toLowerCase() == 'a') {
-                el.addEventListener('click', (e) => modifyMenu(e, 'toggle', 'click'));
+                el.addEventListener('click', (e) => {
+                    return modifyMenu(e, 'toggle', 'click');
+                });
                 el.addEventListener('keydown', (e) => {
                     if (e.key == ' ' || e.key.toLowerCase() == 'enter') {
                         return modifyMenu(e, 'toggle', 'click')
