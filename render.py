@@ -183,7 +183,7 @@ def render_series(context: Context):
             't': video.title,
             'ch': channel_lookup[video.playlist.channel.name],
         })
-    data['descriptions'] = render_descriptions(slug, descs)
+    data['descriptions'] = render_descriptions_by_hash(slug, descs)
     with open(f'output/data/{slug}/index.json', 'w') as fp:
         fp.write(json.dumps(data))
     render_updates(context)
@@ -200,8 +200,8 @@ def render_descriptions_by_hash(slug: str, descs: Dict[str, str]):
         if len(stack_bytes) < 500 * 1024 and not final:
             return
         sig = sha1(stack_bytes)
-        with open(f'output/data/{slug}/desc/{sig}.json', 'w') as fp:
-            fp.write(json.dumps(stack))
+        # with open(f'output/data/{slug}/desc/{sig}.json', 'w') as fp:
+        #     fp.write(json.dumps(stack))
         with gzip.open(f'output/data/{slug}/desc/{sig}.json.gz', 'wb') as fp:
             fp.write(stack_bytes)
         print(f'Hash: {sig} ({len(stack)})')
@@ -214,28 +214,28 @@ def render_descriptions_by_hash(slug: str, descs: Dict[str, str]):
     _write(True)
     return sigs
         
-def render_descriptions(slug: str, descs: Dict[str, str]):
-    """Writes out chunks of descriptions."""
-    stack = {}
-    i = 0
-    os.makedirs(f'output/data/{slug}/desc', exist_ok=True)
-    def _write(done: bool):
-        with open(f'output/data/{slug}/desc/{i}.json', 'w') as fp:
-            fp.write(json.dumps({
-                'videos': stack,
-                'done': int(done)
-            }))
-    for j, (vid, desc) in enumerate(descs.items()):
-        stack[vid] = desc
-        # TODO: a better approach is a max file size, but how big?
-        if len(stack) < 100:
-            continue
-        _write(j == len(descs) - 1)
-        stack = {}
-        i += 1
-    if stack:
-        _write(True)
-    return render_descriptions_by_hash(slug, descs)
+# def render_descriptions(slug: str, descs: Dict[str, str]):
+#     """Writes out chunks of descriptions."""
+#     stack = {}
+#     i = 0
+#     os.makedirs(f'output/data/{slug}/desc', exist_ok=True)
+#     def _write(done: bool):
+#         with open(f'output/data/{slug}/desc/{i}.json', 'w') as fp:
+#             fp.write(json.dumps({
+#                 'videos': stack,
+#                 'done': int(done)
+#             }))
+#     for j, (vid, desc) in enumerate(descs.items()):
+#         stack[vid] = desc
+#         # TODO: a better approach is a max file size, but how big?
+#         if len(stack) < 100:
+#             continue
+#         _write(j == len(descs) - 1)
+#         stack = {}
+#         i += 1
+#     if stack:
+#         _write(True)
+#     return render_descriptions_by_hash(slug, descs)
 
 
 def render_updates(context: Context):
