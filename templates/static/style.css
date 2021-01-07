@@ -26,6 +26,11 @@ input:focus {
     outline-offset: 4px;
 }
 
+input[type="checkbox"] {
+    width: 0.7rem;
+    height: 0.7rem;
+}
+
 #loading {
     text-align: center;
     margin: 1em 0;
