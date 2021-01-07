@@ -714,7 +714,6 @@ function renderVideo(videos, vid) {
                 'data-src': ch.thumb,
                 title: ch.t,
                 alt: ch.t,
-                class: 'lazyload',
             })
         ), 
         makeElement('span', {class: 'vid_desc'},
