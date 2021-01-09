@@ -231,9 +231,7 @@ function closeMenus(actionTypes) {
     }
     actionTypes.forEach(actionType => {
         document.querySelectorAll('#menu > li').forEach((li) => {
-            if (li != el) {
-                li.classList.remove(`active_${actionType}`);
-            }
+            li.classList.remove(`active_${actionType}`);
         });
     });
 }
@@ -249,9 +247,11 @@ function initDropdown() {
         }
         document.body.classList.toggle('menu_active');
     });
+
     document.body.addEventListener('click', (e) => {
         closeMenus();
     });
+
     document.querySelectorAll("#menu > li").forEach((menu) => {
         menu.childNodes.forEach((el) => {
             if (el.nodeType == 1 && el.tagName.toLowerCase() == 'a') {
