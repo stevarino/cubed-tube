@@ -200,8 +200,11 @@ def render_descriptions_by_hash(slug: str, descs: Dict[str, str]):
         if len(stack_bytes) < 500 * 1024 and not final:
             return
         sig = sha1(stack_bytes)
-        # with open(f'output/data/{slug}/desc/{sig}.json', 'w') as fp:
-        #     fp.write(json.dumps(stack))
+        # gzip takes into account file metadata when hashing, therefore it is
+        # necessary to separate hashing from the logical file to ensure
+        # deterministic output and avoid false invalidation of caches.
+        #
+        # TLDR: gzip.open() bad.
         with open(f'output/data/{slug}/desc/{sig}.json.gz', 'wb') as fp:
             with gzip.GzipFile(
                     fileobj=fp, filename='', mtime=0, mode='wb') as fpz:
@@ -215,29 +218,6 @@ def render_descriptions_by_hash(slug: str, descs: Dict[str, str]):
         _write()
     _write(True)
     return sigs
-        
-# def render_descriptions(slug: str, descs: Dict[str, str]):
-#     """Writes out chunks of descriptions."""
-#     stack = {}
-#     i = 0
-#     os.makedirs(f'output/data/{slug}/desc', exist_ok=True)
-#     def _write(done: bool):
-#         with open(f'output/data/{slug}/desc/{i}.json', 'w') as fp:
-#             fp.write(json.dumps({
-#                 'videos': stack,
-#                 'done': int(done)
-#             }))
-#     for j, (vid, desc) in enumerate(descs.items()):
-#         stack[vid] = desc
-#         # TODO: a better approach is a max file size, but how big?
-#         if len(stack) < 100:
-#             continue
-#         _write(j == len(descs) - 1)
-#         stack = {}
-#         i += 1
-#     if stack:
-#         _write(True)
-#     return render_descriptions_by_hash(slug, descs)
 
 
 def render_updates(context: Context):
