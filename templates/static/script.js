@@ -711,7 +711,7 @@ function renderVideo(videos, vid) {
     vidEl.appendChild(makeElement('h3', {},
         makeElement('a', {href: chURL, class: 'vid_ch_logo'},
             makeElement('img', {
-                'data-src': ch.thumb,
+                src: ch.thumb,
                 title: ch.t,
                 alt: ch.t,
             })
