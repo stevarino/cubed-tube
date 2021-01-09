@@ -316,7 +316,7 @@ h1 svg.triangle polygon {
 }
 
 #videos .activevid {
-    box-shadow: 0.25rem 0.25rem 0.5rem black;
+    box-shadow: 0.5rem 0.5rem 1.2rem black;
 }
 
 #videos .video.expanded {
