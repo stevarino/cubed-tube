@@ -202,8 +202,10 @@ def render_descriptions_by_hash(slug: str, descs: Dict[str, str]):
         sig = sha1(stack_bytes)
         # with open(f'output/data/{slug}/desc/{sig}.json', 'w') as fp:
         #     fp.write(json.dumps(stack))
-        with gzip.open(f'output/data/{slug}/desc/{sig}.json.gz', 'wb') as fp:
-            fp.write(stack_bytes)
+        with open(f'output/data/{slug}/desc/{sig}.json.gz', 'wb') as fp:
+            with gzip.GzipFile(
+                    fileobj=fp, filename='', mtime=0, mode='wb') as fpz:
+                fpz.write(stack_bytes)
         print(f'Hash: {sig} ({len(stack)})')
         stack.clear()
         sigs.append(sig)
