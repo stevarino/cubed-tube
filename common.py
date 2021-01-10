@@ -3,6 +3,7 @@ from models import Series, Channel, Video
 
 from copy import copy
 from dataclasses import dataclass, field
+import time
 from typing import List, Dict
 
 @dataclass
@@ -19,10 +20,12 @@ class Context:
     api_key: str = ''
     config: Dict = None
     cost: Cost  = field(default_factory=Cost)
+    quota: int = None
     series: Series = None
     series_config: Dict = None
     channel: Channel = None
     channels: List[str] = field(default_factory=list)
+    now: int = field(default_factory=lambda: int(time.time()))
 
     def copy(self, **kwargs):
         other = copy(self)

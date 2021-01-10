@@ -60,10 +60,32 @@ class Video(BaseModel):
     position = pw.IntegerField(null=True)
     description = pw.CharField(null=True)
     thumbnails = pw.CharField(null=True)
+    length = pw.IntegerField(null=True)
+    last_scanned = pw.IntegerField(null=True)
+    captions = pw.CharField(null=True)
 
     class Meta:
         indexes = (
             (('video_type', 'video_id'), True),
         )
 
-db.create_tables([Misc, Channel, Series, Playlist, Video])
+class Statistic(BaseModel):
+    statistic_id = pw.AutoField()
+    video = pw.ForeignKeyField(Video, backref='statistics')
+    timestamp = pw.IntegerField(null=True)
+    views = pw.IntegerField(null=True)
+    likes = pw.IntegerField(null=True)
+    dislikes = pw.IntegerField(null=True)
+    favorites = pw.IntegerField(null=True)
+    comments = pw.IntegerField(null=True)
+
+
+@db.func('power')
+def power(base, exponent):
+    """As far as I know, this does not exist"""
+    if base is None or exponent is None:
+        return None
+    return base ** exponent
+
+
+db.create_tables([Misc, Channel, Series, Playlist, Video, Statistic])

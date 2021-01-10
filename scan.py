@@ -1,7 +1,12 @@
-
+# YouTube Quota Limit = 10k/day
+# crontab = */10 (6x/hour, 144/day)
+# => 69.4 quota/run (round down to 60)
+# playlist updating = ~40 quota/run
+# currently 11339 videos in system
+# => scan entire library = 227 quota, or 12 runs, or 2 hours
 
 from common import Context
-from models import Misc, Series, Channel, Playlist, Video, pw, db
+from models import Misc, Series, Channel, Playlist, Video, Statistic, pw, db
 
 import argparse
 import datetime
@@ -18,6 +23,11 @@ import yaml
 
 API_URL = 'https://www.googleapis.com/youtube/v3/'
 YT_PLAYLIST = re.compile(r'https://www.youtube.com/playlist\?list=([^&]+)')
+
+# Matches PT15M33S and P1DT2H3M4S as timedelta compatible dicts
+ISO8601_DUR = re.compile(
+    r'P(?:(?P<days>\d+)D)?T(?:(?P<hours>\d+)H)?'
+    r'(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+)S)?')
 
 def _yt_get(ctx: Context, endpoint: str, args: Dict, cost=1):
     args['key'] = ctx.api_key
@@ -87,7 +97,6 @@ def load_yt_channel(ctx: Context, channel: Dict):
     return ctx.copy(channel=chan)
 
 def update_yt_channel(ctx: Context, chan_ids: List[str]):
-    now = int(time.time())
     chans = (
         Channel.select(
             Channel,
@@ -95,7 +104,7 @@ def update_yt_channel(ctx: Context, chan_ids: List[str]):
         )
         .where(
             Channel.last_scanned.is_null() | 
-            (Channel.last_scanned <= (now - 24*3600)))
+            (Channel.last_scanned <= (ctx.now - 24*3600)))
         .order_by(pw.SQL('targeted').desc())
         .limit(50))
     
@@ -110,7 +119,7 @@ def update_yt_channel(ctx: Context, chan_ids: List[str]):
     items = _yt_get(ctx, 'channels', chan_args)['items']
     for item in items:
         chan = chan_map[item['id']]
-        chan.last_scanned = now
+        chan.last_scanned = ctx.now
 
         chan.title = item['snippet']['title']
         chan.custom_url = item['snippet'].get('customUrl')
@@ -132,10 +141,6 @@ def update_yt_channel(ctx: Context, chan_ids: List[str]):
     
 
 def process_yt_playlist(ctx: Context, p_id: str):
-    def _parse_ts(dt_str):
-        dt = datetime.datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
-        return int(dt.timestamp())
-
     args = {
         'playlistId': p_id, 
         'maxResults': 50,
@@ -143,24 +148,66 @@ def process_yt_playlist(ctx: Context, p_id: str):
     }
     play, _ = Playlist.get_or_create(
         playlist_id=p_id, playlist_type='youtube_pl', channel=ctx.channel)
-    for i, video in enumerate(_yt_get_many(ctx, 'playlistItems', args)):
-        vid, _ = Video.get_or_create(
-            video_type='youtube', 
-            video_id=video['snippet']['resourceId']['videoId'],
-            defaults={'playlist': play, 'series': ctx.series})
-        vid.title = video['snippet']['title']
-        pub_at = video['contentDetails'].get('videoPublishedAt')
-        if not pub_at:
-            continue
-        vid.published_at = _parse_ts(pub_at)
-        vid.playlist_at = _parse_ts(video['snippet']['publishedAt'])
-        vid.position = video['snippet']['position']
-        vid.description = video['snippet']['description']
-        vid.thumbnails = json.dumps(video['snippet']['thumbnails'])
-        if ctx.filter_video(vid):
-            continue
-        vid.save()
+    for i, result in enumerate(_yt_get_many(ctx, 'playlistItems', args)):
+        update_video(ctx, result['snippet']['resourceId']['videoId'], result,
+                     defaults={'playlist': play, 'series': ctx.series})
     print(f'    Playlist ID {p_id} ({i+1})')
+
+
+def _parse_ts(dt_str):
+    dt = datetime.datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
+    return int(dt.timestamp())
+
+
+def update_video(ctx: Context, video_id: str, result: Dict,
+                 filter_vid: bool = True, defaults: Dict = None):
+    """Write a video to the database"""
+    vid, _ = Video.get_or_create(
+            video_type='youtube', 
+            video_id=video_id,
+            defaults=defaults)
+    vid.title = result['snippet']['title']
+    vid.description = result['snippet']['description']
+    vid.thumbnails = json.dumps(result['snippet']['thumbnails'])
+
+    if 'position' in result['snippet']:
+        # playlist fields
+        vid.position = result['snippet']['position']
+        vid.playlist_at = _parse_ts(result['snippet']['publishedAt'])
+        pub_at = result['contentDetails'].get('videoPublishedAt')
+        if not pub_at:  # unpublished video, bail out
+            return
+        vid.published_at = _parse_ts(pub_at)
+
+    if 'duration' in result['contentDetails']:
+        # video query fields
+        vid.captions = result['contentDetails']['caption']
+        match = ISO8601_DUR.match(result['contentDetails']['duration'])
+        if match is not None:
+            # expired livestreams such as uGW9jJT__IY have value 'P0D'
+            vid.length = datetime.timedelta(
+                **{k: int(v) if v else 0 for k, v in match.groupdict().items()}
+            ).total_seconds()
+        vid.last_scanned = ctx.now
+
+    if 'statistics' in result:
+        _map = {
+            'views': 'viewCount',
+            'likes': 'likeCount',
+            'dislikes': 'dislikeCount',
+            'favorites': 'favoriteCount',
+            'comments': 'commentCount',
+        }
+        Statistic.create(
+            video = vid,
+            timestamp = ctx.now,
+            **{k: result['statistics'].get(_map[k]) for k in _map}
+        )
+
+    
+    if filter_vid and ctx.filter_video(vid):
+        return
+    vid.save()
 
 
 def process_channel(ctx: Context, channel: Dict):
@@ -182,6 +229,50 @@ def process_series(ctx: Context, channels: List[Dict[str,str]]):
             process_channel(ctx, channel)
         except Exception:
             traceback.print_exc()
+
+def scan_videos(ctx: Context):
+    """Use the remaining quota to update video metadata."""
+    if ctx.quota is None:
+        return
+    # Given video (A) (last_scan_dur = 1w, pub_dur = 1mo) and video (B) 
+    # (last_scan_dur = 10m, pub_dur = 1d), rescan scoring can be calculated
+    # by:
+    # 
+    #   score = last_scan_dur / (pub_dur ** rate_factor)
+    # 
+    # Assuming video (A) and video (B) have equal scores, rate_factor can be
+    # calculated as follows:
+    # 
+    #   rate_factor = log(scan_time_a / scan_time_b, pub_time_a / pub_time_b)
+    rate_factor = 2.033320232
+    for i in range(ctx.quota - ctx.cost.value):
+        
+        videos = Video.select(
+            Video.video_id,
+            ((ctx.now - Video.last_scanned) / pw.fn.power(
+                ctx.now - Video.published_at, rate_factor
+            )).alias('score'),
+            Video.last_scanned,
+            Video.published_at
+        ).where(
+            Video.title.is_null(False),
+        ).order_by(
+            Video.last_scanned.is_null(False),
+            pw.SQL('score').desc(),
+            Video.published_at.desc()
+        ).limit(50)
+
+        print(f'  Requesting update {i}:')
+        print(f'    Start: {videos[0].video_id} ({videos[0].score}, '
+              f'{videos[0].last_scanned}, {videos[0].published_at})')
+        print(f'    End:   {videos[-1].video_id} ({videos[-1].score}, '
+              f'{videos[-1].last_scanned}, {videos[-1].published_at})')
+        chan_args = dict(
+            id=','.join(v.video_id for v in videos),
+            part='statistics,snippet,contentDetails')
+        for result in _yt_get(ctx, 'videos', chan_args)['items']:
+            update_video(ctx, result['id'], result, filter_vid=False)
+
 
 def get_misc(key, default=None):
     rec, _ = Misc.get_or_create(key=key, defaults={'value': default})
@@ -224,9 +315,11 @@ def main(argv=None):
     parser.add_argument('--series', '-s', nargs='*')
     parser.add_argument('--channel', '-c', nargs='*')
     parser.add_argument('--full', '-f', action='store_true')
+    parser.add_argument('--quota', type=int)
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
 
     ctx.channels = args.channel
+    ctx.quota = args.quota
 
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     with open('credentials.yaml') as fp:
@@ -250,6 +343,7 @@ def main(argv=None):
                 series_.save()
             c_ctx = ctx.copy(series=series_, series_config=series)
             process_series(c_ctx, series['channels'])
+        scan_videos(ctx)
     finally:
         update_stats(ctx.cost.value)
         print('api cost:', ctx.cost.value)

@@ -3,33 +3,26 @@ from playhouse import migrate
 from playhouse import reflection
 
 def run(db: pw.SqliteDatabase):
-    while True:
+    int_field = pw.IntegerField(null=True)
+    char_field = pw.CharField(null=True)
+
+    new_fields = [
+        [
+            ('channel', 'last_scanned', int_field),
+            ('channel', 'subscriber_count', int_field),
+            ('channel', 'video_count', int_field),
+            ('channel', 'view_count', int_field),
+        ],
+        [('channel', 'tag', char_field)],
+        [('video', 'length', int_field)],
+        [('video', 'last_scanned', int_field)],
+        [('video', 'captions', char_field)],
+    ]
+    for field_set in new_fields:
+        table, field, _ = field_set[0]
         models = reflection.generate_models(db)
-        if 'last_scanned' not in models['channel']._meta.fields:
-            add_channel_counts_update(db)
-            continue
-        if 'tag' not in models['channel']._meta.fields:
-            add_channel_tag_update(db)
-            continue
-        break
-
-def add_channel_counts_update(db):
-    print('Adding last_scanned and count fields to channel...')
-    migrator = migrate.SqliteMigrator(db)
-    count_field = pw.IntegerField(null=True)
-
-    migrate.migrate(
-        migrator.add_column('channel', 'last_scanned', count_field),
-        migrator.add_column('channel', 'subscriber_count', count_field),
-        migrator.add_column('channel', 'video_count', count_field),
-        migrator.add_column('channel', 'view_count', count_field),
-    )
-    
-def add_channel_tag_update(db):
-    print('Adding tag field to channel...')
-    migrator = migrate.SqliteMigrator(db)
-
-    migrate.migrate(
-        migrator.add_column('channel', 'tag', pw.CharField(null=True)),
-    )
-    
+        if field not in models[table]._meta.fields:
+            print(f'Adding {table}.{field}...')
+            migrator = migrate.SqliteMigrator(db)
+            migrate.migrate(*[migrator.add_column(table, field, field_type)
+                              for table, field, field_type in field_set])
