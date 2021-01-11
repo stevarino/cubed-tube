@@ -246,7 +246,6 @@ def scan_videos(ctx: Context):
     #   rate_factor = log(scan_time_a / scan_time_b, pub_time_a / pub_time_b)
     rate_factor = 2.033320232
     for i in range(ctx.quota - ctx.cost.value):
-        
         videos = Video.select(
             Video.video_id,
             ((ctx.now - Video.last_scanned) / pw.fn.power(
@@ -255,23 +254,34 @@ def scan_videos(ctx: Context):
             Video.last_scanned,
             Video.published_at
         ).where(
-            Video.title.is_null(False),
+            Video.title.is_null(False) & Video.tombstone.is_null()
         ).order_by(
             Video.last_scanned.is_null(False),
             pw.SQL('score').desc(),
             Video.published_at.desc()
         ).limit(50)
 
+        expected_video_ids = set(v.video_id for v in videos)
         print(f'  Requesting update {i}:')
         print(f'    Start: {videos[0].video_id} ({videos[0].score}, '
               f'{videos[0].last_scanned}, {videos[0].published_at})')
         print(f'    End:   {videos[-1].video_id} ({videos[-1].score}, '
               f'{videos[-1].last_scanned}, {videos[-1].published_at})')
         chan_args = dict(
-            id=','.join(v.video_id for v in videos),
+            id=','.join(expected_video_ids),
             part='statistics,snippet,contentDetails')
+        received_video_ids = set()
         for result in _yt_get(ctx, 'videos', chan_args)['items']:
+            received_video_ids.add(result['id'])
             update_video(ctx, result['id'], result, filter_vid=False)
+        missing_videos = expected_video_ids - received_video_ids
+        if missing_videos:
+            print(f'    Tomstoning Videos {", ".join(missing_videos)}')
+            Video.update(
+                tombstone=ctx.now
+            ).where(
+                Video.video_id.in_(missing_videos)
+            ).execute()
 
 
 def get_misc(key, default=None):

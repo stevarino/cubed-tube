@@ -17,6 +17,7 @@ def run(db: pw.SqliteDatabase):
         [('video', 'length', int_field)],
         [('video', 'last_scanned', int_field)],
         [('video', 'captions', char_field)],
+        [('video', 'tombstone', int_field)],
     ]
     for field_set in new_fields:
         table, field, _ = field_set[0]
