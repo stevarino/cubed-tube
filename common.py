@@ -43,4 +43,6 @@ class Context:
             return True
         if video.video_id in self.series_config.get('ignore_video_ids', []):
             return True
+        if video.tombstone is not None:
+            return True
         return False
