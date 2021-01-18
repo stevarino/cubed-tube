@@ -205,7 +205,6 @@ def update_video(ctx: Context, video_id: str, result: Dict,
             timestamp = ctx.now,
             **{k: result['statistics'].get(_map[k]) for k in _map}
         )
-        print(result['statistics'])
         for key in _map:
             try:
                 trends.add_point(
@@ -352,6 +351,7 @@ def main(argv=None):
         config = yaml.safe_load(fp)
 
     if args.migrate_trends:
+        # One-time use endpoint to migrate data from Statistic table
         def _clump():
             query = Statistic.select().order_by(
                 Statistic.video, Statistic.timestamp)
