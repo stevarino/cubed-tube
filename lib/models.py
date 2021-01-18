@@ -1,4 +1,4 @@
-import model_migration
+from lib import model_migration
 
 import datetime
 import os
@@ -80,6 +80,38 @@ class Statistic(BaseModel):
     favorites = pw.IntegerField(null=True)
     comments = pw.IntegerField(null=True)
 
+class TrendPoint(BaseModel):
+    point_id = pw.AutoField()
+    timestamp = pw.IntegerField()
+    value = pw.IntegerField()
+    series_id = pw.IntegerField(index=True)
+
+    def __str__(self):
+        return (f'{self.point_id}@{self.series_id} '
+                f'({self.timestamp}, {self.value})')
+
+class TrendSeries(BaseModel):
+    series_id = pw.AutoField()
+    pivot = pw.ForeignKeyField(TrendPoint, null=True)
+    current = pw.ForeignKeyField(TrendPoint, null=True)
+    delta = pw.FloatField(default=1)
+    upper = pw.FloatField(null=True)
+    lower = pw.FloatField(null=True)
+    raw_count = pw.IntegerField(default=0)
+    point_count = pw.IntegerField(default=0)
+
+    def __str__(self):
+        return f'{self.series_id} {self.upper} / {self.lower}'
+
+class VideoTrends(BaseModel):
+    video_trend_id = pw.AutoField()
+    video_id = pw.ForeignKeyField(Video, unique=True, backref='trends')
+    views = pw.ForeignKeyField(TrendSeries, null=True)
+    likes = pw.ForeignKeyField(TrendSeries, null=True)
+    dislikes = pw.ForeignKeyField(TrendSeries, null=True)
+    favorites = pw.ForeignKeyField(TrendSeries, null=True)
+    comments = pw.ForeignKeyField(TrendSeries, null=True)
+
 
 @db.func('power')
 def power(base, exponent):
@@ -88,5 +120,7 @@ def power(base, exponent):
         return None
     return base ** exponent
 
+MODELS = BaseModel.__subclasses__()
 
-db.create_tables([Misc, Channel, Series, Playlist, Video, Statistic])
+def init_database():
+    db.create_tables(MODELS)

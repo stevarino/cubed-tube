@@ -2,8 +2,8 @@
 Reads from the database and produces html files.
 """
 
-from common import Context
-from models import Video, Playlist, Channel, Series, Misc
+from lib.common import Context
+from lib.models import Video, Playlist, Channel, Series, Misc, init_database
 
 import argparse
 from collections import defaultdict
@@ -298,6 +298,7 @@ def main(argv=None):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     with open('playlists.yaml') as fp:
         config = yaml.safe_load(fp)
+    init_database()
 
     if args.quick:
         for series in config['series']:

@@ -5,8 +5,10 @@
 # currently 11339 videos in system
 # => scan entire library = 227 quota, or 12 runs, or 2 hours
 
-from common import Context
-from models import Misc, Series, Channel, Playlist, Video, Statistic, pw, db
+from lib.common import Context
+from lib.models import (
+    Misc, Series, Channel, Playlist, Video, Statistic, pw, db, init_database)
+from lib import trends
 
 import argparse
 import datetime
@@ -203,7 +205,15 @@ def update_video(ctx: Context, video_id: str, result: Dict,
             timestamp = ctx.now,
             **{k: result['statistics'].get(_map[k]) for k in _map}
         )
-
+        print(result['statistics'])
+        for key in _map:
+            try:
+                trends.add_point(
+                    trends.get_video_trend(vid, key),
+                    ctx.now,
+                    int(result['statistics'].get(_map[key])))
+            except ValueError:
+                pass
     
     if filter_vid and ctx.filter_video(vid):
         return
@@ -326,6 +336,7 @@ def main(argv=None):
     parser.add_argument('--channel', '-c', nargs='*')
     parser.add_argument('--full', '-f', action='store_true')
     parser.add_argument('--quota', type=int)
+    parser.add_argument('--migrate_trends', action='store_true')
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
 
     ctx.channels = args.channel
@@ -334,10 +345,45 @@ def main(argv=None):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     with open('credentials.yaml') as fp:
         creds = yaml.safe_load(fp)
+    init_database()
     ctx.api_key = creds['api_key']
 
     with open('playlists.yaml') as fp:
         config = yaml.safe_load(fp)
+
+    if args.migrate_trends:
+        def _clump():
+            query = Statistic.select().order_by(
+                Statistic.video, Statistic.timestamp)
+            video_trends = {t: [] for t in trends.VIDEO_TRENDS}
+            video_id = None
+            for row in query:
+                if video_id != row.video_id:
+                    for t in trends.VIDEO_TRENDS:
+                        if video_trends[t] and video_id:
+                            yield video_id, t, video_trends[t]
+                        video_trends[t] = []
+                    video_id = row.video_id
+                for t in trends.VIDEO_TRENDS:
+                    video_trends[t].append((row.timestamp, getattr(row, t)))
+            for t in trends.VIDEO_TRENDS:
+                if video_trends[t]:
+                    yield video_id, t, video_trends[t]
+
+        total_stats = Statistic.select().count() * len(trends.VIDEO_TRENDS)
+        with db.atomic() as transaction:
+            stat_cnt = 0
+            for i, (video_id, trend, pts) in enumerate(_clump()):
+                stat_cnt += len(pts)
+                vid_trend = trends.get_video_trend(video_id, trend)
+                trends.add_points(vid_trend, pts)
+                if i % 10 == 0:
+                    transaction.commit()
+                    print(f'\r{stat_cnt:7} / {total_stats}',
+                            f'({100*stat_cnt/total_stats:.2f}%)', end='')
+        print()
+        return
+
 
     try:
         for series in config['series']:

@@ -4,3 +4,4 @@ output/**
 .vscode
 __pycache__
 env
+**/*.sqbpro

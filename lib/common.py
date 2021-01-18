@@ -1,5 +1,5 @@
 
-from models import Series, Channel, Video
+from lib.models import Series, Channel, Video
 
 from copy import copy
 from dataclasses import dataclass, field
