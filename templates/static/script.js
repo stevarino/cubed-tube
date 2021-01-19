@@ -188,6 +188,9 @@ function loadSettings() {
         SETTINGS.player_mobile = false;
         this.saveToStorage('settings', SETTINGS)
     }
+    if (document.getElementById('opt_player') === undefined) {
+        return;
+    }
     document.getElementById('opt_player').checked = SETTINGS.player;
     document.getElementById('opt_player').addEventListener('change', (e) => {
         SETTINGS.player = document.getElementById('opt_player').checked;
