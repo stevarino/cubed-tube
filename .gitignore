@@ -1,6 +1,6 @@
 credentials.yaml
 **/*.sqlite3*
-output/**
+**/output/**
 .vscode
 __pycache__
 env
