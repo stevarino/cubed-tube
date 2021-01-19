@@ -1,17 +1,23 @@
+from lib.common import generate_template_context
+
 import os.path
 import yaml
 
-from flask import Flask, url_for, session
-from flask import render_template, redirect
+from flask import (
+    Flask, url_for, session, render_template, redirect, send_from_directory)
 from authlib.integrations.flask_client import OAuth
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 with open('credentials.yaml') as fp:
     creds = yaml.safe_load(fp)
+with open('playlists.yaml') as fp:
+        config = yaml.safe_load(fp)
 
-
-templates = os.path.abspath('./lib/wsgi/templates')
-app = Flask(__name__, template_folder=templates)
+app = Flask(
+    __name__, 
+    template_folder=os.path.abspath('./templates'),
+    static_url_path='')
 app.config.update(creds['wsgi'])
 
 CONF_URL = 'https://accounts.google.com/.well-known/openid-configuration'
@@ -24,11 +30,13 @@ oauth.register(
     }
 )
 
+STATIC_DIR = os.path.abspath('templates/static').replace('\\', '/')
 
 @app.route('/')
 def homepage():
     user = session.get('user')
-    return render_template('home.html', user=user)
+    context = generate_template_context(config)
+    return render_template('wsgi/wsgi.html', user=user, **context)
 
 
 @app.route('/login')
@@ -49,6 +57,11 @@ def auth():
 def logout():
     session.pop('user', None)
     return redirect('/')
+
+@app.route('/static/<path:path>')
+def send_static(path):
+    return send_from_directory(STATIC_DIR, path)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

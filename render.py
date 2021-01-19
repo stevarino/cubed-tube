@@ -2,7 +2,7 @@
 Reads from the database and produces html files.
 """
 
-from lib.common import Context
+from lib.common import Context, generate_template_context
 from lib.models import Video, Playlist, Channel, Series, Misc, init_database
 
 import argparse
@@ -14,12 +14,14 @@ import hashlib
 import html
 import json
 import os
-import peewee as pw
 import re
 import shutil
 import sys
 from typing import Dict, List, Tuple, Union
 import yaml
+
+from jinja2 import Environment, PackageLoader
+import peewee as pw
 
 def sha1(value: Union[str, bytes]) -> str:  # pylint: disable=unsubscriptable-object
     """Convenience function to convert a string into a sha1 hex string"""
@@ -27,113 +29,18 @@ def sha1(value: Union[str, bytes]) -> str:  # pylint: disable=unsubscriptable-ob
         value = value.encode('utf-8')
     return hashlib.sha1(value).hexdigest()
 
-def process_html(filename: str, context: Dict[str, str]):
-    """Poor man's html-includes, because I miss php apparently."""
-    with open(filename, 'r') as fp:
-        contents = fp.read()
-    parts = re.split(r'(<%.+?%>)', contents)
-    for i, part in enumerate(parts):
-        if not part.startswith('<%'):
-            continue
-        tag_parts = re.match(r'<%(=?)\s*(\w+)(\s*)(.*?)\s*%>', part).groups()
-        if tag_parts[0] == '=':
-            # <%= foo %> convenience syntax for printing
-            tag_type, data = ('print', ''.join(tag_parts[1:]).strip())
-        else:
-            tag_type, data = (tag_parts[1], tag_parts[3])
-
-        if tag_type == 'include':
-            assert '..' not in data, "lazy path escaping"
-            parts[i] = process_html('templates/'+ data, context)
-        elif tag_type == 'print':
-            assert data in context, f"Missing context {data} - {filename}"
-            parts[i] = context[data]
-        elif tag_type == 'pprint':
-            assert data in context, f"Missing context {data} - {filename}"
-            parts[i] = html.escape(context[data])
-            for old, new in [('\n', '<br />'), ('  ', ' &nbsp;')]:
-                parts[i] = parts[i].replace(old, new)
-        elif tag_type == 'table':
-            assert data in context, f"Missing context {data} - {filename}"
-            table_data = json.loads(context[data])
-            columns = []
-            skip_row_label = False
-            if isinstance(table_data, list):
-                table_data = {i: row for i, row in enumerate(table_data)}
-                skip_row_label = True
-            for row in sorted(table_data.keys()):
-                for col in table_data[row].keys():
-                    if col not in columns:
-                        columns.append(col)
-            output = ['<table><thead><tr><td></td>']
-            [output.append(f'<th>{col}</th>') for col in columns]
-            output.append('</tr></thead>')
-            for row in table_data.keys():
-                table_row = table_data[row]
-                output.append(f'<tr>')
-                if not skip_row_label:
-                    output.append(f'<th>{row}</th>')
-                cols = '</td><td>'.join([
-                    str(table_row.get(c, '')) for c in columns])
-                output.append(f'<td>{cols}</td></tr>')
-            output.append('</table>')
-            parts[i] = ''.join(output)
-        else:
-            raise ValueError(f"Unrecognized tag_type: {tag_type}")
-    return ''.join(parts)
-
 def render_static(config: Dict):
     os.makedirs( 'output/static', exist_ok=True)
-    defaults = [s['slug'] for s in config['series'] if s.get('default')]
-    assert len(defaults) == 1, 'Only one series should be marked default'
-    default_series = defaults[0]
-    series_list = [[s['slug'], s['title']] for s in config['series']]
-    context = {
-        'title': config['title'],
-        'default_series': json.dumps(default_series),
-        'series_list': json.dumps(series_list),
-        'now': str(int(datetime.datetime.now().timestamp())),
-        'version': config['version'],
-    }
-    context['hermit_counts'] = json.dumps(get_videos_by_hermit())
-    for data in Misc.select():
-        context[data.key] = data.value
+    env = Environment(loader=PackageLoader(__name__))
+    context = generate_template_context(config)
     for html_file in glob('templates/**/*.html', recursive=True):
-        out_file = "output" + html_file[9:]
+        if 'wsgi' in html_file:  # auth site
+            continue
+        html_file = html_file[10:].replace('\\', '/')
+        out_file = os.path.join("output", html_file)
         os.makedirs(os.path.dirname(out_file), exist_ok=True)
         with open(out_file, 'w') as fp:
-            fp.write(process_html(html_file, context))
-
-def get_videos_by_hermit():
-    vids = (
-        Video.select(
-            Video.series, 
-            Video.playlist.channel, 
-            pw.fn.COUNT(Video.video_id).alias('cnt'))
-        .join(Playlist)
-        .join(Channel)
-        .group_by(Video.series, Video.playlist.channel)
-        .order_by(pw.fn.Lower(Video.playlist.channel.tag))
-    )
-    seasons = set()
-    data = defaultdict(dict)
-    for v in vids:
-        seasons.add(v.series.slug)
-        data[v.playlist.channel.tag][v.series.slug] = v.cnt
-    seasons = sorted(seasons)
-    totals = {}
-    for ch in data:
-        data[ch] = {s: data[ch].get(s, 0) for s in seasons}
-        data[ch]['total'] = sum(data[ch][s] for s in seasons)
-    for season in seasons:
-        totals[season] = sum(data[ch].get(season, 0) for ch in data.keys())
-    totals['total'] = sum(totals.values())
-    data['total'] = totals
-    for ch in data:
-        for season in data[ch]:
-            if not data[ch][season]:
-                data[ch][season] = ''
-    return data
+            fp.write(env.get_template(html_file).render(**context))
 
 
 def render_series(context: Context):
