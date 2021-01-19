@@ -2,7 +2,7 @@ import argparse
 import os
 import os.path
 
-from hermit_tube import scan, render
+from hermit_tube.lib import scan, render
 
 SUBCOMMANDS = {
     'scan': scan,
