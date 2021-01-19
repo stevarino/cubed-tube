@@ -20,7 +20,7 @@ with open(os.path.join(path, 'playlists.yaml')) as fp:
 
 app = Flask(
     __name__, 
-    template_folder='../../templates',
+    template_folder='../templates',
     static_url_path='')
 app.config.update(creds['wsgi'])
 
