@@ -62,8 +62,10 @@ function clearObject(obj) {
 window.onload = function() {
     loadSettings();
     initDropdown()
-    if (document.getElementById('loading') === null) {
+    if (document.getElementById('channels') !== null) {
         document.getElementById('channels').style.display = 'none';
+    }
+    if (document.getElementById('loading') === null) {
         return;
     }
     STATE = loadFromStorage('state');
@@ -188,7 +190,7 @@ function loadSettings() {
         SETTINGS.player_mobile = false;
         this.saveToStorage('settings', SETTINGS)
     }
-    if (document.getElementById('opt_player') === undefined) {
+    if (document.getElementById('opt_player') === null) {
         return;
     }
     document.getElementById('opt_player').checked = SETTINGS.player;
@@ -272,6 +274,9 @@ function initDropdown() {
         menu.addEventListener('mouseleave', (e) => modifyMenu(e, 'remove', 'hover'));
     });
     let dropdown = document.getElementById('seasons');
+    if (dropdown === null) {
+        return
+    }
     window.all_series.forEach((s) => {
         let li = document.createElement('li');
         let link = document.createElement('a');
