@@ -388,6 +388,7 @@ h1 svg.triangle polygon {
     background: #900;
     text-transform: uppercase;
     height: 1em;
+    line-height: 1em;
 }
 
 #videos h3 .channel_link {
