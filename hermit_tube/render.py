@@ -2,8 +2,8 @@
 Reads from the database and produces html files.
 """
 
-from lib.common import Context, generate_template_context
-from lib.models import Video, Playlist, Channel, Series, Misc, init_database
+from hermit_tube.lib.common import Context, generate_template_context
+from hermit_tube.lib.models import Video, Playlist, Channel, Series, Misc, init_database
 
 import argparse
 from collections import defaultdict
@@ -196,12 +196,11 @@ def clear_directory(dir_name):
             except Exception as e:
                 print(f'Failed to delete {file_path}. Reason: {e}')
 
-def main(argv=None):
-    parser = argparse.ArgumentParser()
+def build_argparser(parser: argparse.ArgumentParser):
     parser.add_argument('--series', '-s', nargs='*')
     parser.add_argument('--quick', '-q', action='store_true')
-    args = parser.parse_args(sys.argv[1:] if argv is None else argv)
 
+def main(args: argparse.Namespace):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     with open('playlists.yaml') as fp:
         config = yaml.safe_load(fp)
@@ -224,4 +223,6 @@ def main(argv=None):
     copytree('templates/static', 'output/static')
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    build_argparser(parser)
+    main(parser.parse_args())

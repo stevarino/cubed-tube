@@ -1,4 +1,4 @@
-from lib import model_migration
+from hermit_tube.lib import model_migration, util
 
 import datetime
 import os
@@ -9,9 +9,9 @@ import peewee as pw
 
 FILENAME = 'db.sqlite3'
 
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
-new_db = not os.path.exists(FILENAME)
-db = pw.SqliteDatabase(FILENAME)
+new_db = not os.path.exists(util.root(FILENAME))
+db = pw.SqliteDatabase(util.root(FILENAME))
+
 if not new_db:
     model_migration.run(db)
 

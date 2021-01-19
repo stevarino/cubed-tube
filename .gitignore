@@ -5,3 +5,4 @@ credentials.yaml
 __pycache__
 env
 **/*.sqbpro
+*.egg-info

@@ -1,5 +1,5 @@
-from lib import trends
-from lib import models
+from hermit_tube.lib import trends
+from hermit_tube.lib import models
 
 import unittest
 

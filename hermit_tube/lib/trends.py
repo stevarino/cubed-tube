@@ -2,7 +2,7 @@
 Houses high-level trend interface for linear data-point storage/retrieval.
 """
 
-from lib import models as m
+from hermit_tube.lib import models as m
 
 from typing import List, Tuple
 

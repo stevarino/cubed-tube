@@ -5,10 +5,10 @@
 # currently 11339 videos in system
 # => scan entire library = 227 quota, or 12 runs, or 2 hours
 
-from lib.common import Context
-from lib.models import (
+from hermit_tube.lib.common import Context
+from hermit_tube.lib.models import (
     Misc, Series, Channel, Playlist, Video, Statistic, pw, db, init_database)
-from lib import trends
+from hermit_tube.lib import trends
 
 import argparse
 import datetime
@@ -327,16 +327,16 @@ def update_stats(api_cost):
     set_misc('latest_channel_title', latest.playlist.channel.tag)
     set_misc('latest_channel_id', latest.playlist.channel.channel_id)
 
-def main(argv=None):
-    ctx = Context()
-
-    parser = argparse.ArgumentParser()
+def build_argparser(parser):
     parser.add_argument('--series', '-s', nargs='*')
     parser.add_argument('--channel', '-c', nargs='*')
     parser.add_argument('--full', '-f', action='store_true')
     parser.add_argument('--quota', type=int)
     parser.add_argument('--migrate_trends', action='store_true')
-    args = parser.parse_args(sys.argv[1:] if argv is None else argv)
+
+
+def main(args: argparse.Namespace):
+    ctx = Context()
 
     ctx.channels = args.channel
     ctx.quota = args.quota
@@ -370,6 +370,7 @@ def main(argv=None):
                 if video_trends[t]:
                     yield video_id, t, video_trends[t]
 
+        # pylint: disable=no-value-for-parameter
         total_stats = Statistic.select().count() * len(trends.VIDEO_TRENDS)
         with db.atomic() as transaction:
             stat_cnt = 0
@@ -405,4 +406,6 @@ def main(argv=None):
         print('api cost:', ctx.cost.value)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    build_argparser(parser)
+    main(parser.parse_args())

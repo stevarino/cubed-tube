@@ -1,22 +1,26 @@
-from lib.common import generate_template_context
 
 import os.path
+import sys
 import yaml
 
 from flask import (
     Flask, url_for, session, render_template, redirect, send_from_directory)
 from authlib.integrations.flask_client import OAuth
 
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
+from hermit_tube.lib.common import generate_template_context
 
-with open('credentials.yaml') as fp:
+path = os.path.abspath(__file__)
+while 'lib' in path:
+    path = os.path.dirname(path)
+
+with open(os.path.join(path, 'credentials.yaml')) as fp:
     creds = yaml.safe_load(fp)
-with open('playlists.yaml') as fp:
-        config = yaml.safe_load(fp)
+with open(os.path.join(path, 'playlists.yaml')) as fp:
+    config = yaml.safe_load(fp)
 
 app = Flask(
     __name__, 
-    template_folder=os.path.abspath('./templates'),
+    template_folder='../../templates',
     static_url_path='')
 app.config.update(creds['wsgi'])
 
@@ -30,7 +34,7 @@ oauth.register(
     }
 )
 
-STATIC_DIR = os.path.abspath('templates/static').replace('\\', '/')
+STATIC_DIR = os.path.join(path, 'templates/static').replace('\\', '/')
 
 @app.route('/')
 def homepage():

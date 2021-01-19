@@ -1,11 +1,12 @@
 
-from lib.models import Series, Channel, Video, Misc, Playlist, pw
+from hermit_tube.lib.models import Series, Channel, Video, Misc, Playlist, pw
 
 from collections import defaultdict
 from copy import copy
 from dataclasses import dataclass, field
 import datetime
 import json
+import os
 import time
 from typing import List, Dict
 
@@ -49,9 +50,6 @@ class Context:
         if video.tombstone is not None:
             return True
         return False
-
-
-
 
 def generate_template_context(config: Dict):
     defaults = [s['slug'] for s in config['series'] if s.get('default')]
