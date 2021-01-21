@@ -212,7 +212,7 @@ def update_video(ctx: Context, video_id: str, result: Dict,
                     trends.get_video_trend(vid, key),
                     ctx.now,
                     int(result['statistics'].get(_map[key])))
-            except ValueError:
+            except (ValueError, TypeError):
                 pass
     
     if filter_vid and ctx.filter_video(vid):
