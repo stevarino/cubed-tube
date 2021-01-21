@@ -33,7 +33,7 @@ def sha1(value: Union[str, bytes]) -> str:  # pylint: disable=unsubscriptable-ob
     return hashlib.sha1(value).hexdigest()
 
 def render_static(config: Dict):
-    os.makedirs( 'output/static', exist_ok=True)
+    os.makedirs(root('output/static'), exist_ok=True)
     env = Environment(loader=PackageLoader(__name__))
     context = generate_template_context(config)
     for html_file in glob('templates/**/*.html', recursive=True):
@@ -41,7 +41,7 @@ def render_static(config: Dict):
             continue
         html_file = html_file[10:].replace('\\', '/')
         out_file = os.path.join("output", html_file)
-        os.makedirs(os.path.dirname(out_file), exist_ok=True)
+        os.makedirs(root(os.path.dirname(out_file)), exist_ok=True)
         with open(root(out_file), 'w') as fp:
             fp.write(env.get_template(html_file).render(**context))
 
@@ -99,7 +99,7 @@ def render_series(context: Context):
     render_updates(context)
 
 def render_descriptions_by_hash(slug: str, descs: Dict[str, str]):
-    os.makedirs(f'output/data/{slug}/desc', exist_ok=True)
+    os.makedirs(root(f'output/data/{slug}/desc'), exist_ok=True)
     stack = {}
     sigs = []
 
@@ -133,7 +133,7 @@ def render_descriptions_by_hash(slug: str, descs: Dict[str, str]):
 def render_updates(context: Context):
     """Renders json files for the last 10 videos published."""
     slug = context.series_config['slug']
-    os.makedirs(f'output/data/{slug}/updates', exist_ok=True)
+    os.makedirs(root(f'output/data/{slug}/updates'), exist_ok=True)
     vid_hash, vid_id = render_updates_for_series(context)
     with open(root(f'output/data/{slug}/updates.json'), 'w') as f:
         f.write(json.dumps({
@@ -214,7 +214,7 @@ def main(args: argparse.Namespace):
             context = Context(config=config, series_config=series)
             render_updates(context)
     else:
-        clear_directory('output')
+        clear_directory(root('output'))
 
         for series in config['series']:
             print(f'Processing {series["slug"]}')
@@ -223,7 +223,7 @@ def main(args: argparse.Namespace):
             render_series(Context(config=config, series_config=series))
 
     render_static(config)
-    copytree('templates/static', 'output/static')
+    copytree(root('templates/static'), root('output/static'))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
