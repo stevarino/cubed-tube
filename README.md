@@ -1,7 +1,8 @@
-# HermitBook
+# HermitTube
 
-This is a way to watch [Hermitcraft](http://hermitcraft.com) seasons, allowing
-you to follow your select hermits in order!
+[hermit.tube](https://hermit.tube) - This is a way to watch all of the
+[HermitCraft](http://hermitcraft.com) seasons and follow your favorite hermits
+in order!
 
 ## Motivation
 
