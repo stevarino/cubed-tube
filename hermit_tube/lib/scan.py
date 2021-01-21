@@ -9,6 +9,7 @@ from hermit_tube.lib.common import Context
 from hermit_tube.lib.models import (
     Misc, Series, Channel, Playlist, Video, Statistic, pw, db, init_database)
 from hermit_tube.lib import trends
+from hermit_tube.lib.util import root
 
 import argparse
 import datetime
@@ -342,12 +343,12 @@ def main(args: argparse.Namespace):
     ctx.quota = args.quota
 
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    with open('credentials.yaml') as fp:
+    with open(root('credentials.yaml')) as fp:
         creds = yaml.safe_load(fp)
     init_database()
     ctx.api_key = creds['api_key']
 
-    with open('playlists.yaml') as fp:
+    with open(root('playlists.yaml')) as fp:
         config = yaml.safe_load(fp)
 
     if args.migrate_trends:

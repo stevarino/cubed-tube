@@ -8,14 +8,15 @@ from flask import (
 from authlib.integrations.flask_client import OAuth
 
 from hermit_tube.lib.common import generate_template_context
+from hermit_tube.lib.util import root
 
 path = os.path.abspath(__file__)
 while 'lib' in path:
     path = os.path.dirname(path)
 
-with open(os.path.join(path, 'credentials.yaml')) as fp:
+with open(root('credentials.yaml'), 'r') as fp:
     creds = yaml.safe_load(fp)
-with open(os.path.join(path, 'playlists.yaml')) as fp:
+with open(root('playlists.yaml'), 'r') as fp:
     config = yaml.safe_load(fp)
 
 app = Flask(

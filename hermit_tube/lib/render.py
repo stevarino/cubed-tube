@@ -2,8 +2,11 @@
 Reads from the database and produces html files.
 """
 
-from hermit_tube.lib.common import Context, generate_template_context
-from hermit_tube.lib.models import Video, Playlist, Channel, Series, Misc, init_database
+from hermit_tube.lib.common import (
+    Context, generate_template_context)
+from hermit_tube.lib.models import (
+    Video, Playlist, Channel, Series, Misc, init_database)
+from hermit_tube.lib.util import root
 
 import argparse
 from collections import defaultdict
@@ -39,7 +42,7 @@ def render_static(config: Dict):
         html_file = html_file[10:].replace('\\', '/')
         out_file = os.path.join("output", html_file)
         os.makedirs(os.path.dirname(out_file), exist_ok=True)
-        with open(out_file, 'w') as fp:
+        with open(root(out_file), 'w') as fp:
             fp.write(env.get_template(html_file).render(**context))
 
 
@@ -91,7 +94,7 @@ def render_series(context: Context):
             'ch': channel_lookup[video.playlist.channel.name],
         })
     data['descriptions'] = render_descriptions_by_hash(slug, descs)
-    with open(f'output/data/{slug}/index.json', 'w') as fp:
+    with open(root(f'output/data/{slug}/index.json'), 'w') as fp:
         fp.write(json.dumps(data))
     render_updates(context)
 
@@ -112,7 +115,7 @@ def render_descriptions_by_hash(slug: str, descs: Dict[str, str]):
         # deterministic output and avoid false invalidation of caches.
         #
         # TLDR: gzip.open() bad.
-        with open(f'output/data/{slug}/desc/{sig}.json.gz', 'wb') as fp:
+        with open(root(f'output/data/{slug}/desc/{sig}.json.gz'), 'wb') as fp:
             with gzip.GzipFile(
                     fileobj=fp, filename='', mtime=0, mode='wb') as fpz:
                 fpz.write(stack_bytes)
@@ -132,7 +135,7 @@ def render_updates(context: Context):
     slug = context.series_config['slug']
     os.makedirs(f'output/data/{slug}/updates', exist_ok=True)
     vid_hash, vid_id = render_updates_for_series(context)
-    with open(f'output/data/{slug}/updates.json', 'w') as f:
+    with open(root(f'output/data/{slug}/updates.json'), 'w') as f:
         f.write(json.dumps({
             'id': vid_id,
             'hash': vid_hash,
@@ -166,7 +169,7 @@ def render_updates_for_series(context: Context) -> Tuple[str, str]:
             },
         }
         vid_hash = sha1(f'{slug}/{vid.video_id}')
-        with open(f'output/data/{slug}/updates/{vid_hash}.json', 'w') as f:
+        with open(root(f'output/data/{slug}/updates/{vid_hash}.json'), 'w') as f:
             f.write(json.dumps(vid_data))
         prev_hash = vid_hash
         prev_id = vid.video_id
@@ -202,7 +205,7 @@ def build_argparser(parser: argparse.ArgumentParser):
 
 def main(args: argparse.Namespace):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    with open('playlists.yaml') as fp:
+    with open(root('playlists.yaml')) as fp:
         config = yaml.safe_load(fp)
     init_database()
 
