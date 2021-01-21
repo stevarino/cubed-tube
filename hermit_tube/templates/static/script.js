@@ -62,10 +62,10 @@ function clearObject(obj) {
 window.onload = function() {
     loadSettings();
     initDropdown()
-    if (document.getElementById('channels') !== null) {
-        document.getElementById('channels').style.display = 'none';
-    }
     if (document.getElementById('loading') === null) {
+        if (document.getElementById('channels') !== null) {
+            document.getElementById('channels').style.display = 'none';
+        }
         return;
     }
     STATE = loadFromStorage('state');
@@ -367,9 +367,10 @@ function loadSeries() {
         STATE[series] = [STATE['series']];
     }
 
+    let d = new Date().getTime();
     var req = new XMLHttpRequest();
     req.overrideMimeType("application/json");
-    req.open('GET', '/data/' + series + '/index.json', true);
+    req.open('GET', `/data/${series}/index.json?d=${d}`, true);
     req.onreadystatechange = function() {
         if (req.readyState == 4) {
             if (req.status == "200") {

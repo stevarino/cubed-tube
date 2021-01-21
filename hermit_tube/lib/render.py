@@ -34,15 +34,17 @@ def sha1(value: Union[str, bytes]) -> str:  # pylint: disable=unsubscriptable-ob
 
 def render_static(config: Dict):
     os.makedirs(root('output/static'), exist_ok=True)
-    env = Environment(loader=PackageLoader(__name__))
+    env = Environment(loader=PackageLoader('hermit_tube'))
     context = generate_template_context(config)
-    for html_file in glob('templates/**/*.html', recursive=True):
+    for html_file in glob(root('templates/**/*.html'), recursive=True):
         if 'wsgi' in html_file:  # auth site
             continue
-        html_file = html_file[10:].replace('\\', '/')
-        out_file = os.path.join("output", html_file)
+        html_file = html_file.replace('\\', '/').split(
+            'hermit_tube/templates/')[-1]
+        out_file = root(os.path.join("output", html_file))
         os.makedirs(root(os.path.dirname(out_file)), exist_ok=True)
-        with open(root(out_file), 'w') as fp:
+        print(f'writing {out_file}')
+        with open(out_file, 'w') as fp:
             fp.write(env.get_template(html_file).render(**context))
 
 
