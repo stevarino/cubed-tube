@@ -226,15 +226,30 @@ h1 svg.triangle polygon {
     font-weight: bold;
 }
 
+#menu>li>a::before {
+    content: " ";
+    display: inline-block;
+    width: 0.75em;
+    height: 0.75em;
+    line-height: 0.75em;
+    margin-right: 0.25em;
+}
+
+#menu>li.submenus>a[href='#']::before {
+    transition: transform 0.1s ease-in-out;
+    content: url(/static/triangle.svg);
+    display: inline-block;
+}
+
 #menu li:hover,
 #menu li:focus-within {
     cursor: pointer;
     border: 1px solid #000;
 }
 
-#menu li:focus-within a {
+/* #menu li:focus-within a {
     outline: none;
-}
+} */
 
 #menu li ul {
     margin: 0;
@@ -268,17 +283,24 @@ h1 svg.triangle polygon {
     background: rgba(255, 255, 255, 0.95);
 }
 
+#menu li.active_hover>ul,
 #menu li.active_click>ul {
     visibility: visible;
     display: block;
     transition-duration: 0.5s;
 }
 
-#menu li #channels li>a,
+#menu>li.active_hover>a[href='#']::before,
+#menu>li.active_click>a[href='#']::before {
+    transform: rotate(90deg);
+}
+
+/* select all/none */
+#menu li #channels li>span,
 #menu li #channels li label {
     padding: 0.5rem;
     position: relative;
-    padding-left: 2em;
+    padding-left: 3em;
     color: #999;
 }
 
@@ -288,7 +310,13 @@ h1 svg.triangle polygon {
 }
 
 #channels input {
-    visibility: hidden;
+    position: absolute;
+    left: 1rem;
+    top: calc(50% - 0.75em);
+    height: 1.5em;
+    width: 1.5em;
+    display: inline-block;
+    margin: 0;
 }
 
 #channels img {
@@ -298,7 +326,6 @@ h1 svg.triangle polygon {
     width: 1.5em;
     position: absolute;
     filter: grayscale(80%);
-    opacity: 0.2;
 }
 
 #channels .checked img,
@@ -470,6 +497,9 @@ h1 svg.triangle polygon {
     #menu>li {
         display: inline-block;
         text-align: left;
+    }
+    #menu>li>a::before {
+        display: none;
     }
     #menu li a#channel_dropdown {
         display: none;

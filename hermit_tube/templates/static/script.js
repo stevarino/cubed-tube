@@ -42,9 +42,9 @@ var PLAYER = {
 };
 
 var BROWSE_CONTROLS = {
-    'ArrowLeft': browsePrevVideo,
-    'ArrowRight': browseNextVideo,
-    ' ': browsePlayVideo,
+    'k': browsePrevVideo,
+    'j': browseNextVideo,
+    'l': browsePlayVideo,
 }
 
 // cached channel lookup metadata, keyed by name and index
@@ -215,7 +215,10 @@ function loadSettings() {
  * 
  * @param {Event} e 
  */
-function modifyMenu(e, action, actionType) {
+function hoverMenu(e, action) {
+    if (isMobileView()) {
+        return;
+    }
     let el = e.target;
     if (el.tagName.toLowerCase() == 'a') {
         el = el.parentElement;
@@ -223,21 +226,32 @@ function modifyMenu(e, action, actionType) {
             return true;
         }
     }
-    e.stopPropagation();
-    if (el.tagName.toLowerCase() == 'a') {}
-    closeMenus([actionType]);
-    el.classList[action](`active_${actionType}`);
+
+    document.querySelectorAll('#menu > li').forEach((li) => {
+        li.classList.remove(`active_hover`);
+    });
+
+    el.classList[action](`active_hover`);
     return false;
 }
 
-function closeMenus(actionTypes) {
-    if (actionTypes === undefined) {
-        actionTypes = ['click', 'hover'];
-    }
-    actionTypes.forEach(actionType => {
-        document.querySelectorAll('#menu > li').forEach((li) => {
-            li.classList.remove(`active_${actionType}`);
-        });
+function clickHandler(e) {
+    console.log('click:', e.target)
+
+    document.querySelectorAll('#menu li').forEach((li) => {
+        let submenu = li.querySelector('ul');
+        if (submenu === null) {
+            return;
+        }
+        if (li == e.target || li.contains(e.target)) {
+            if (submenu.contains(e.target)) {
+                li.classList.add('active_click');
+            } else {
+                li.classList.toggle('active_click');
+            }
+        } else {
+            li.classList.remove('active_click');
+        }
     });
 }
 
@@ -247,31 +261,26 @@ function closeMenus(actionTypes) {
 function initDropdown() {
     let mainMenu = document.querySelector('.menu-icon');
     mainMenu.addEventListener('click', (e) => {
-        if (document.body.classList.contains('menu_active')) {
-            closeMenus();
-        }
         document.body.classList.toggle('menu_active');
     });
 
-    document.body.addEventListener('click', (e) => {
-        closeMenus();
-    });
+    document.body.addEventListener('click', clickHandler);
 
     document.querySelectorAll("#menu > li").forEach((menu) => {
         menu.childNodes.forEach((el) => {
             if (el.nodeType == 1 && el.tagName.toLowerCase() == 'a') {
-                el.addEventListener('click', (e) => {
-                    return modifyMenu(e, 'toggle', 'click');
-                });
                 el.addEventListener('keydown', (e) => {
                     if (e.key == ' ' || e.key.toLowerCase() == 'enter') {
-                        return modifyMenu(e, 'toggle', 'click')
+                        console.log('keydown', e);
+                        e.preventDefault();
+                        e.stopPropagation();
+                        clickHandler(e);
                     }
                 });
             }
         });
-        menu.addEventListener('mouseenter', (e) => modifyMenu(e, 'add', 'hover'));
-        menu.addEventListener('mouseleave', (e) => modifyMenu(e, 'remove', 'hover'));
+        menu.addEventListener('mouseenter', (e) => hoverMenu(e, 'add'));
+        menu.addEventListener('mouseleave', (e) => hoverMenu(e, 'remove'));
     });
     let dropdown = document.getElementById('seasons');
     if (dropdown === null) {
@@ -592,16 +601,16 @@ function renderChannels(seriesChannels) {
         CHANNELS_BY_INDEX[i] = ch;
     }
     var channels = document.getElementById('channels');
-    let selectall = makeElement('a', {
+    let selectall = makeElement('span', {}, makeElement('a', {
         href: '#',
         id: 'selectall',
         innerText: 'Select All'
-    });
-    let selectnone = makeElement('a', {
+    }));
+    let selectnone = makeElement('span', {}, makeElement('a', {
         href: '#',
         id: 'selectnone',
         innerText: 'Clear Selection',
-    });
+    }));
     channels.appendChild(makeElement('li', {}, selectall));
     channels.appendChild(makeElement('li', {}, selectnone));
     
@@ -984,14 +993,20 @@ function renderDescription(desc) {
 }
 
 /**
+ * Quick check if we're using a mobile stylesheet layout
+ */
+function isMobileView() {
+    let menuButton = document.getElementsByClassName('menu-button')[0];
+    return window.getComputedStyle(menuButton).display == 'block';
+}
+
+/**
  * Initialize the YouTube Embedded Player if available and play the clicked
  * video.
  * @param {Object} e onclick triggering event
  */
 function loadPlayer(e) {
-    let menuButton = document.getElementsByClassName('menu-button')[0];
-    let isMobile = window.getComputedStyle(menuButton).display == 'block';
-    let usePlayer = isMobile ? SETTINGS.player_mobile : SETTINGS.player;
+    let usePlayer = isMobileView() ? SETTINGS.player_mobile : SETTINGS.player;
     if (!usePlayer || !PLAYER.ready) {
         return true;
     }
