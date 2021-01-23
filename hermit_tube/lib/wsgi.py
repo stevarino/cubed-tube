@@ -37,6 +37,17 @@ oauth.register(
 
 STATIC_DIR = os.path.join(path, 'templates/static').replace('\\', '/')
 
+@app.after_request
+def add_header(req):
+    """
+    Add headers to both force latest IE rendering engine or Chrome Frame,
+    and also to cache the rendered page for 10 minutes.
+    """
+    req.headers["Pragma"] = "no-cache"
+    req.headers["Expires"] = "0"
+    req.headers['Cache-Control'] = 'public, max-age=0'
+    return r
+
 @app.route('/')
 def homepage():
     user = session.get('user')
