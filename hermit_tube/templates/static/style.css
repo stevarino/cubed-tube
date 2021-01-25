@@ -381,8 +381,13 @@ h1 svg.triangle polygon {
 
 #videos h3 {
     display: flex;
-    margin: 0;
+    margin: 0 0 0.25em 0;
     padding: 0;
+    font-size: 1em;
+}
+
+.vid_link {
+    font-size: 1.17em;
 }
 
 #videos h3 a {
@@ -407,7 +412,7 @@ h1 svg.triangle polygon {
 .channel_subscribe {
     flex: 0;
     font-weight: bold;
-    font-size: 0.6em;
+    font-size: 0.7em;
     padding: 0.8em 1em;
     margin: 0 0 0 0.5rem;
     border-radius: 0.3em;
@@ -418,17 +423,14 @@ h1 svg.triangle polygon {
     line-height: 1em;
 }
 
-#videos h3 .channel_link {
-    color: #999;
-}
-
 #videos h3 .date {
-    color: #ccc;
-    margin-left: 1em;
+    color: #666;
+    margin-left: 0.5em;
 }
 
 #videos p {
     display: none;
+    margin: 0;
 }
 
 #videos .video.expanded p {

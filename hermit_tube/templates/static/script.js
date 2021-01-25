@@ -237,8 +237,6 @@ function hoverMenu(e, action) {
 }
 
 function clickHandler(e) {
-    console.log('click:', e.target)
-
     document.querySelectorAll('#menu li').forEach((li) => {
         let submenu = li.querySelector('ul');
         if (submenu === null) {
@@ -576,6 +574,8 @@ function makeElement(tagName, properties, ...children) {
             el.innerText = properties[k];
         } else if (k == 'innerHTML') {
             el.innerHTML = properties[k];
+        } else if (k == 'click') {
+            el.addEventListener(k, properties[k]);
         } else {
             el.setAttribute(k, properties[k]);
         }
@@ -718,14 +718,6 @@ function renderVideo(videos, vid) {
         'data-video-id': vid.id,
         'data-channel': ch.name,
     });
-    
-    let vidLink = makeElement('a', {
-        href: vidURL, 
-        target: '_blank',
-        'data-video-id': vid.id,
-        innerText: vid.t,
-    });
-    vidLink.addEventListener('click', loadPlayer);
 
     vidEl.appendChild(makeElement('h3', {},
         makeElement('a', {href: chURL, class: 'vid_ch_logo'},
@@ -733,10 +725,18 @@ function renderVideo(videos, vid) {
                 src: ch.thumb,
                 title: ch.t,
                 alt: ch.t,
+                target: '_blank',
             })
         ), 
         makeElement('span', {class: 'vid_desc'},
-            vidLink,
+            makeElement('a', {
+                class: 'vid_link',
+                href: vidURL, 
+                target: '_blank',
+                'data-video-id': vid.id,
+                innerText: vid.t,
+                click: loadPlayer,
+            }),
             document.createElement('br'),
             makeElement('a', {
                 href: chURL,
@@ -1067,11 +1067,11 @@ function onPlayerStateChange(e) {
         return;
     }
     let videoId = findNextVideo(PLAYER.video);
-    scrollToVideo(ELEMENT_BY_VIDEO_ID[videoId]);
     if (videoId == null) {
         closePlayer();
         return;
     }
+    scrollToVideo(ELEMENT_BY_VIDEO_ID[videoId]);
     PLAYER.video = videoId;
     PLAYER.obj.loadVideoById({ 'videoId': videoId });
 }
