@@ -47,6 +47,7 @@ class Playlist(BaseModel):
     playlist_type = pw.CharField(default='youtube_pl')
     key = pw.CharField(null=True)
     channel = pw.ForeignKeyField(Channel, backref='playlists')
+    etag = pw.CharField(null=True)
 
 class Video(BaseModel):
     video_type = pw.CharField(default='youtube')

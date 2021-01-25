@@ -12,6 +12,7 @@ from hermit_tube.lib import trends
 from hermit_tube.lib.util import root
 
 import argparse
+from dataclasses import dataclass
 import datetime
 import json
 import os
@@ -32,38 +33,61 @@ ISO8601_DUR = re.compile(
     r'P(?:(?P<days>\d+)D)?T(?:(?P<hours>\d+)H)?'
     r'(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+)S)?')
 
-def _yt_get(ctx: Context, endpoint: str, args: Dict, cost=1):
-    args['key'] = ctx.api_key
-    url = ''.join([API_URL, endpoint, '?', urllib.parse.urlencode(args)])
-    ctx.cost.add(cost)
-    # print(url)
+
+@dataclass
+class YouTubeRequest:
+    endpoint: str
+    args: Dict
+    cost: int = 1
+    etag: str = None
+
+
+def _yt_get(ctx: Context, req: YouTubeRequest):
+    req.args['key'] = ctx.api_key
+    request = urllib.request.Request(
+        f'{API_URL}{req.endpoint}?{urllib.parse.urlencode(req.args)}')
+    # NOTE: https://issuetracker.google.com/issues/176760791
+    # if req.etag:
+    #     request.add_header('if-none-match', f'"{req.etag}"')
+    ctx.cost.add(req.cost)
     try:
         for timeout in [5, 10, 20, 40, 80]:
             try:
-                resp = urllib.request.urlopen(url, timeout=timeout)
+                resp = urllib.request.urlopen(request, timeout=timeout)
+                # print(resp.headers)
                 data = json.loads(resp.read().decode(
                     resp.info().get_content_charset('utf-8')))
             except socket.timeout:
-                print(f'  timeout {endpoint} @ {timeout}')
+                print(f'  timeout {req.endpoint} @ {timeout}')
                 continue
             else:
                 break
         else:
             raise socket.timeout()
     except Exception:
-        print('Exception from:', endpoint)
-        print(json.dumps(args, indent=2))
+        print('Exception from:', req.endpoint)
+        print(json.dumps(req.args, indent=2))
         raise
     return data
 
-def _yt_get_many(ctx: Context, endpoint: str, args: Dict, cost=1):
+def _yt_get_generator(ctx: Context, response: Dict, req: YouTubeRequest):
+    """Yields an item from a response, making additional requests as needed."""
     while True:
-        items = _yt_get(ctx, endpoint, args, cost=cost)
+        for item in response['items']:
+            yield item
+        if 'nextPageToken' not in response:
+            break
+        req.args['pageToken'] = response['nextPageToken']
+        response = _yt_get(ctx, req)
+
+def _yt_get_many(ctx: Context, req: YouTubeRequest):
+    while True:
+        items = _yt_get(ctx, req)
         for item in items['items']:
             yield item
         if 'nextPageToken' not in items:
             break
-        args['pageToken'] = items['nextPageToken']
+        req.args['pageToken'] = items['nextPageToken']
 
 def get_yt_channel_id(channel_name: str):
     """Normalize a channel name into an id."""
@@ -79,14 +103,16 @@ def load_yt_channel(ctx: Context, channel: Dict):
         if created:
             if 'channel' in channel:
                 channel_name = channel['channel']
-                channel = _yt_get(ctx, 'channels', {'forUsername': channel_name})
+                channel = _yt_get(ctx, YouTubeRequest(
+                    endpoint='channels', args={'forUsername': channel_name}))
                 if 'items' not in channel:
                     raise ValueError("Unable to find channel " + channel_name)
                 channel_id = channel['items'][0]['id']
             elif YT_PLAYLIST.match(channel.get('playlist', '')):
                 playlist_id = YT_PLAYLIST.match(channel['playlist'])[1]
                 args =  {'playlistId': playlist_id, 'part': 'id,snippet'}
-                playlist = _yt_get(ctx, 'playlistItems', args)
+                playlist = _yt_get(ctx, YouTubeRequest(
+                    endpoint='playlistItems', args=args))
                 if 'items' not in playlist:
                     raise ValueError("Unable to find playlist {} ({})".format(
                         playlist_id, channel['name']))
@@ -119,7 +145,8 @@ def update_yt_channel(ctx: Context, chan_ids: List[str]):
         id=','.join(c.channel_id for c in chan_map.values()),
         part='snippet,statistics',
         maxResults=50)
-    items = _yt_get(ctx, 'channels', chan_args)['items']
+    items = _yt_get(ctx, YouTubeRequest(
+        endpoint='channels', args=chan_args))['items']
     for item in items:
         chan = chan_map[item['id']]
         chan.last_scanned = ctx.now
@@ -151,7 +178,15 @@ def process_yt_playlist(ctx: Context, p_id: str):
     }
     play, _ = Playlist.get_or_create(
         playlist_id=p_id, playlist_type='youtube_pl', channel=ctx.channel)
-    for i, result in enumerate(_yt_get_many(ctx, 'playlistItems', args)):
+    req = YouTubeRequest('playlistItems', args, etag=play.etag)
+    try:
+        videos = _yt_get(ctx, req)
+    except Exception as e:
+        print(e)
+        return
+    play.etag = videos['etag']
+    play.save()
+    for i, result in enumerate(_yt_get_generator(ctx, videos, req)):
         update_video(ctx, result['snippet']['resourceId']['videoId'], result,
                      defaults={'playlist': play, 'series': ctx.series})
     print(f'    Playlist ID {p_id} ({i+1})')
@@ -281,7 +316,8 @@ def scan_videos(ctx: Context):
             id=','.join(expected_video_ids),
             part='statistics,snippet,contentDetails')
         received_video_ids = set()
-        for result in _yt_get(ctx, 'videos', chan_args)['items']:
+        for result in _yt_get(ctx, YouTubeRequest(
+            endpoint='videos', args=chan_args))['items']:
             received_video_ids.add(result['id'])
             update_video(ctx, result['id'], result, filter_vid=False)
         missing_videos = expected_video_ids - received_video_ids

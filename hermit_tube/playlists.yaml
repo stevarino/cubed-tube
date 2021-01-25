@@ -6,15 +6,7 @@ series:
     default: true
     start: 1582900000
     ignore_video_ids:
-     - 2PxJJTI7qBI
-     - Ca1i6DZC3iY
-     - 1uj0u6TlOR4
-     - PkUg89kLLBE
-     - kWvQyPI7A-M
-     - 2xG1Umugpxs
      - JE-Uea1aLhM
-     - RFqnVH5uMXQ
-     - swa2ni6DjlA
     channels:
     # https://hermitcraft.fandom.com/wiki/Season_7
     - name: BdoubleO100
