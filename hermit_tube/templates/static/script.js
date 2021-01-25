@@ -42,9 +42,9 @@ var PLAYER = {
 };
 
 var BROWSE_CONTROLS = {
-    'k': browsePrevVideo,
-    'j': browseNextVideo,
-    'l': browsePlayVideo,
+    'ArrowLeft': browsePrevVideo,
+    'ArrowRight': browseNextVideo,
+    ' ': browsePlayVideo,
 }
 
 // cached channel lookup metadata, keyed by name and index
@@ -94,11 +94,12 @@ window.onload = function() {
         if (PLAYER.obj !== null && e.key in PLAYER.controls) {
             PLAYER.controls[e.key](e);
             e.preventDefault();
-            return false;
         } else if (PLAYER.obj === null && e.key in BROWSE_CONTROLS) {
+            if (e.target.tagName.toLowerCase() == 'input') {
+                return;
+            }
             BROWSE_CONTROLS[e.key](e);
             e.preventDefault();
-            return false;
         } else {
             // console.log(e.key);
         }
