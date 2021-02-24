@@ -37,6 +37,7 @@ class Channel(BaseModel):
     view_count = pw.IntegerField(null=True)
     # Canonical name for use on site (from playlists.yaml)
     tag = pw.IntegerField(null=True)
+    id = pw.IntegerField(null=True)
 
 class Series(BaseModel):
     slug = pw.CharField(primary_key=True, unique=True)

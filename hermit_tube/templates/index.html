@@ -56,6 +56,8 @@
                                 Autoplay next video
                             </label></li>
                             <li class='hr'></li>
+                            <li><a href='#' id='login'>Log In</a></li>
+                            <li class='hr'></li>
                             <li><a href='#' id='profile_new'>New Profile</a></li>
                             <li><a href='#' id='profile_rename'>Rename Profile</a></li>
                             <li><a href='#' id='profile_delete'>Delete Profile</a></li>
@@ -74,14 +76,13 @@
                 {% endblock content %}
             </div>
         </div>
-    <script async src="https://www.youtube.com/iframe_api"></script>
     <script async src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.2/pako.min.js" integrity="sha512-IjkvjWp4tSkhkQRb9gFwCcMhBWZLPKc7Zo8ifb6qxORyehV072QgRVG3F0fwAaJh0fnEFNLc2+XggoC5wvW24g==" crossorigin="anonymous"></script>
     <script>
-        window.series={{ default_series|safe }};
-        window.all_series={{ series_list|safe }};
-        window.backend_version='{{ version|safe }}';
+        {% for key, value in window_vars.items() %}
+        window.{{ key|safe }}={{ value|safe }}
+        {% endfor %}
     </script>
-    <script async src='/static/script.js?20210125'></script>
+    <script async src='/script.js?20210125'></script>
     <script async src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.js"></script>
     </body>
 </html>

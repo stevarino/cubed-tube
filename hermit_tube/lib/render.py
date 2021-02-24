@@ -6,31 +6,20 @@ from hermit_tube.lib.common import (
     Context, generate_template_context)
 from hermit_tube.lib.models import (
     Video, Playlist, Channel, Series, Misc, init_database)
-from hermit_tube.lib.util import root
+from hermit_tube.lib.util import root, sha1
 
 import argparse
-from collections import defaultdict
-import datetime
 from glob import glob
 import gzip
-import hashlib
-import html
 import json
 import os
 import re
 import shutil
-import sys
 from typing import Dict, List, Tuple, Union
 import yaml
 
 from jinja2 import Environment, PackageLoader
 import peewee as pw
-
-def sha1(value: Union[str, bytes]) -> str:  # pylint: disable=unsubscriptable-object
-    """Convenience function to convert a string into a sha1 hex string"""
-    if isinstance(value, str):
-        value = value.encode('utf-8')
-    return hashlib.sha1(value).hexdigest()
 
 def render_static(config: Dict):
     os.makedirs(root('output/static'), exist_ok=True)
@@ -47,45 +36,40 @@ def render_static(config: Dict):
         with open(out_file, 'w') as fp:
             fp.write(env.get_template(html_file).render(**context))
 
+    # join javascript files together
+    re_global_var = re.compile(r'^(?:function|var|const) (\w+)', re.MULTILINE)
+    global_namespace = {}
+    with open(root(os.path.join("output", 'script.js')), 'w') as fp:
+        for js_file in glob(root('templates/scripts/*.js')):
+            filename = js_file.replace('\\', '/').split(
+                'hermit_tube/templates/')[-1]
+            fp.write(f'/*\n * {filename}\n */\n\n')
+            with open(js_file, 'r') as js_contents:
+                content = js_contents.read()
+            for match in re_global_var.findall(content):
+                if match in global_namespace:
+                    raise ValueError(
+                        f'{match} found in {global_namespace[match]} '
+                        f'and {filename}')
+                global_namespace[match] = filename
+            fp.write(content)
+            fp.write('\n\n')
 
 def render_series(context: Context):
     slug = context.series_config['slug']
-    videos = (Video.select()
+    videos = (Video.select(Video, Playlist, Channel, Series)
         .join(Playlist)
         .join(Channel)
         .join_from(Video, Series)
         .where(Video.series.slug == slug)
         .order_by(Video.published_at)
     )
-    data = {'channels': [], 'videos': []}
+    data = {'series': slug, 'channels': {}, 'videos': []}
 
     channels = {}
-    channel_lookup = {}
     descs = {}
     for video in videos:
-        ch_name = video.playlist.channel.name
-        if ch_name not in channels:
-            thumb = {}
-            if video.playlist.channel.thumbnails:
-                thumbs = json.loads(video.playlist.channel.thumbnails)
-                thumb = thumbs['default']['url']
-            channels[ch_name] = {
-                'id': video.playlist.channel.channel_id,
-                'name': ch_name,
-                't': video.playlist.channel.tag,
-                'thumb': thumb,
-                'count': 1,
-            }
-        else:
-            channels[ch_name]['count'] += 1
-    channel_names = sorted(
-        channels.keys(), key=lambda k: channels[k]['count'], reverse=True)
-    for i, name in enumerate(channel_names):
-        data['channels'].append(channels[name])
-        del data['channels'][i]['count']
-        channel_lookup[name] = i
-
-    for video in videos:
+        ch = video.playlist.channel
         if context.filter_video(video):
             continue
         descs[video.video_id] = video.description
@@ -93,10 +77,27 @@ def render_series(context: Context):
             'id': video.video_id,
             'ts': video.published_at,
             't': video.title,
-            'ch': channel_lookup[video.playlist.channel.name],
+            'ch': ch.id,
         })
+        if ch.id in channels:
+            continue
+        thumb = {}
+        if ch.thumbnails:
+            thumbs = json.loads(ch.thumbnails)
+            thumb = thumbs['default']['url']
+        channels[ch.id] = {
+            'id': ch.channel_id,
+            'name': ch.name,
+            't': ch.tag,
+            'thumb': thumb,
+        }
+
+    data['channels'] = {
+        str(cid): channels[cid] for cid in sorted(channels.keys())
+    }
+
     data['descriptions'] = render_descriptions_by_hash(slug, descs)
-    with open(root(f'output/data/{slug}/index.json'), 'w') as fp:
+    with open(root(f'output/data/{slug}/{slug}.json'), 'w') as fp:
         fp.write(json.dumps(data))
     render_updates(context)
 
@@ -201,14 +202,18 @@ def clear_directory(dir_name):
             except Exception as e:
                 print(f'Failed to delete {file_path}. Reason: {e}')
 
+
 def build_argparser(parser: argparse.ArgumentParser):
     parser.add_argument('--series', '-s', nargs='*')
     parser.add_argument('--quick', '-q', action='store_true')
+
 
 def main(args: argparse.Namespace):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     with open(root('playlists.yaml')) as fp:
         config = yaml.safe_load(fp)
+    with open(root('credentials.yaml')) as fp:
+        config['creds'] = yaml.safe_load(fp)
     init_database()
 
     if args.quick:
@@ -226,6 +231,7 @@ def main(args: argparse.Namespace):
 
     render_static(config)
     copytree(root('templates/static'), root('output/static'))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

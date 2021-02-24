@@ -101,6 +101,7 @@ def load_yt_channel(ctx: Context, channel: Dict):
             channel_type=channel.get('type', 'youtube'),
             defaults={'tag': channel['name']})
         if created:
+            chan.id = Channel.select(pw.fn.MAX(Channel.id)).scalar() + 1
             if 'channel' in channel:
                 channel_name = channel['channel']
                 channel = _yt_get(ctx, YouTubeRequest(

@@ -28,3 +28,13 @@ def run(db: pw.SqliteDatabase):
             migrator = migrate.SqliteMigrator(db)
             migrate.migrate(*[migrator.add_column(table, field, field_type)
                               for table, field, field_type in field_set])
+
+    
+    models = reflection.generate_models(db)
+    if 'id' not in models['channel']._meta.fields:
+        migrator = migrate.SqliteMigrator(db)
+        migrate.migrate(migrator.add_column('channel', 'id', int_field))
+    db.execute_sql(
+        'UPDATE channel SET id = c2.rowid '
+        'FROM (select name, rowid from channel) as c2 '
+        'WHERE channel.name = c2.name and id is null;')

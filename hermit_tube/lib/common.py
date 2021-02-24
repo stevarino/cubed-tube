@@ -58,10 +58,18 @@ def generate_template_context(config: Dict):
     series_list = [[s['slug'], s['title']] for s in config['series']]
     context = {
         'title': config['title'],
+        'window_vars': {
+            'series': json.dumps(default_series),
+            'all_series': json.dumps(series_list),
+            'backend_version': json.dumps(config['version']),
+            'API_DOMAIN': json.dumps(
+                config.get('creds', {}).get('wsgi', {}).get('DOMAIN', ''))
+        },
         'default_series': json.dumps(default_series),
         'series_list': json.dumps(series_list),
         'now': str(int(datetime.datetime.now().timestamp())),
         'version': config['version'],
+        'api_domain': config.get('creds', {}).get('wsgi', {}).get('DOMAIN', '')
     }
     context['hermit_counts'] = json.dumps(get_videos_by_hermit())
     for data in Misc.select():
