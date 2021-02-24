@@ -7,7 +7,7 @@
 
 from hermit_tube.lib.common import Context
 from hermit_tube.lib.models import (
-    Misc, Series, Channel, Playlist, Video, Statistic, pw, db, init_database)
+    Misc, Series, Channel, Playlist, Video, pw, db, init_database)
 from hermit_tube.lib import trends
 from hermit_tube.lib.util import root
 
@@ -236,11 +236,6 @@ def update_video(ctx: Context, video_id: str, result: Dict,
             'favorites': 'favoriteCount',
             'comments': 'commentCount',
         }
-        Statistic.create(
-            video = vid,
-            timestamp = ctx.now,
-            **{k: result['statistics'].get(_map[k]) for k in _map}
-        )
         for key in _map:
             try:
                 trends.add_point(
@@ -386,41 +381,6 @@ def main(args: argparse.Namespace):
 
     with open(root('playlists.yaml')) as fp:
         config = yaml.safe_load(fp)
-
-    if args.migrate_trends:
-        # One-time use endpoint to migrate data from Statistic table
-        def _clump():
-            query = Statistic.select().order_by(
-                Statistic.video, Statistic.timestamp)
-            video_trends = {t: [] for t in trends.VIDEO_TRENDS}
-            video_id = None
-            for row in query:
-                if video_id != row.video_id:
-                    for t in trends.VIDEO_TRENDS:
-                        if video_trends[t] and video_id:
-                            yield video_id, t, video_trends[t]
-                        video_trends[t] = []
-                    video_id = row.video_id
-                for t in trends.VIDEO_TRENDS:
-                    video_trends[t].append((row.timestamp, getattr(row, t)))
-            for t in trends.VIDEO_TRENDS:
-                if video_trends[t]:
-                    yield video_id, t, video_trends[t]
-
-        # pylint: disable=no-value-for-parameter
-        total_stats = Statistic.select().count() * len(trends.VIDEO_TRENDS)
-        with db.atomic() as transaction:
-            stat_cnt = 0
-            for i, (video_id, trend, pts) in enumerate(_clump()):
-                stat_cnt += len(pts)
-                vid_trend = trends.get_video_trend(video_id, trend)
-                trends.add_points(vid_trend, pts)
-                if i % 10 == 0:
-                    transaction.commit()
-                    print(f'\r{stat_cnt:7} / {total_stats}',
-                            f'({100*stat_cnt/total_stats:.2f}%)', end='')
-        print()
-        return
 
 
     try:
