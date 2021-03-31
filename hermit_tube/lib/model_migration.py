@@ -28,3 +28,8 @@ def run(db: pw.SqliteDatabase):
             migrator = migrate.SqliteMigrator(db)
             migrate.migrate(*[migrator.add_column(table, field, field_type)
                               for table, field, field_type in field_set])
+
+    models = reflection.generate_models(db)
+    db.execute_sql('DROP TABLE IF EXISTS statistic;')
+    db.execute_sql('VACUUM;')
+
