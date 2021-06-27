@@ -72,15 +72,15 @@ class Video(BaseModel):
             (('video_type', 'video_id'), True),
         )
 
-class Statistic(BaseModel):
-    statistic_id = pw.AutoField()
-    video = pw.ForeignKeyField(Video, backref='statistics')
-    timestamp = pw.IntegerField(null=True)
-    views = pw.IntegerField(null=True)
-    likes = pw.IntegerField(null=True)
-    dislikes = pw.IntegerField(null=True)
-    favorites = pw.IntegerField(null=True)
-    comments = pw.IntegerField(null=True)
+# class Statistic(BaseModel):
+#     statistic_id = pw.AutoField()
+#     video = pw.ForeignKeyField(Video, backref='statistics')
+#     timestamp = pw.IntegerField(null=True)
+#     views = pw.IntegerField(null=True)
+#     likes = pw.IntegerField(null=True)
+#     dislikes = pw.IntegerField(null=True)
+#     favorites = pw.IntegerField(null=True)
+#     comments = pw.IntegerField(null=True)
 
 class TrendPoint(BaseModel):
     point_id = pw.AutoField()
