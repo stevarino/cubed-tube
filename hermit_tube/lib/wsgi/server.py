@@ -2,6 +2,7 @@
 import json
 import os.path
 import time
+from urllib.parse import urlparse
 import yaml
 
 from flask import (
@@ -63,7 +64,11 @@ def _allow_cors(func):
     def _wrapper(*args, **kwargs):
         res, code = func(*args, **kwargs)
         res.headers['Access-Control-Allow-Credentials'] = 'true'
-        res.headers['Access-Control-Allow-Origin'] = flask_config['CORS_ORIGINS']
+        domain = _get_domain(request.referrer)
+        if domain not in flask_config['CORS_ORIGINS']:
+            print(f'Unrecognized referrer: "{domain}"')
+            domain = flask_config['CORS_ORIGINS'][0]
+        res.headers['Access-Control-Allow-Origin'] = domain
         return res, code
     return _wrapper
 
@@ -74,6 +79,13 @@ def _json(data):
     codes failurs and log them to the console. :-(
     """
     return jsonify(data), 200
+
+def _get_domain(referrer):
+    try:
+        parts = urlparse(referrer)
+        return f'{parts.scheme}://{parts.netloc}'
+    except:
+        return ''
 
 
 @app.route('/')
