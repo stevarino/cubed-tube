@@ -466,6 +466,7 @@ function setActiveProfile(profile) {
 }
 
 function setSeries(series) {
+    createSeries(series);
     SETTINGS.series = series;
     SETTINGS.profile = getProfileIndex(listProfiles(false)[0]);
     saveSettings();

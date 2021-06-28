@@ -1,9 +1,86 @@
 title: HermitTube
 version: '20200103'
 series:
+  - title: HermitCraft Season 8
+    slug: hc8
+    default: true
+    start: 1623456000
+    channels:
+    # https://hermitcraft.fandom.com/wiki/Season_8
+    - name: BdoubleO100
+      playlist: https://www.youtube.com/playlist?list=PL2XncHqN_7yI-l0535yQg5tn3JBYSejt7
+    - name: cubfan135
+      playlist: https://www.youtube.com/playlist?list=PLoH7Sjb8-XEjKvddiwp584JTSo3A9_1KH
+      videos:
+        - _UYxrNgqLi4
+    - name: docm77
+      playlist: https://www.youtube.com/playlist?list=PLvh8CGg6LWwpByCakAgEn5DNEQxbIC9Ju
+    - name: EthosLab
+      # no playlist
+      channel: EthosLab
+      videos:
+        - wWHhzqGP_Z0
+    - name: FalseSymmetry
+      playlist: https://www.youtube.com/playlist?list=PLgj0MXHeQpb_PF2-lK05WoClbqdLi-UvG
+    - name: GeminiTay
+      playlist: https://www.youtube.com/playlist?list=PLfim1Ac_MuxbQVjqLa9unoj9JD5fdSTiO
+      # missing first vid
+      videos:
+        - 6uY4CNKNHQ4
+    - name: GoodTimeWithScar
+      playlist: https://www.youtube.com/playlist?list=PLSCZsQa9VSCdDJmIMkIuK0XazfnI677oV
+    - name: Grian
+      playlist: https://www.youtube.com/playlist?list=PLU2851hDb3SGaiE8aNZrHgeO7AyR2Gtwd
+    - name: Hypnotizd
+      playlist: https://www.youtube.com/playlist?list=PLriprjos26pu0LZHK30oxYLOLGTdOgrOM
+    - name: iJevin
+      playlist: https://www.youtube.com/playlist?list=PL9heRuhTVdQQvJxfeO4eghU4ev0RN3-sV
+    - name: impulseSV
+      playlist: https://www.youtube.com/playlist?list=PL0Z8otuXXj_0uYsRwLZV79NE2BLLAZAKh
+    - name: iskall85
+      # no playlist
+      channel: AhlViktor
+      videos:
+        - giLuKkTahRU
+        - L9n0IIlkPJI
+        - qNKg4DCZb3I
+    - name: JoeHillsSays
+      playlist: https://www.youtube.com/playlist?list=PL7On8E0_x1toZvZ00oFnof0nCll8B9v06
+    - name: Keralis
+      playlist: https://www.youtube.com/playlist?list=PLs6cC73V4fpvJmKvaaUBafPClscwCke93
+    - name: Mumbo Jumbo
+      playlist: https://www.youtube.com/playlist?list=PLFm1tTY1NA4coPMrYuttluRQ1yzVO8gqp
+    - name: PearlescentMoon
+      playlist: https://www.youtube.com/playlist?list=PLxAyA97FNoKKYLczElANwQqAB4HewQDXc
+    - name: Renthedog
+      playlist: https://www.youtube.com/playlist?list=PL6_PcQuFcLhv8Pkaz1bRGVKpiSzkBX1e7
+    - name: Stressmonster101
+      playlist: https://www.youtube.com/playlist?list=PLFDYDXHl7Us9QTN7Hj21JMQ7SXIii_ShU
+    - name: TangoTek
+      playlist: https://www.youtube.com/playlist?list=PL8t707flkqpem7-LabtdM4KoQUQzJgN1L
+    - name: TinfoilChef
+      playlist: https://www.youtube.com/playlist?list=PLrp4YiBloNz5HZbCTiEKeJywB4iSoEoaL
+    - name: Welsknight
+      playlist: https://www.youtube.com/playlist?list=PL3e14exB92LKNsaBFrYYeVXRBycH2ogF8
+    - name: VintageBeef
+      # no playlist
+      channel: VintageBeef
+      videos:
+        - SUMN33Fz_8A
+    - name: xBCrafted
+      playlist: https://www.youtube.com/playlist?list=PLmtS5lzk1pBRiPgX2KvX19UZOkoGWxHO5
+    - name: Xisuma
+      playlist: https://www.youtube.com/playlist?list=PL7VmhWGNRxKhH4-ObAPWdsACvns2lq8CZ
+    - name: Zedaph
+      # no playlist
+      channel: ZedaphPlays
+      videos:
+        - xglsGT1qOXA
+        - 86EeS2tvAxs
+    - name: ZombieCleo
+      playlist: https://www.youtube.com/playlist?list=PLVO4L4qtJmBo20V3nZ8q45nIQIn9H0s1p
   - title: HermitCraft Season 7
     slug: hc7
-    default: true
     start: 1582900000
     ignore_video_ids:
      - JE-Uea1aLhM

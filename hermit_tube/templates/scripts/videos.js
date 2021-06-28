@@ -4,9 +4,7 @@
  function loadSeries() {
     let series = getSeries();
     console.log('Loading', series);
-    if (!(series in STATE)) {
-        createSeries();
-    }
+    createSeries(series);
 
     if (USER.UPDATE_TIMER !== 0) {
         clearInterval(USER.UPDATE_TIMER);

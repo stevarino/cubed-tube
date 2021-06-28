@@ -188,7 +188,7 @@ def process_yt_playlist(ctx: Context, ch_name: str, p_id: str):
     for i, result in enumerate(_yt_get_generator(ctx, videos, req)):
         update_video(ctx, result['snippet']['resourceId']['videoId'], result,
                      defaults={'playlist': play, 'series': ctx.series, 
-                               'channel': ch_name})
+                               'channel': get_yt_channel_id(ch_name)})
     print(f'    Playlist ID {p_id} ({i+1})')
 
 
@@ -263,6 +263,22 @@ def process_channel(ctx: Context, channel: Dict):
         playlist_id = YT_PLAYLIST.match(channel['playlist'])[1]
         print('    Processing playlist', playlist_id)
         process_yt_playlist(ctx_, channel['name'], playlist_id)
+    elif 'channel' in channel:
+        with db.atomic():
+            chan, created = Channel.get_or_create(
+                name=get_yt_channel_id(channel['name']),
+                channel_type=channel.get('type', 'youtube'),
+                defaults={'tag': channel['name']})
+            if created:
+                chan.id = Channel.select(pw.fn.MAX(Channel.id)).scalar() + 1
+                channel_name = channel['channel']
+                channel = _yt_get(ctx, YouTubeRequest(
+                    endpoint='channels', args={'forUsername': channel_name}))
+                if 'items' not in channel:
+                    raise ValueError("Unable to find channel " + channel_name)
+                channel_id = channel['items'][0]['id']
+                chan.channel_id = channel_id
+                chan.save()
     else:
         raise ValueError("Cannot parse {}".format(channel))
 
