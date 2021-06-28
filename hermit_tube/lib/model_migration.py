@@ -19,6 +19,7 @@ def run(db: pw.SqliteDatabase):
         [('video', 'captions', char_field)],
         [('video', 'tombstone', int_field)],
         [('playlist', 'etag', char_field)],
+        [('video', 'channel', char_field)],
     ]
     for field_set in new_fields:
         table, field, _ = field_set[0]
@@ -38,3 +39,11 @@ def run(db: pw.SqliteDatabase):
         'UPDATE channel SET id = c2.rowid '
         'FROM (select name, rowid from channel) as c2 '
         'WHERE channel.name = c2.name and id is null;')
+    db.execute_sql(
+        'UPDATE video SET channel = pl.channel_id '
+        'FROM (select p.playlist_id, p.channel_id from playlist p) as pl '
+        'WHERE video.playlist_id = pl.playlist_id and video.channel is null;')
+
+    migrator = migrate.SqliteMigrator(db)
+    migrate.migrate(migrator.drop_not_null('video', 'playlist_id'))
+

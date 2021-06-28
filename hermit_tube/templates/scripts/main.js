@@ -255,6 +255,7 @@ function initDropdown() {
             }
             clearSeries();
             loadSeries();
+            renderProfileMenu();
             return false;
         };
     });

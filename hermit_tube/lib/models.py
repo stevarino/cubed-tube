@@ -66,6 +66,7 @@ class Video(BaseModel):
     last_scanned = pw.IntegerField(null=True)
     captions = pw.CharField(null=True)
     tombstone = pw.IntegerField(null=True)
+    channel = pw.CharField(null=True)
 
     class Meta:
         indexes = (

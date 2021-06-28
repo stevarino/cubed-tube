@@ -57,9 +57,8 @@ def render_static(config: Dict):
 
 def render_series(context: Context):
     slug = context.series_config['slug']
-    videos = (Video.select(Video, Playlist, Channel, Series)
-        .join(Playlist)
-        .join(Channel)
+    videos = (Video.select(Video, Channel, Series)
+        .join(Channel, on=(Video.channel == Channel.name))
         .join_from(Video, Series)
         .where(Video.series.slug == slug)
         .order_by(Video.published_at)
@@ -69,7 +68,7 @@ def render_series(context: Context):
     channels = {}
     descs = {}
     for video in videos:
-        ch = video.playlist.channel
+        ch = video.channel
         if context.filter_video(video):
             continue
         descs[video.video_id] = video.description
@@ -122,7 +121,7 @@ def render_descriptions_by_hash(slug: str, descs: Dict[str, str]):
             with gzip.GzipFile(
                     fileobj=fp, filename='', mtime=0, mode='wb') as fpz:
                 fpz.write(stack_bytes)
-        print(f'Hash: {sig} ({len(stack)})')
+        print(f'  Hash: {sig} ({len(stack)})')
         stack.clear()
         sigs.append(sig)
 

@@ -18,8 +18,6 @@ import json
 import os
 import re
 import socket
-import sys
-import time
 import traceback
 from typing import Dict, List
 import urllib.request, urllib.parse
@@ -171,7 +169,7 @@ def update_yt_channel(ctx: Context, chan_ids: List[str]):
     return ctx.copy(channel=chan)
     
 
-def process_yt_playlist(ctx: Context, p_id: str):
+def process_yt_playlist(ctx: Context, ch_name: str, p_id: str):
     args = {
         'playlistId': p_id, 
         'maxResults': 50,
@@ -189,7 +187,8 @@ def process_yt_playlist(ctx: Context, p_id: str):
     play.save()
     for i, result in enumerate(_yt_get_generator(ctx, videos, req)):
         update_video(ctx, result['snippet']['resourceId']['videoId'], result,
-                     defaults={'playlist': play, 'series': ctx.series})
+                     defaults={'playlist': play, 'series': ctx.series, 
+                               'channel': ch_name})
     print(f'    Playlist ID {p_id} ({i+1})')
 
 
@@ -229,6 +228,12 @@ def update_video(ctx: Context, video_id: str, result: Dict,
             ).total_seconds()
         vid.last_scanned = ctx.now
 
+        # directly queried videos have the publishedAt 
+        pub_at = result['snippet'].get('publishedAt')
+        if not pub_at:  # unpublished video, bail out
+            return
+        vid.published_at = _parse_ts(pub_at)
+
     if 'statistics' in result:
         _map = {
             'views': 'viewCount',
@@ -257,12 +262,13 @@ def process_channel(ctx: Context, channel: Dict):
     if 'playlist' in channel and YT_PLAYLIST.match(channel['playlist']):
         playlist_id = YT_PLAYLIST.match(channel['playlist'])[1]
         print('    Processing playlist', playlist_id)
-        process_yt_playlist(ctx_, playlist_id)
+        process_yt_playlist(ctx_, channel['name'], playlist_id)
     else:
         raise ValueError("Cannot parse {}".format(channel))
 
 def process_series(ctx: Context, channels: List[Dict[str,str]]):
     print("Working on series", ctx.series.slug)
+    videos = {}
     for channel in channels:
         if ctx.channels and channel['name'] not in ctx.channels:
             continue
@@ -270,6 +276,56 @@ def process_series(ctx: Context, channels: List[Dict[str,str]]):
             process_channel(ctx, channel)
         except Exception:
             traceback.print_exc()
+
+        # explicit videos
+        ch_id = get_yt_channel_id(channel['name'])
+        for video in channel.get('videos', []):
+            videos[video] = ch_id
+
+    if not videos:
+        return
+    query = Video.select(Video.video_id).where(
+        Video.video_id.in_(list(videos.keys())))
+    db_vids = set(v.video_id for v in query)
+    new_vids = list(set(videos.keys()) - db_vids)
+    if not new_vids:
+        return
+    print(f"  Requesting explicit videos: {', '.join(new_vids)}")
+
+    def _get_defaults(vid):
+        return {
+            'defaults': {
+                'series': ctx.series,
+                'channel': videos[vid['id']],
+            }
+        }
+
+    missing_vids = get_video_by_ids(ctx, new_vids, kwargs_func=_get_defaults)
+    if missing_vids:
+        print(f'  WARNING: Videos not found: {", ".join(missing_vids)}')
+    
+def get_video_by_ids(ctx: Context, video_ids: list[str], kwargs_func: None):
+    def _chunk(ids, count):
+        for i in range(0, len(ids), count):
+            yield ids[i:i+count]
+
+    expected_video_ids = set(video_ids)
+    received_video_ids = set()
+
+    for chunked_ids in _chunk(video_ids, 50):
+        chan_args = dict(
+            id=','.join(chunked_ids),
+            part='statistics,snippet,contentDetails')
+        for result in _yt_get(ctx, YouTubeRequest(
+                endpoint='videos', args=chan_args))['items']:
+            received_video_ids.add(result['id'])
+            kwargs = {}
+            if kwargs_func:
+                kwargs = kwargs_func(result)
+            update_video(ctx, result['id'], result, **kwargs)
+
+    return expected_video_ids - received_video_ids
+
 
 def scan_videos(ctx: Context):
     """Use the remaining quota to update video metadata."""
@@ -308,15 +364,11 @@ def scan_videos(ctx: Context):
               f'{videos[0].last_scanned}, {videos[0].published_at})')
         print(f'    End:   {videos[-1].video_id} ({videos[-1].score}, '
               f'{videos[-1].last_scanned}, {videos[-1].published_at})')
-        chan_args = dict(
-            id=','.join(expected_video_ids),
-            part='statistics,snippet,contentDetails')
-        received_video_ids = set()
-        for result in _yt_get(ctx, YouTubeRequest(
-            endpoint='videos', args=chan_args))['items']:
-            received_video_ids.add(result['id'])
-            update_video(ctx, result['id'], result, filter_vid=False)
-        missing_videos = expected_video_ids - received_video_ids
+
+        missing_videos = get_video_by_ids(
+            ctx, list(expected_video_ids), 
+            kwargs_func=lambda _: {'filter_vid': False})
+
         if missing_videos:
             print(f'    Tomstoning Videos {", ".join(missing_videos)}')
             Video.update(
