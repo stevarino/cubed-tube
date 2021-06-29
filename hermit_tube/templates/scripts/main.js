@@ -67,7 +67,7 @@ window.onload = function() {
     });
 
     youtubeInit();
-    initUser().then(() => {
+    initUser().finally(() => {
         loadSeries();
         renderProfileMenu();
     });
