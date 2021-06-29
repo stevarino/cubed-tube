@@ -42,10 +42,9 @@ var USER = {
 }
 
 async function initUser() {
-    let state = await getUserState().then((state) => {
-        return state;
-    }).catch(() => {
-        return loadFromStorage('state');
+    let state = await getUserState().catch(() => {
+        initLocalState();
+        createSeries(getSeries());
     });
     STATE = await migrateState(state);
     saveState();
