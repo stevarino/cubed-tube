@@ -35,15 +35,17 @@ def run(db: pw.SqliteDatabase):
     if 'id' not in models['channel']._meta.fields:
         migrator = migrate.SqliteMigrator(db)
         migrate.migrate(migrator.add_column('channel', 'id', int_field))
-    db.execute_sql(
-        'UPDATE channel AS c SET id = '
-        '(SELECT rowid FROM channel c2 WHERE c2.name = c.name) '
-        'WHERE c.id IS null')
     db.execute_sql('''
-        UPDATE video  AS v SET channel = (
+        UPDATE channel SET id = (
+            SELECT rowid FROM channel c2 WHERE c2.name = channel.name
+        ) WHERE channel.id IS null;
+    ''')
+    db.execute_sql('''
+        UPDATE video SET channel = (
             SELECT p.channel_id from playlist p
-            WHERE p.playlist_id = v.playlist_id
-        ) WHERE channel is null;''')
+            WHERE p.playlist_id = video.playlist_id
+        ) WHERE video.channel is null;
+    ''')
 
     migrator = migrate.SqliteMigrator(db)
     migrate.migrate(migrator.drop_not_null('video', 'playlist_id'))
