@@ -82,6 +82,7 @@ series:
   - title: HermitCraft Season 7
     slug: hc7
     start: 1582900000
+    active: false
     ignore_video_ids:
      - JE-Uea1aLhM
     channels:
