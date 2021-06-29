@@ -36,13 +36,14 @@ def run(db: pw.SqliteDatabase):
         migrator = migrate.SqliteMigrator(db)
         migrate.migrate(migrator.add_column('channel', 'id', int_field))
     db.execute_sql(
-        'UPDATE channel SET id = c2.rowid '
-        'FROM (select name, rowid from channel) as c2 '
-        'WHERE channel.name = c2.name and id is null;')
-    db.execute_sql(
-        'UPDATE video SET channel = pl.channel_id '
-        'FROM (select p.playlist_id, p.channel_id from playlist p) as pl '
-        'WHERE video.playlist_id = pl.playlist_id and video.channel is null;')
+        'UPDATE channel AS c SET id = '
+        '(SELECT rowid FROM channel c2 WHERE c2.name = c.name) '
+        'WHERE c.id IS null')
+    db.execute_sql('''
+        UPDATE video  AS v SET channel = (
+            SELECT p.channel_id from playlist p
+            WHERE p.playlist_id = v.playlist_id
+        ) WHERE channel is null;''')
 
     migrator = migrate.SqliteMigrator(db)
     migrate.migrate(migrator.drop_not_null('video', 'playlist_id'))
