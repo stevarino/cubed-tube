@@ -2,39 +2,16 @@
  * Loads a series from the server.
  */
  function loadSeries() {
-    let series = getSeries();
-    console.log('Loading', series);
-    createSeries(series);
+    let series_name = getSeries();
+    console.log('Loading', series_name);
+    createSeries(series_name);
 
     if (USER.UPDATE_TIMER !== 0) {
         clearInterval(USER.UPDATE_TIMER);
     }
     USER.UPDATE_TIMER = setInterval(fetchUpdate, 300000); // 5 minutes
-    requestSeries(series);
-    
-}
 
-/**
- * Resets the content window to load a different series.
- */
-function clearSeries() {
-    document.querySelectorAll('#videos, #channels > *').forEach((el) => {
-        el.parentElement.removeChild(el);
-    });
-    document.getElementById('loading').style.display = 'block';
-}
-
-/**
- * Request series payload, calling a callback on the response JSON.
- * 
- * @param {function} callback 
- */
-function requestSeries(series) {
-    let d = new Date(0).getTime();
-    makeRequest({
-        url: `/data/${series}/${series}.json?d=${d}`,
-        json: true,
-    }).then((series) => {
+    requestSeries(series_name).then((series) => {
         document.getElementById('loading').style.display = 'none';
         var content = document.getElementById('content');
         clearObject(ELEMENT_BY_VIDEO_ID);
@@ -55,6 +32,28 @@ function requestSeries(series) {
     });
 }
 
+/**
+ * Resets the content window to load a different series.
+ */
+function clearSeries() {
+    document.querySelectorAll('#videos, #channels > *').forEach((el) => {
+        el.parentElement.removeChild(el);
+    });
+    document.getElementById('loading').style.display = 'block';
+}
+
+/**
+ * Request series payload, calling a callback on the response JSON.
+ * 
+ * @param {function} callback 
+ */
+function requestSeries(series) {
+    let d = new Date(0).getTime();
+    return makeRequest({
+        url: `/data/${series}/${series}.json?d=${d}`,
+        json: true,
+    });
+}
 
 
 /**
