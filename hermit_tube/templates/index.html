@@ -41,7 +41,7 @@
                         <ul id="seasons" aria-label='submenu'></ul>
                     </li>
                     <li class='submenus'>
-                        <a href='#' onclick='return false'>Settings</a>
+                        <a href='#' onclick='return false'>Profile</a>
                         <ul id="settings" aria-label='submenu'>
                             <li><label for='opt_player' class='menu_checkbox'>
                                 <input type='checkbox' id='opt_player' name='opt_player' />
@@ -56,16 +56,22 @@
                                 Autoplay next video
                             </label></li>
                             <li class='hr'></li>
-                            <li><a href='#' id='login'>Log In</a></li>
-                            <li class='hr'></li>
                             <li><a href='#' id='profile_new'>New Profile</a></li>
                             <li><a href='#' id='profile_rename'>Rename Profile</a></li>
                             <li><a href='#' id='profile_delete'>Delete Profile</a></li>
                             <li class='hr' id='profile_sep'></li>
                         </ul>
                     </li>
-                    <li><a href='/about/'>About</a></li>
-                    <li><a href='https://github.com/stevarino/hermit-tube'>Github</a></li>
+                    <li class='submenus'>
+                        <a href='#' onclick='return false'>About</a>
+                        <ul id="seasons" aria-label='submenu'>
+                            <li><a href='/about/'>About</a></li>
+                            <li><a href='/privacy/'>Privacy</a></li>
+                            <li><a href='https://github.com/stevarino/hermit-tube'>Github</a></li>
+
+                        </ul>
+                    </li>
+                    <li><a href='#' id='login'>Log In</a></li>
                     {% endblock %}
                 </ul>
             </div>
