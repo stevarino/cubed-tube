@@ -30,7 +30,7 @@ flask_config.update(creds['wsgi'])
 
 app = Flask(
     __name__, 
-    template_folder='../templates',
+    template_folder='../../templates',
     static_url_path='')
 app.config.update(flask_config)
 
