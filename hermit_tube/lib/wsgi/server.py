@@ -63,12 +63,13 @@ def after_request(response):
 def _allow_cors(func):
     def _wrapper(*args, **kwargs):
         res, code = func(*args, **kwargs)
-        res.headers['Access-Control-Allow-Credentials'] = 'true'
         domain = _get_domain(request.referrer)
         if domain not in flask_config['CORS_ORIGINS']:
             print(f'Unrecognized referrer: "{domain}"')
             domain = flask_config['CORS_ORIGINS'][0]
         res.headers['Access-Control-Allow-Origin'] = domain
+        res.headers['Vary'] = 'Origin'
+        res.headers['Access-Control-Allow-Credentials'] = 'true'
         return res, code
     return _wrapper
 
