@@ -418,7 +418,7 @@ function fetchUpdate() {
             processUpdate(response, []);
         }
     }).catch((err) => {
-        console.log('Error during request:', err);
+        console.log('Error during fetchUpdate:', err);
     });
 }
 
@@ -453,7 +453,7 @@ function processUpdate(next, stack) {
         stack.unshift(response);
         processUpdate(response.next, stack);
     }).catch((err) => {
-        console.log('Error during request:', err);
+        console.log('Error during processUpdate:', err);
     });
 }
 

@@ -16,6 +16,10 @@ body {
     background: #f7f0de
 }
 
+body.modal {
+    overflow: hidden;
+}
+
 a {
     color: #000;
 }
@@ -457,20 +461,90 @@ h1 svg.triangle polygon {
     color: #fff;
 }
 
-#player_wrap {
+#player {
     display: none;
     position: fixed;
     top: 0;
+    bottom: 0;
     left: 0;
     right: 0;
-    bottom: -100%;
     background: rgba(0, 0, 0, 0.9);
+    z-index: 99;
+}
+
+#player .play {
+    display: none;
+}
+
+#player.paused .paws {
+    display: none;
+}
+
+#player.paused .play {
+    display: inline;
+}
+
+#player_wrap {
+    position: absolute;
+    top: 2vh;
+    left: 5vw;
+    right: 5vw;
+    bottom: 8vh;
     z-index: 100;
 }
 
-#player {
-    margin: 2em auto 0 auto;
+#player.fullscreen #player_wrap {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+#player_iframe {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+#player iframe {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+}
+
+#player_controls {
+    position: absolute;
+    right: 5vw;
+    bottom: 1vh;
+    color: white;
+    text-align: right;
+    z-index: 101;
+    font-size: 5vh;
+}
+
+#player.fullscreen #player_controls {
+    display: none;
+    top: calc(50vh - 0.5em);
+    left: 0;
+    right: 0;
+    background: black;
+    font-size: 8vw;
+    text-align: center;
+    height: 1em;
+    filter: opacity(0.5);
+}
+
+#player.fullscreen.paused #player_controls {
     display: block;
+}
+
+#player_controls .material-icons {
+    font-size: inherit;
+    cursor: pointer;
+}
+
+#player.fullscreen #player_controls .material-icons {
+    margin: 0 0.4em;
 }
 
 @media only screen and (min-width: 62rem) {

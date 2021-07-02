@@ -72,7 +72,7 @@ async function getUserState() {
                 console.log('Error, unrecognized response:', response);
             }
         }).catch((err) => {
-            console.log('Error during request:', err);
+            console.log('Error during getUserState:', err);
         });
         return reject();
     });
@@ -184,33 +184,38 @@ function saveSettings() {
 }
 
 function loadSettings() {
+    let settings_defaults = [
+        ['player', true],
+        ['autoplay', true],
+        ['use_fullscreen', true],
+    ];
+    
     SETTINGS = this.loadFromStorage('settings');
+    let list = document.getElementById('settings');
     if (SETTINGS === null) {
-        SETTINGS = { player: true, autoplay: true };
-        saveSettings()
+        SETTINGS = {};
     }
-    if (SETTINGS.player_mobile === undefined) {
-        SETTINGS.player_mobile = false;
-        saveSettings()
+    let save = false;
+    for (const [key, val] of settings_defaults) {
+        if (SETTINGS[key] === undefined) {
+            SETTINGS[key] = val;
+            save = true;
+        }
+        let checkbox = document.getElementById(`opt_${key}`);
+        if (checkbox === null) {
+            // page without settings
+            continue;
+        }
+        checkbox.checked = SETTINGS[key];
+        
+        checkbox.addEventListener('change', (e) => {
+            SETTINGS[key] = checkbox.checked;
+            saveSettings();
+        });
     }
-    if (document.getElementById('opt_player') === null) {
-        return;
+    if (save) {
+        saveSettings();
     }
-    document.getElementById('opt_player').checked = SETTINGS.player;
-    document.getElementById('opt_player').addEventListener('change', (e) => {
-        SETTINGS.player = document.getElementById('opt_player').checked;
-        saveSettings();
-    });
-    document.getElementById('opt_player_mobile').checked = SETTINGS.player_mobile;
-    document.getElementById('opt_player_mobile').addEventListener('change', (e) => {
-        SETTINGS.player_mobile = document.getElementById('opt_player_mobile').checked;
-        saveSettings();
-    });
-    document.getElementById('opt_autoplay').checked = SETTINGS.autoplay;
-    document.getElementById('opt_autoplay').addEventListener('change', (e) => {
-        SETTINGS.autoplay = document.getElementById('opt_autoplay').checked;
-        saveSettings();
-    });
 }
 
 /**

@@ -10,6 +10,7 @@
         <link rel="icon" href="/static/favicon_disc196.png" sizes="196x196" />
         <link rel="shortcut icon" href="/static/favicon_disc196.png" sizes="196x196" />
         <link rel="stylesheet" href="/static/style.css?20210627" />
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="manifest" href="/static/manifest.webmanifest">
     </head>
@@ -45,11 +46,11 @@
                         <ul id="settings" aria-label='submenu'>
                             <li><label for='opt_player' class='menu_checkbox'>
                                 <input type='checkbox' id='opt_player' name='opt_player' />
-                                Embedded Player Desktop
+                                Embedded Player
                             </label></li>
-                            <li><label for='opt_player_mobile' class='menu_checkbox'>
-                                <input type='checkbox' id='opt_player_mobile' name='opt_player_mobile' />
-                                Embedded Player Mobile
+                            <li><label for='opt_use_fullscreen' class='menu_checkbox'>
+                                <input type='checkbox' id='opt_use_fullscreen' name='opt_use_fullscreen' />
+                                Fullscreen
                             </label></li>
                             <li><label for='opt_autoplay' class='menu_checkbox'>
                                 <input type='checkbox' id='opt_autoplay' name='opt_autoplay' />
@@ -68,7 +69,6 @@
                             <li><a href='/about/'>About</a></li>
                             <li><a href='/privacy/'>Privacy</a></li>
                             <li><a href='https://github.com/stevarino/hermit-tube'>Github</a></li>
-
                         </ul>
                     </li>
                     <li><a href='#' id='login'>Log In</a></li>
@@ -78,8 +78,21 @@
             <div id='content'>
                 {% block content %}
                 <p id='loading'>Loading...</p>
-                <div id="player_wrap"></div>
                 {% endblock content %}
+            </div>
+        </div>
+        <div id="player">
+            <div id='player_wrap'>
+                <div id='player_iframe'></div>
+                <div id='player_pause'></div>
+            </div>
+            <div id='player_controls'>
+                <span class='material-icons prev'>skip_previous</span>
+                <span class='material-icons stop'>stop</span>
+                <span class='material-icons paws'>pause</span>
+                <span class='material-icons play'>play_arrow</span>
+                <span class='material-icons full'>fullscreen</span>
+                <span class='material-icons next'>skip_next</span>
             </div>
         </div>
     <script async src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.2/pako.min.js" integrity="sha512-IjkvjWp4tSkhkQRb9gFwCcMhBWZLPKc7Zo8ifb6qxORyehV072QgRVG3F0fwAaJh0fnEFNLc2+XggoC5wvW24g==" crossorigin="anonymous"></script>

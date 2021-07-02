@@ -341,7 +341,7 @@ function getDescriptions(i, d) {
     }).then((response) => {
         renderDescriptions(i, d, response);
     }).catch((err) => {
-        console.log('Error during request:', err);
+        console.log('Error during getDescriptions:', err);
     });
 }
 
@@ -398,15 +398,20 @@ function renderDescription(desc) {
  * Given a video id, finds the next video id for the user's selected channels.
  * @param {str} videoId 
  */
- function findNextVideo(videoId) {
+ function findNextVideo(videoId, forward=true) {
     let videos = document.getElementsByClassName('video');
-    found = false;
+    let found = false;
+    let prev = null;
     for (let i = 0; i < videos.length; i++) {
         let other_id = videos[i].getAttribute('data-video-id');
         if (other_id == videoId) {
+            if (!forward) {
+                return prev;
+            }
             found = true;
             continue;
         }
+        prev = other_id;
         if (!found) {
             continue;
         }
