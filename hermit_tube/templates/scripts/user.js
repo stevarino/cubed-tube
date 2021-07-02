@@ -79,6 +79,7 @@ async function getUserState() {
 }
 
 function migrateState(state) {
+    // profile.accessed => profile.ts
     for (const profiles of Object.values(state)) {
         for (const profile of profiles) {
             if ('accessed' in profile) {
@@ -87,6 +88,11 @@ function migrateState(state) {
             }
         }
     }
+    // trash
+    if (null in STATE) {
+        delete STATE[null];
+    }
+    // migrate channel strings
     let promises = [];
     for (const series in state) {
         let profiles = state[series];
@@ -119,7 +125,6 @@ function initLocalState() {
     STATE = loadFromStorage('state');
     if (STATE === null) {
         STATE = {};
-        saveState();
     }
     return STATE
 }
@@ -419,10 +424,10 @@ function listProfiles(recursive=true) {
  * Returns the currently active series (hc7).
  */
 function getSeries() {
-    if (SETTINGS.series !== undefined) {
+    if (SETTINGS.series !== null && SETTINGS.series !== undefined) {
         return SETTINGS.series;
     }
-    series = loadFromStorage('series');
+    let series = loadFromStorage('series');
     if (series === null) {
         series = window.series;
     }
@@ -435,7 +440,7 @@ function getSeries() {
  * Returns the currently active profile.
  */
 function getProfile() {
-    if (SETTINGS.series === undefined || SETTINGS.profile === undefined) {
+    if (getSeries() === undefined || SETTINGS.profile === undefined) {
         let profile = listProfiles(false)[0];
         let index = getProfileIndex(profile);
         if (index === -1) {
