@@ -466,7 +466,7 @@ def main(args: argparse.Namespace):
                 series_.title = series['title']
                 series_.save()
             c_ctx = ctx.copy(series=series_, series_config=series)
-            # process_series(c_ctx, series['channels'])
+            process_series(c_ctx, series['channels'])
         scan_videos(ctx)
     finally:
         update_stats(ctx.cost.value)
