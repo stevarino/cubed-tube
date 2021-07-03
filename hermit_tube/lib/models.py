@@ -53,7 +53,6 @@ class Playlist(BaseModel):
 class Video(BaseModel):
     video_type = pw.CharField(default='youtube')
     video_id = pw.CharField()
-    playlist = pw.ForeignKeyField(Playlist, backref='videos')
     series = pw.ForeignKeyField(Series, backref='videos')
 
     title = pw.CharField(null=True)

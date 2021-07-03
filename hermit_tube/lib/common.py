@@ -1,5 +1,5 @@
 
-from hermit_tube.lib.models import Series, Channel, Video, Misc, Playlist, pw
+from hermit_tube.lib.models import Series, Channel, Video, Misc, pw
 
 from collections import defaultdict
 from copy import copy
@@ -9,6 +9,10 @@ import json
 import os
 import time
 from typing import List, Dict
+
+def chunk(items, count, chunk_size):
+        for i in range(0, count, chunk_size):
+            yield items[i:i+chunk_size]
 
 @dataclass
 class Cost():
@@ -80,18 +84,17 @@ def get_videos_by_hermit():
     vids = (
         Video.select(
             Video.series, 
-            Video.playlist.channel, 
+            Channel.tag.alias('ch_tag'), 
             pw.fn.COUNT(Video.video_id).alias('cnt'))
-        .join(Playlist)
-        .join(Channel)
-        .group_by(Video.series, Video.playlist.channel)
-        .order_by(pw.fn.Lower(Video.playlist.channel.tag))
-    )
+        .join(Channel, on=(Video.channel == Channel.name), attr='ch')
+        .group_by(Video.series, Video.channel)
+        .order_by(pw.fn.Lower(Channel.tag))
+    ).objects()
     seasons = set()
     data = defaultdict(dict)
     for v in vids:
         seasons.add(v.series.slug)
-        data[v.playlist.channel.tag][v.series.slug] = v.cnt
+        data[v.ch_tag][v.series.slug] = v.cnt
     seasons = sorted(seasons)
     totals = {}
     for ch in data:

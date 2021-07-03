@@ -5,7 +5,7 @@ Reads from the database and produces html files.
 from hermit_tube.lib.common import (
     Context, generate_template_context)
 from hermit_tube.lib.models import (
-    Video, Playlist, Channel, Series, Misc, init_database)
+    Video, Channel, Series, Misc, init_database)
 from hermit_tube.lib.util import root, sha1
 
 import argparse
@@ -58,7 +58,7 @@ def render_static(config: Dict):
 def render_series(context: Context):
     slug = context.series_config['slug']
     videos = (Video.select(Video, Channel, Series)
-        .join(Channel, on=(Video.channel == Channel.name))
+        .join(Channel, on=(Video.channel == Channel.name), attr='ch')
         .join_from(Video, Series)
         .where(Video.series.slug == slug)
         .order_by(Video.published_at)
@@ -68,7 +68,7 @@ def render_series(context: Context):
     channels = {}
     descs = {}
     for video in videos:
-        ch = video.channel
+        ch = video.ch
         if context.filter_video(video):
             continue
         descs[video.video_id] = video.description
@@ -150,9 +150,9 @@ def render_updates_for_series(context: Context) -> Tuple[str, str]:
     slug = context.series_config['slug']
     prev_hash = None
     prev_id = None
-    videos = (Video.select()
-        .join(Playlist)
-        .join(Channel)
+
+    videos = (
+        Video.select()
         .join_from(Video, Series)
         .where(Video.series.slug == slug)
         .order_by(Video.published_at.desc())
@@ -163,7 +163,7 @@ def render_updates_for_series(context: Context) -> Tuple[str, str]:
             'id': vid.video_id,
             'ts': vid.published_at,
             't': vid.title,
-            'chn': vid.playlist.channel.name,
+            'chn': vid.channel,  # video.channel = channel.name
             'd': vid.description,
             'next': {
                 'hash': prev_hash,

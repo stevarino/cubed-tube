@@ -5,7 +5,7 @@
 # currently 11339 videos in system
 # => scan entire library = 227 quota, or 12 runs, or 2 hours
 
-from hermit_tube.lib.common import Context
+from hermit_tube.lib.common import Context, chunk
 from hermit_tube.lib.models import (
     Misc, Series, Channel, Playlist, Video, pw, db, init_database)
 from hermit_tube.lib import trends
@@ -321,14 +321,10 @@ def process_series(ctx: Context, channels: List[Dict[str,str]]):
         print(f'  WARNING: Videos not found: {", ".join(missing_vids)}')
     
 def get_video_by_ids(ctx: Context, video_ids: list[str], kwargs_func: None):
-    def _chunk(ids, count):
-        for i in range(0, len(ids), count):
-            yield ids[i:i+count]
-
     expected_video_ids = set(video_ids)
     received_video_ids = set()
 
-    for chunked_ids in _chunk(video_ids, 50):
+    for chunked_ids in chunk(video_ids, len(video_ids), 50):
         chan_args = dict(
             id=','.join(chunked_ids),
             part='statistics,snippet,contentDetails')
@@ -345,7 +341,7 @@ def get_video_by_ids(ctx: Context, video_ids: list[str], kwargs_func: None):
 
 def scan_videos(ctx: Context):
     """Use the remaining quota to update video metadata."""
-    if ctx.quota is None:
+    if ctx.quota is None or ctx.cost.value >= ctx.quota:
         return
     # Given video (A) (last_scan_dur = 1w, pub_dur = 1mo) and video (B) 
     # (last_scan_dur = 10m, pub_dur = 1d), rescan scoring can be calculated
@@ -358,22 +354,24 @@ def scan_videos(ctx: Context):
     # 
     #   rate_factor = log(scan_time_a / scan_time_b, pub_time_a / pub_time_b)
     rate_factor = 2.033320232
-    for i in range(ctx.quota - ctx.cost.value):
-        videos = Video.select(
-            Video.video_id,
-            ((ctx.now - Video.last_scanned) / pw.fn.power(
-                ctx.now - Video.published_at, rate_factor
-            )).alias('score'),
-            Video.last_scanned,
-            Video.published_at
-        ).where(
-            Video.title.is_null(False) & Video.tombstone.is_null()
-        ).order_by(
-            Video.last_scanned.is_null(False),
-            pw.SQL('score').desc(),
-            Video.published_at.desc()
-        ).limit(50)
+    
+    count = 50 * (ctx.quota - ctx.cost.value)
+    all_videos = Video.select(
+        Video.video_id,
+        ((ctx.now - Video.last_scanned) / pw.fn.power(
+            ctx.now - Video.published_at, rate_factor
+        )).alias('score'),
+        Video.last_scanned,
+        Video.published_at
+    ).where(
+        Video.title.is_null(False) & Video.tombstone.is_null()
+    ).order_by(
+        Video.last_scanned.is_null(False),
+        pw.SQL('score').desc(),
+        Video.published_at.desc()
+    ).limit(count)
 
+    for i, videos in enumerate(chunk(all_videos, count, 50)):
         expected_video_ids = set(v.video_id for v in videos)
         print(f'  Requesting update {i}:')
         print(f'    Start: {videos[0].video_id} ({videos[0].score}, '
@@ -415,18 +413,21 @@ def update_stats(api_cost):
     dailies[ymd]['scans'] += 1
     set_misc('dailies', json.dumps(dailies, sort_keys=True, indent=2))
 
-    latest = (Video.select()
-        .join(Playlist)
-        .join(Channel)
+    latest = (
+        Video.select(
+            Video, 
+            Channel.tag.alias('ch_tag'), 
+            Channel.channel_id.alias('ch_id')
+        ).join(Channel, on=(Video.channel == Channel.name), attr='ch')
         .order_by(Video.published_at.desc())
-        .get()
-    )
+        .limit(1)
+    ).objects().first()
 
     set_misc('latest_id', latest.video_id)
     set_misc('latest_dt', latest.published_at)
     set_misc('latest_title', latest.title)
-    set_misc('latest_channel_title', latest.playlist.channel.tag)
-    set_misc('latest_channel_id', latest.playlist.channel.channel_id)
+    set_misc('latest_channel_title', latest.ch_tag)
+    set_misc('latest_channel_id', latest.ch_id)
 
 def build_argparser(parser):
     parser.add_argument('--series', '-s', nargs='*')
@@ -465,7 +466,7 @@ def main(args: argparse.Namespace):
                 series_.title = series['title']
                 series_.save()
             c_ctx = ctx.copy(series=series_, series_config=series)
-            process_series(c_ctx, series['channels'])
+            # process_series(c_ctx, series['channels'])
         scan_videos(ctx)
     finally:
         update_stats(ctx.cost.value)
