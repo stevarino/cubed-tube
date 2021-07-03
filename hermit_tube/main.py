@@ -13,11 +13,21 @@ def run_tests(args):
     from hermit_tube import test
     unittest.main()
 
+def run_compress(args):
+    from hermit_tube.lib.trends import compress_trends
+    compress_trends([
+        # after 1 week, keep hourly
+        (7 * 24 * 3600, 3600),
+        # after 1 month, keep daily
+        (30 * 24 * 3600, 24 * 3600),
+    ])
+
 SUBCOMMANDS = {
     'scan': scan,
     'render': render,
     'wsgi': run_wsgi_server,
     'test': run_tests,
+    'compress': run_compress,
 }
 
 def main(args: argparse.Namespace):

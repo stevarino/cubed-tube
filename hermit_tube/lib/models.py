@@ -99,7 +99,9 @@ class TrendSeries(BaseModel):
     delta = pw.FloatField(default=1)
     upper = pw.FloatField(null=True)
     lower = pw.FloatField(null=True)
+    # uncompressed sample size
     raw_count = pw.IntegerField(default=0)
+    # stored sample size after compression
     point_count = pw.IntegerField(default=0)
 
     def __str__(self):

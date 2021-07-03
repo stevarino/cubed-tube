@@ -2,8 +2,11 @@
 Houses high-level trend interface for linear data-point storage/retrieval.
 """
 
+from os import times
+from hermit_tube.lib import common
 from hermit_tube.lib import models as m
 
+from time import time
 from typing import List, Tuple
 
 VIDEO_TRENDS = {
@@ -121,4 +124,70 @@ def get_video_trend(video: m.Video, trend: str):
         trends.save()
     return getattr(trends, trend)
 
+def compress_trends(rules: List[Tuple[int, int]]):
+    m.init_database()
+    now = int(time())
 
+    rules = sorted(rules, key=lambda r: r[0])
+    def _get_horizon_frequency(timestamp) -> Tuple[int, int]:
+        """Returns the horizon and frequency for a given timestamp"""
+        delta = now - timestamp
+        horizon = None
+        frequency = None
+        for h, f in rules:
+            if h > delta:
+                continue
+            horizon = h
+            frequency = f
+        return horizon, frequency
+
+    status = '\rChecking trend {} of {}'
+    query = m.TrendSeries.select()
+    total = m.TrendSeries.select(m.pw.fn.Count()).scalar()
+    print()
+    i = 0
+
+    for chunk in common.chunk(query, total, 100):
+        first = True
+        with m.db.atomic():
+            print(status.format(i, total), end='')
+            for series in chunk:
+                i += 1
+                pt_query = m.TrendPoint.select().where(
+                    m.TrendPoint.series_id == series.series_id
+                ).order_by(m.TrendPoint.timestamp.desc())
+
+                prev = None
+                prev_timestamp = None
+                pt_count = 0
+
+                for pt in pt_query:
+                    pt_count += 1
+                    horizon, frequency = _get_horizon_frequency(pt.timestamp)
+                    if not horizon:
+                        continue
+
+                    timestamp = pt.timestamp // frequency * frequency
+                    if not prev_timestamp:
+                        prev_timestamp = timestamp
+                        prev = pt
+
+                    if timestamp != prev_timestamp:
+                        if timestamp % frequency != 0:
+                            dt = prev.timestamp - pt.timestamp
+                            dy = prev.value - pt.value
+                            val = dy / dt  * (timestamp - pt.timestamp) + pt.value
+                            prev = m.TrendPoint.create(timestamp=timestamp, value=val)
+                            prev.save()
+                            pt.delete_instance()
+                        else:
+                            prev = pt
+                        prev_timestamp = timestamp
+                    else:
+                        pt_count -= 1
+                        pt.delete_instance()
+                if pt_count != series.point_count:
+                    series.point_count = pt_count
+                    series.save()
+    print("\nVacuuming...")
+    m.db.execute_sql('VACUUM')
