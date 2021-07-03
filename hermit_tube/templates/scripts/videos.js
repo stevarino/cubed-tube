@@ -48,7 +48,7 @@ function clearSeries() {
  * @param {function} callback 
  */
 function requestSeries(series) {
-    let d = new Date(0).getTime();
+    let d = new Date().getTime();
     return makeRequest({
         url: `/data/${series}/${series}.json?d=${d}`,
         json: true,
