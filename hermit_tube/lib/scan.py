@@ -325,16 +325,17 @@ def get_video_by_ids(ctx: Context, video_ids: list[str], kwargs_func: None):
     received_video_ids = set()
 
     for chunked_ids in chunk(video_ids, len(video_ids), 50):
-        chan_args = dict(
-            id=','.join(chunked_ids),
-            part='statistics,snippet,contentDetails')
-        for result in _yt_get(ctx, YouTubeRequest(
-                endpoint='videos', args=chan_args))['items']:
-            received_video_ids.add(result['id'])
-            kwargs = {}
-            if kwargs_func:
-                kwargs = kwargs_func(result)
-            update_video(ctx, result['id'], result, **kwargs)
+        with db.atomic():
+            chan_args = dict(
+                id=','.join(chunked_ids),
+                part='statistics,snippet,contentDetails')
+            for result in _yt_get(ctx, YouTubeRequest(
+                    endpoint='videos', args=chan_args))['items']:
+                received_video_ids.add(result['id'])
+                kwargs = {}
+                if kwargs_func:
+                    kwargs = kwargs_func(result)
+                update_video(ctx, result['id'], result, **kwargs)
 
     return expected_video_ids - received_video_ids
 

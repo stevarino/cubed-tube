@@ -148,7 +148,6 @@ def compress_trends(rules: List[Tuple[int, int]]):
     i = 0
 
     for chunk in common.chunk(query, total, 100):
-        first = True
         with m.db.atomic():
             print(status.format(i, total), end='')
             for series in chunk:
@@ -172,7 +171,12 @@ def compress_trends(rules: List[Tuple[int, int]]):
                         prev_timestamp = timestamp
                         prev = pt
 
-                    if timestamp != prev_timestamp:
+                    if pt.point_id in (series.pivot_id, series.current_id):
+                        # don't touch points in foreign keys
+                        prev = pt
+                        prev_timestamp = timestamp
+                    elif timestamp != prev_timestamp:
+                        # timestamp window boundary, recalc and delete
                         if timestamp % frequency != 0:
                             dt = prev.timestamp - pt.timestamp
                             dy = prev.value - pt.value
@@ -184,6 +188,7 @@ def compress_trends(rules: List[Tuple[int, int]]):
                             prev = pt
                         prev_timestamp = timestamp
                     else:
+                        # none of the above, delete
                         pt_count -= 1
                         pt.delete_instance()
                 if pt_count != series.point_count:
