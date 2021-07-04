@@ -73,8 +73,8 @@ series:
     - name: Xisuma
       playlist: https://www.youtube.com/playlist?list=PL7VmhWGNRxKhH4-ObAPWdsACvns2lq8CZ
     - name: Zedaph
-      # no playlist
       channel: ZedaphPlays
+      playlist: https://www.youtube.com/playlist?list=PLaURolsKD_VGSkEz6DfZYJVg0rYYuThT6
       videos:
         - xglsGT1qOXA
         - 86EeS2tvAxs
