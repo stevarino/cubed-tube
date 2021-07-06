@@ -87,3 +87,7 @@ function makeRequest({method='GET', url='', headers={}, params='', creds=false,
     });
     return el;
 }
+
+function logJson(obj) {
+    console.log(JSON.stringify(obj, null, 2));
+}

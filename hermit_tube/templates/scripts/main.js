@@ -404,7 +404,6 @@ function fetchUpdate() {
         url: `/data/${getSeries()}/updates.json?${d}`,
         json: true,
     }).then((response) => {
-        console.log('update received:', response);
         let vid = document.querySelector(
             `.video[data-video-id="${response.id}"]`);
         if (window.backend_version != response.version) {

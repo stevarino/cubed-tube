@@ -94,7 +94,7 @@ function migrateState(state) {
     }
     // migrate channel strings
     let promises = [];
-    for (const series in state) {
+    for (const series of state) {
         let profiles = state[series];
         promises.push(new Promise((resolve, reject) => {
             if (profiles.length > 0 && ('channels' in profiles[0])) {
@@ -175,7 +175,30 @@ function uploadState() {
         json: true,
     }).then((response) => {
         if (response.error === undefined) {
+            let profile = getProfile();
             STATE = response.state;
+            let profiles = listProfiles();
+            let found = false;
+            let areYouMyProfile = (lhv, rhv) => {
+                return lhv.profile === rhv.profile && lhv.ch === rhv.ch
+            }
+            if ('id' in profile) {
+                areYouMyProfile = (lhv, rhv) => lhv.id === rhv.id
+            }
+            
+            for (const p of profiles) {
+                if (areYouMyProfile(p, profile)) {
+                    found = true;
+                    SETTINGS.profile = getProfileIndex(p);
+                    break;
+                }
+            }
+            if (!found) {
+                // currently active profile is likely deleted
+                // this is awkward...
+                window.location.reload();
+            }
+            renderProfileMenu();
         } else {
             console.log("Request error: ", response);
         }
@@ -280,6 +303,7 @@ function createProfile() {
     }
     let series = STATE[getSeries()];
     let profile = JSON.parse(JSON.stringify(getProfile()));
+    delete profile.id
     profile.profile = name;
     profile.ts = new Date().getTime();
     SETTINGS.profile = series.length;
@@ -301,9 +325,9 @@ function deleteProfile() {
     if (i == -1) {
         return console.error("Profile not found.", profile, profiles);
     }
-    profiles.splice(i, 1);
+    profiles[i] = {id: profile.id, ts: (new Date().getTime())};
     let j = getProfileIndex(newProfile);
-    SETTINTGS.profile = j;
+    SETTINGS.profile = j;
 
 
     saveState();
@@ -384,7 +408,6 @@ function loadChannelsFromState(channelString) {
     var bits = atob(channelString).split('').map(byte => {
         return byte.charCodeAt(0);
     });
-    console.log("channels before: ", channels);
     for (const [index, chan] of Object.entries(CHANNELS_BY_INDEX)) {
         let val = parseInt(index) - 1;
         let byte = Math.floor(val / 8);
@@ -403,7 +426,9 @@ function loadChannelsFromState(channelString) {
  * Returns a list of profiles in order of last accessed (current first).
  */
 function listProfiles(recursive=true) {
-    let profiles = [...STATE[getSeries()]];
+    let profiles = [...STATE[getSeries()]].filter(p => {
+        return 'profile' in p
+    });
     let profile = null;
     if (recursive) {
         profile = getProfile();
@@ -437,17 +462,23 @@ function getSeries() {
 }
 
 /**
- * Returns the currently active profile.
+ * Returns the currently active profile object, creating if necessary.
  */
 function getProfile() {
-    if (getSeries() === undefined || SETTINGS.profile === undefined) {
+    function _resetProfile() {
         let profile = listProfiles(false)[0];
         let index = getProfileIndex(profile);
         if (index === -1) {
-            index = 0;
+            throw "Profile not found";
         }
         SETTINGS.profile = index;
         saveSettings()
+    }
+    
+    if (SETTINGS.profile === undefined 
+            || STATE[getSeries()][SETTINGS.profile] === undefined
+            || STATE[getSeries()][SETTINGS.profile].profile === undefined) {
+        _resetProfile();
     }
     return STATE[SETTINGS.series][SETTINGS.profile];
 }
@@ -479,4 +510,16 @@ function setSeries(series) {
     SETTINGS.series = series;
     SETTINGS.profile = getProfileIndex(listProfiles(false)[0]);
     saveSettings();
+}
+
+function logSeries() {
+    logJson(STATE[getSeries()]);
+}
+
+function logProfile() {
+    logJson(getProfile());
+}
+
+function logProfiles() {
+    logJson(listProfiles());
 }

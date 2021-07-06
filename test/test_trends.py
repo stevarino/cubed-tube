@@ -32,7 +32,7 @@ class TestTrends(unittest.TestCase):
         trends.add_point(ts, 100, 99)
         for i in range(100):
             trends.add_point(ts, i+101, 99-i)
-        self.assertEqual(len(models.TrendPoint.select()), 4, self._tp())
+        self.assertEqual(len(models.TrendPoint.select()), 3, self._tp())
 
 if __name__ == '__main__':
     unittest.main()

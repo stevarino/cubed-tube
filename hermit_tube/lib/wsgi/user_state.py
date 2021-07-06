@@ -1,12 +1,13 @@
 from base64 import b85encode
 from collections import OrderedDict
 import json
+import time
 from uuid import uuid4
 
-from pprint import pprint
-
-from hermit_tube.lib.util import root, sha1
 import hermit_tube.lib.wsgi.bucket as bucket
+
+# remove profile tombstones after 30d
+DELETE_HORIZON = 30 * 24 * 3600
 
 class UserNotFound(Exception):
     """The user file could not be found."""
@@ -70,18 +71,20 @@ def lookup_user(user_hash: str):
     cache = get_user_cache()
     return cache.get(user_hash)
 
-def merge_data(user_hash: str, data: dict):
+def merge_data(user_hash: str, data: dict, old_data=None,
+               delete_horizon=None):
     """
     Given a hash and uploaded state, merges with cached data. Returns a
     two-tuple of (merged_data: dict, write_needed: bool).
     """
-    try:
-        old_data = lookup_user(user_hash)
-    except UserNotFound:
-        [_index_profiles(data[series]) for series in data]
-        return data, True
-    if data == old_data:
-        return data, False
+    if delete_horizon is None:
+        delete_horizon = time.time() - DELETE_HORIZON
+    if old_data is None:
+        try:
+            old_data = lookup_user(user_hash)
+        except UserNotFound:
+            [_index_profiles(data[series]) for series in data]
+            return data, True
 
     # missing series (hc7, etc)
     for key in set(old_data.keys()) - set(data.keys()):
@@ -104,13 +107,24 @@ def merge_data(user_hash: str, data: dict):
                 continue
             old_profile, _ = old_profiles[key]
             profile, index = prof_index
-            # uploaded profile is newer
-            if profile.get('ts', 0) > old_profile.get('ts', 0):
+            # tombstoned profile
+            if 'profile' not in profile:
                 continue
-            # cached profile is newer
-            if profile.get('ts', 0) < old_profile.get('ts', 0):
+            is_deleted = 'profile' not in old_profile
+            is_newer = profile.get('ts', 0) < old_profile.get('ts', 0)
+            if is_deleted or is_newer:
                 profiles[key] = old_profile
                 data[series][index] = old_profile
+        
+        to_remove = []
+        for i, profile in enumerate(data[series]):
+            if 'profile' in profile:
+                continue
+            if profile.get('ts', 0) < delete_horizon:
+                # insert at beginning to delete backwards, preserving order
+                to_remove.insert(0, i)
+        for i in to_remove:
+            del data[series][i]
 
     return data, data != old_data 
 
@@ -121,7 +135,6 @@ def _index_profiles(profiles: list):
     complicated but it was fun to write.
     """
     values = {}
-    indexes = {}
     ids = set([p.get('id') for p in profiles if p.get('id')])
     for index, profile in enumerate(profiles):
         chars = 2
