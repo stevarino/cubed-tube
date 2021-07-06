@@ -94,7 +94,7 @@ function migrateState(state) {
     }
     // migrate channel strings
     let promises = [];
-    for (const series of state) {
+    for (const series in state) {
         let profiles = state[series];
         promises.push(new Promise((resolve, reject) => {
             if (profiles.length > 0 && ('channels' in profiles[0])) {
