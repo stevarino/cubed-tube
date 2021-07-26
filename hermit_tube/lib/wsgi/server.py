@@ -38,7 +38,7 @@ flask_config.update(creds['wsgi'])
 
 
 CTR_REQUESTS = Counter('ht_requests', 'Number of requests to site',
-                       labelnames=['path', 'method'])
+                       labelnames=['path', 'method', 'status'])
 HIST_REQUESTS = Histogram('ht_latency', 'Latency of requests',
                           labelnames=['path', 'method'])
 CTR_VIDEO_PLAY = Counter('ht_video_play', 'Videos played by channel/series',
@@ -87,15 +87,10 @@ def before_first_request():
 @app.before_request
 def before_request():
     g.start = time.time()
-    CTR_REQUESTS.labels(
-        path=request.path,
-        method=request.method,
-    ).inc()
-
 
 
 @app.after_request
-def after_request(response):
+def after_request(response: Response):
     diff = time.time() - g.start
     if response.response and 200 <= response.status_code < 300:
         response.headers["X-ServerTiming"] = str(diff)
@@ -103,6 +98,11 @@ def after_request(response):
         path=request.path,
         method=request.method,
     ).observe(diff)
+    CTR_REQUESTS.labels(
+        path=request.path,
+        method=request.method,
+        status=response.status_code,
+    ).inc()
     return response
 
 
