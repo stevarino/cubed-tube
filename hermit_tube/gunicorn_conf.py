@@ -7,7 +7,7 @@ raw_env = [
 
 bind = 'unix:hermit-tube.socket'
 
-umask = '007'
+umask = 7
 
 accesslog = '/var/www/hermit.tube/logs/gunicorn.logs'
 
