@@ -9,7 +9,7 @@ bind = 'unix:hermit-tube.socket'
 
 umask = '007'
 
-accesslog = '/var/www/hermit.tube/logs'
+accesslog = '/var/www/hermit.tube/logs/gunicorn.logs'
 
 def post_fork(server, worker):
     server.log.info("Worker spawned (pid: %s)", worker.pid)
