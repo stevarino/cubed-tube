@@ -1,3 +1,6 @@
+import os
+import shutil
+
 workers = 5
 
 raw_env = [
@@ -7,15 +10,18 @@ raw_env = [
 
 bind = 'unix:hermit-tube.socket'
 
-umask = 7
-
-accesslog = '/var/www/hermit.tube/logs/gunicorn.logs'
+accesslog = '/var/www/hermit.tube/logs/access.log'
+errorlog = '/var/www/hermit.tube/logs/error.log'
+loglevel = 'info'
+enable_stdio_inheritance = True
 
 def post_fork(server, worker):
     server.log.info("Worker spawned (pid: %s)", worker.pid)
     
 def on_starting(server):
     server.log.info("on_starting")
+    shutil.rmtree('./prometheus_multiproc')
+    os.mkdir('./prometheus_multiproc')
 
 def when_ready(server):
     server.log.info("server ready")

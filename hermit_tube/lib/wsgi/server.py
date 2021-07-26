@@ -110,6 +110,8 @@ def _allow_cors(func):
     def _wrapper(*args, **kwargs):
         res, code = func(*args, **kwargs)
         domain = _get_domain(request.referrer)
+        if not domain:
+            domain = flask_config['CORS_ORIGINS'][0]
         if domain not in flask_config['CORS_ORIGINS']:
             app.logger.error(f'Unrecognized referrer: "{domain}"')
             domain = flask_config['CORS_ORIGINS'][0]
