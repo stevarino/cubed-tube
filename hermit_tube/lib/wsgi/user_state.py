@@ -1,75 +1,149 @@
 from base64 import b85encode
-from collections import OrderedDict
 import json
+import logging
+import os
 import time
+import typing
 from uuid import uuid4
+from peewee import Value
 
-import hermit_tube.lib.wsgi.bucket as bucket
+from pymemcache.client import base as pymemcache_client
+from pymemcache.client.retrying import RetryingClient
+import pymemcache.exceptions
+
+from prometheus_client import Counter
+
+import hermit_tube.lib.wsgi.cloud_storage as cloud_storage
 
 # remove profile tombstones after 30d
 DELETE_HORIZON = 30 * 24 * 3600
+LOGGER = logging.getLogger(__name__)
 
 class UserNotFound(Exception):
     """The user file could not be found."""
 
 class Cache():
-    """An LRU cache with the ability to update cache items."""
-    def __init__(self, user_func, maxsize=1000):
-        self.user_func = user_func
-        self.maxsize = maxsize
-        self.hits = 0
-        self.misses = 0
-        self.cache = OrderedDict()
+    """An S3 wrapper with optional memcache read cache and write buffering."""
 
-    def get(self, key):
-        if key in self.cache:
-            self.cache.move_to_end(key)
-            self.hits += 1
-            return self.cache[key]
-        result = self.user_func(key)
-        self.cache[key] = result
-        self.misses += 1
-        self.resize()
+    _instance = None
+
+    def __init__(self,
+                 miss_func: typing.Callable[[str], None],
+                 write_func: typing.Callable[[str, dict], None],
+                 memcache: pymemcache_client.Client,
+                 deferred_writes: bool):
+        self.miss_func = miss_func
+        self.write_func = write_func
+        self.memcache = memcache
+        self.deferred_writes = deferred_writes
+
+        self.mem_hits = Counter(
+            'ht_memcache_hit', 
+            'Count of hits against memcached')
+        self.mem_misses = Counter(
+            'ht_memcache_miss', 
+            'Count of memcached misses')
+        self.mem_writes = Counter(
+            'ht_memcache_writes', 
+            'Count of memcached writes')
+        self.mem_buffer_writes = Counter(
+            'ht_memcache_buffwrites',
+            'Count of memcached buffered write attempts')
+        self.mem_buffer_fails = Counter(
+            'ht_memcache_buffwrite_colisions',
+            'Count of memcached buffered write aborts')
+        # NOTE: cloud_reads will be equal to memcache missses
+        # self.cloud_reads = Counter(
+        #     'ht_cloud_reads', 'Count of cloud reads')
+        self.cloud_writes = Counter(
+            'ht_cloud_writes', 'Count of cloud writes')
+
+        if self.deferred_writes and not self.memcache:
+            raise ValueError("Cannot enable deferred_writes without memcache")
+
+    @classmethod
+    def cache(cls, force=False, cache_miss=None, cache_write=None,
+              memcache=None, deferred_writes=None):
+        """Factory static method"""
+        if force or not cls._instance:
+            if not cache_miss:
+                cache_miss = cls._cache_miss
+            if not cache_write:
+                cache_write = cls._cache_write
+            if not memcache and os.getenv('memcache'):
+                host, port = os.getenv('memcache').split(':')
+                memcache = RetryingClient(
+                    pymemcache_client.Client((host, int(port))),
+                    attempts=3,
+                    retry_delay=0.1,
+                    retry_for=[
+                        pymemcache.exceptions.MemcacheUnexpectedCloseError,
+                        ConnectionAbortedError,
+                    ],
+                )
+            if deferred_writes is None:
+                deferred_writes = bool(os.getenv('deferred_writes'))
+            cls._instance = cls(cache_miss, cache_write, memcache,
+                                        deferred_writes)
+        return cls._instance
+
+    @classmethod
+    def _cache_miss(cls, user_hash: str):
+        """Looks up user from S3 service."""
+        try:
+            return json.loads(cloud_storage.get_object(user_hash))
+        except cloud_storage.NoSuchKey:
+            raise UserNotFound()
+
+    @classmethod
+    def _cache_write(cls, user_hash: str, data: dict):
+        """Writes user to S3 service."""
+        cloud_storage.put_object(user_hash, json.dumps(data))
+
+    def read(self, key):
+        if self.memcache:
+            result = self.memcache.get(key)
+            if result:
+                self.mem_hits.inc()
+                return json.loads(result)
+        result = self.miss_func(key)
+        if self.memcache:
+            self.memcache.set(key, json.dumps(result))
+        self.mem_misses.inc()
         return result
 
-    def update(self, key, value):
-        self.cache[key] = value
-        self.cache.move_to_end(key)
-        self.resize()
-
-    def resize(self):
-        while len(self.cache) > self.maxsize:
-            self.cache.popitem(last=False)
-
-
-_user_cache = None
-
-def get_user_cache(lookup_user_func = None, force=False, maxsize=None):
-    """Initializes, caches (yo dawg), and returns the User Cache object."""
-    global _user_cache
-    kwargs = {}
-    if lookup_user_func is None:
-        lookup_user_func = _lookup_user
-    if maxsize is not None:
-        kwargs['maxsize'] = maxsize
-    if _user_cache is None or force:
-        _user_cache = Cache(lookup_user_func, **kwargs)
-    return _user_cache
-
-def _lookup_user(user_hash: str):
-    """Looks up user from the filesystem."""
-    try:
-        return json.loads(bucket.get_object(_key(user_hash)))
-    except bucket.NoSuchKey:
-        raise UserNotFound()
-
+    def write(self, key, value):
+        self.mem_writes.inc()
+        if self.memcache:
+            self.memcache.set(key, json.dumps(value))
+        if self.deferred_writes:
+            self.mem_buffer_writes.inc()
+            for i in range(3):
+                result = self.memcache.get('_deferred')
+                if result is None:
+                    LOGGER.info('adding')
+                    self.memcache.add('_deferred', '')
+                    result = b''
+                keys = result.decode("utf-8").split()
+                if key in keys:
+                    return
+                try:
+                    self.memcache.append('_deferred', key + ' ')
+                    return
+                except:
+                    LOGGER.warning(
+                        'Failed to append to _deferred', exc_info=True)
+                    pass
+                self.mem_buffer_fails.inc()
+        self.cloud_writes.inc()
+        self.write_func(key, value)
+        
 def _key(user_hash: str):
     return f'user_state/{user_hash[0:2]}/{user_hash}.json'
 
 def lookup_user(user_hash: str):
     """Returns the user from cache/file, or throws UserNotFound."""
-    cache = get_user_cache()
-    return cache.get(user_hash)
+    return Cache.cache().read(_key(user_hash))
 
 def merge_data(user_hash: str, data: dict, old_data=None,
                delete_horizon=None):
@@ -156,8 +230,6 @@ def write_user(user_hash: str, data: dict):
     data, write_needed = merge_data(user_hash, data)
     if not write_needed:
         return data
-    bucket.put_object(_key(user_hash), json.dumps(data))
-    cache = get_user_cache()
-    cache.update(user_hash, data)
+    Cache.cache().write(_key(user_hash), data)
     return data
 

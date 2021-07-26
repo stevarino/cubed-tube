@@ -21,11 +21,11 @@ var STATE = {}
 var SETTINGS = {};
     /**
      * {
-     *      player_mobile
-     *      player
-     *      autoplay
-     *      profile
-     *      series
+     *      player = bool           use integrated player
+     *      autoplay = bool         autoplay integrated player on click
+     *      use_fullscreen = bool   fullscreen integrated player
+     *      series = string (hc7)   current series/season selected
+     *      profile = int (0)       current profile selected
      * }
      */
 
@@ -47,22 +47,39 @@ async function initUser() {
         createSeries(getSeries());
     });
     STATE = await migrateState(STATE);
-    saveState();
 }
 
 async function getUserState() {
     return new Promise((resolve, reject) => {
-        makeRequest({
-            url: `//${window.API_DOMAIN}/app/user_state`, 
-            creds: true,
-            json: true,
-        }).then((response) => {
-            // expecting a json response
+        callBackendServer().then(response => {
+            STATE = response.state;
+            resolve();
+        }).catch(reject);
+    });
+}
+
+function callBackendServer(request) {
+    default_request = {
+        url: `//${window.API_DOMAIN}/app/user_state`, 
+        creds: true,
+        json: true,
+    };
+
+    if (request === undefined) {
+        request = JSON.parse(JSON.stringify(default_request));
+    }
+    Object.keys(default_request).forEach((key) => {
+        if (!(key in request)) {
+            request[key] = default_request[key];
+        }
+    });
+
+    return new Promise((resolve, reject) => {
+        makeRequest(request).then((response) => {
             if (response.error === undefined) {
                 // Received user state.
-                console.log('Received State from Server');
                 markUserLoggedIn();
-                return resolve(response.state);
+                return resolve(response);
             } else if (response.error === 'unknown') {
                 // User is logged in, but no state.
                 markUserLoggedIn(true);
@@ -71,10 +88,12 @@ async function getUserState() {
             } else {
                 console.log('Error, unrecognized response:', response);
             }
+            return reject();
         }).catch((err) => {
+            // TODO: retry with exponential backoff
             console.log('Error during getUserState:', err);
+            return reject();
         });
-        return reject();
     });
 }
 
@@ -160,51 +179,43 @@ function scheduleUploadState() {
     }, 60000);
 }
 
-function uploadState() {
-    if (USER.STATE_UPLOAD_NEEDED === false) {
+function uploadState(force) {
+    if (USER.STATE_UPLOAD_NEEDED === false && force === undefined) {
         clearInterval(USER.STATE_UPLOAD_TIMER);
         USER.STATE_UPLOAD_TIMER = 0;
         return;
     }
     console.log('Uploading State');
-    makeRequest({
+
+    callBackendServer({
         method: 'POST',
-        url: `//${window.API_DOMAIN}/app/user_state`,
-        creds: true,
         params: JSON.stringify(STATE),
-        json: true,
-    }).then((response) => {
-        if (response.error === undefined) {
-            let profile = getProfile();
-            STATE = response.state;
-            let profiles = listProfiles();
-            let found = false;
-            let areYouMyProfile = (lhv, rhv) => {
-                return lhv.profile === rhv.profile && lhv.ch === rhv.ch
-            }
-            if ('id' in profile) {
-                areYouMyProfile = (lhv, rhv) => lhv.id === rhv.id
-            }
-            
-            for (const p of profiles) {
-                if (areYouMyProfile(p, profile)) {
-                    found = true;
-                    SETTINGS.profile = getProfileIndex(p);
-                    break;
-                }
-            }
-            if (!found) {
-                // currently active profile is likely deleted
-                // this is awkward...
-                window.location.reload();
-            }
-            renderProfileMenu();
-        } else {
-            console.log("Request error: ", response);
+    }).then(response => {
+        let profile = getProfile();
+        STATE = response.state;
+        let profiles = listProfiles();
+        let found = false;
+        let areYouMyProfile = (lhv, rhv) => {
+            return lhv.profile === rhv.profile && lhv.ch === rhv.ch
         }
-    }).catch((err) => {
-        console.log("Request failed: ", err);
-    })
+        if ('id' in profile) {
+            areYouMyProfile = (lhv, rhv) => lhv.id === rhv.id
+        }
+        
+        for (const p of profiles) {
+            if (areYouMyProfile(p, profile)) {
+                found = true;
+                SETTINGS.profile = getProfileIndex(p);
+                break;
+            }
+        }
+        if (!found) {
+            // currently active profile is likely deleted
+            // this is awkward...
+            window.location.reload();
+        }
+        renderProfileMenu();
+    }).catch(console.log);
 }
 
 function saveSettings() {

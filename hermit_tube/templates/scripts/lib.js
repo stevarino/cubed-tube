@@ -91,3 +91,28 @@ function makeRequest({method='GET', url='', headers={}, params='', creds=false,
 function logJson(obj) {
     console.log(JSON.stringify(obj, null, 2));
 }
+
+function parseQueryString(url, multiple_vals) {
+    let args = {};
+    let parts = url.split('?');
+    if (parts.length == 1) {
+        return args;
+    }
+    parts[1].split('&').forEach(arg => {
+        let pair = arg.split('=');
+        if (pair.length == 1) {
+            return;
+        }
+        let key = decodeURIComponent(pair[0]);
+        let val = decodeURIComponent(pair[1]);
+        if (multiple_vals !== undefined) {
+            if (!(key in args)) {
+                args[key] = [];
+            }
+            args[key].push(val);
+        } else {
+            args[key] = val;
+        }
+    });
+    return args;
+}

@@ -1,47 +1,81 @@
 
 from copy import deepcopy
 from  string import ascii_lowercase
+import typing
 import unittest
+
+from prometheus_client.registry import REGISTRY
 
 from hermit_tube.lib.wsgi import user_state
 
+class MemcacheMock():
+    def __init__(self, state: typing.Optional[dict]=None):
+        if state is None:
+            state = {}
+        self.state = state
+
+    def get(self, key):
+        return self.state.get(key)
+
+    def set(self, key, value):
+        self.state[key] = value
+
+    def gets(self, key):
+        return self.get(key), 'foo'
+
+    def cas(self, key, value, cas):
+        assert cas == 'foo'
+        self.set(key, value)
+        return True
+
+
+def _cache_init(data: typing.Optional[dict]=None, memcache=None):
+    if data is None:
+        data = {}
+
+    def _miss(key):
+        if key not in data:
+            raise user_state.UserNotFound()
+        return data[key]
+
+    def _set(key, value):
+        data[key] = value
+
+    return user_state.Cache.cache(
+        force=True,
+        cache_miss=_miss,
+        cache_write=_set,
+        memcache=memcache
+    )
+
+
 class TestWsgiUser(unittest.TestCase):
-    _records = []
+    def tearDown(self) -> None:
+        collectors = list(REGISTRY._collector_to_names.keys())
+        [REGISTRY.unregister(c) for c in collectors]
+        return super().tearDown()
 
-    def _lookup_user(self, hash):
-        if self._records:
-            return self._records.pop(0)
-        raise user_state.UserNotFound()
-
-    def _cache_init(self, data=None, **kwargs):
-        cache_kwargs = {'force': True}
-        for key in kwargs:
-            cache_kwargs[key] = kwargs[key]
-        self._records[:] = data or []
-        return user_state.get_user_cache(
-            self._lookup_user, force=True, **kwargs)
-
-    def test_lru_cache_caches(self):
+    def test_cloud_storage(self):
         """Ensure that repeatedly calling the cache functions."""
-        cache = self._cache_init(list(ascii_lowercase))
-        keys = [cache.get('key') for i in range(5)]
-        self.assertEqual('aaaaa', ''.join(keys))
-        self.assertEqual(1, cache.misses)
-        self.assertEqual(4, cache.hits)
-        self.assertEqual(1, len(cache.cache))
-            
+        cache = _cache_init({str(i): l for i, l in enumerate(ascii_lowercase)})
+        keys = [cache.read('2') for i in range(5)]
+        self.assertEqual('ccccc', ''.join(keys))
+        self.assertEqual(5, cache.mem_misses._value._value)
+        self.assertEqual(0, cache.mem_hits._value._value)
 
-    def test_lru_cache_resize(self):
-        """Ensures the LRU cache only returns the most recent values"""
-        cache = self._cache_init(list(ascii_lowercase), maxsize=5)
-        for i in range(7):
-            cache.get(str(i))
-        keys = ''.join(cache.cache.values())
-        self.assertEqual(keys, 'cdefg')
+    def test_memcache_reads(self):
+        """Test that memcache reads occur before cloud reads"""
+        cache = _cache_init(
+            {str(i): l for i, l in enumerate(ascii_lowercase)},
+            MemcacheMock())
+        keys = [cache.read('2') for i in range(5)]
+        self.assertEqual('ccccc', ''.join(keys))
+        self.assertEqual(1, cache.mem_misses._value._value)
+        self.assertEqual(4, cache.mem_hits._value._value)
 
     def test_merge_data_new_ids(self):
         """Ensures that new profiles receive IDs"""
-        cache = self._cache_init()
+        cache = _cache_init()
         data = {'a': [{'profile': 'foo'}, {'profile': 'bar'}]}
         new_data, is_merged = user_state.merge_data('hash', data)
         self.assertTrue(is_merged)
@@ -49,14 +83,14 @@ class TestWsgiUser(unittest.TestCase):
 
     def test_merge_data_not_updated(self):
         data = {'a': [{'id': 'foo', 'profile': 'foo'}]}
-        cache = self._cache_init([data])
-        new_data, is_merged = user_state.merge_data('hash', data)
-        self.assertFalse(is_merged)
+        _cache_init({user_state._key('hash'): deepcopy(data)})
+        new_data, write_needed = user_state.merge_data('hash', data)
+        self.assertFalse(write_needed)
         self.assertEqual(data, new_data)
 
     def test_merge_data_timestamps(self):
         data = {'a': [{'id': 'foo', 'ts': 2, 'profile': 'foo'}]}
-        self._cache_init([deepcopy(data)])
+        _cache_init({user_state._key('hash'): data})
 
         new_data = deepcopy(data)
         new_data['a'][0]['ts'] = 1
