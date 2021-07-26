@@ -2,7 +2,7 @@ workers = 5
 
 raw_env = [
     'PROMETHEUS_MULTIPROC_DIR=./prometheus_multiproc',
-    ''
+    'memcache=localhost:11211',
 ]
 
 bind = 'unix:hermit-tube.socket'
