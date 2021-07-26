@@ -94,15 +94,16 @@ def after_request(response: Response):
     diff = time.time() - g.start
     if response.response and 200 <= response.status_code < 300:
         response.headers["X-ServerTiming"] = str(diff)
-    HIST_REQUESTS.labels(
-        path=request.path,
-        method=request.method,
-    ).observe(diff)
-    CTR_REQUESTS.labels(
-        path=request.path,
-        method=request.method,
-        status=response.status_code,
-    ).inc()
+    if  request.path != '/metrics':
+        HIST_REQUESTS.labels(
+            path=request.path,
+            method=request.method,
+        ).observe(diff)
+        CTR_REQUESTS.labels(
+            path=request.path,
+            method=request.method,
+            status=response.status_code,
+        ).inc()
     return response
 
 
