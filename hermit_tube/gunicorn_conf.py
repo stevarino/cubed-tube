@@ -1,7 +1,7 @@
 workers = 5
 
 raw_env = [
-    'PROMETHEUS_MULTIPROC_DIR=./prometheus_tmp',
+    'PROMETHEUS_MULTIPROC_DIR=./prometheus_multiproc',
     ''
 ]
 
