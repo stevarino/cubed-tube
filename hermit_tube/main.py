@@ -2,10 +2,11 @@ import argparse
 import os
 import os.path
 
-from hermit_tube.lib import scan, render
+from hermit_tube.frontend import render
+from hermit_tube.scraper import scraper
 
 def run_wsgi_server(args):
-    from hermit_tube.lib.wsgi import app
+    from hermit_tube.backend import app
     app.run(debug=True, use_reloader=False)
 
 def run_tests(args):
@@ -23,7 +24,10 @@ def run_compress(args):
     ])
 
 SUBCOMMANDS = {
-    'scan': scan,
+    'frontend': render,
+    'scraper': scraper,
+    'backend': run_wsgi_server,
+    'scan': scraper,
     'render': render,
     'wsgi': run_wsgi_server,
     'test': run_tests,

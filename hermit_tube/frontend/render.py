@@ -21,28 +21,28 @@ import yaml
 from jinja2 import Environment, PackageLoader
 import peewee as pw
 
+TEMPLATE_DIR = 'frontend/templates/'
+
 def render_static(config: Dict):
     os.makedirs(root('output/static'), exist_ok=True)
-    env = Environment(loader=PackageLoader('hermit_tube'))
+    env = Environment(loader=PackageLoader('hermit_tube.frontend'))
     context = generate_template_context(config)
-    for html_file in glob(root('templates/**/*.html'), recursive=True):
+    for html_file in glob(root(F'{TEMPLATE_DIR}**/*.html'), recursive=True):
         if 'wsgi' in html_file:  # auth site
             continue
-        html_file = html_file.replace('\\', '/').split(
-            'hermit_tube/templates/')[-1]
-        out_file = root(os.path.join("output", html_file))
+        html_file_stub = html_file.replace('\\', '/').split(TEMPLATE_DIR)[-1]
+        out_file = root(os.path.join("output", html_file_stub))
         os.makedirs(root(os.path.dirname(out_file)), exist_ok=True)
         print(f'writing {out_file}')
         with open(out_file, 'w') as fp:
-            fp.write(env.get_template(html_file).render(**context))
+            fp.write(env.get_template(html_file_stub).render(**context))
 
     # join javascript files together
     re_global_var = re.compile(r'^(?:function|var|const) (\w+)', re.MULTILINE)
     global_namespace = {}
     with open(root(os.path.join("output", 'script.js')), 'w') as fp:
-        for js_file in glob(root('templates/scripts/*.js')):
-            filename = js_file.replace('\\', '/').split(
-                'hermit_tube/templates/')[-1]
+        for js_file in glob(root(f'{TEMPLATE_DIR}scripts/*.js')):
+            filename = js_file.replace('\\', '/').split(TEMPLATE_DIR)[-1]
             fp.write(f'/*\n * {filename}\n */\n\n')
             with open(js_file, 'r') as js_contents:
                 content = js_contents.read()
@@ -229,7 +229,7 @@ def main(args: argparse.Namespace):
             render_series(Context(config=config, series_config=series))
 
     render_static(config)
-    copytree(root('templates/static'), root('output/static'))
+    copytree(root('frontend/templates/static'), root('output/static'))
 
 
 if __name__ == "__main__":

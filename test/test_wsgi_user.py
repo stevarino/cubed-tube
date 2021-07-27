@@ -6,7 +6,7 @@ import unittest
 
 from prometheus_client.registry import REGISTRY
 
-from hermit_tube.lib.wsgi import user_state
+from hermit_tube.backend import user_state
 
 class MemcacheMock():
     def __init__(self, state: typing.Optional[dict]=None):

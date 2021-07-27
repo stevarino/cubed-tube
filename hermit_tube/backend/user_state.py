@@ -13,7 +13,7 @@ import pymemcache.exceptions
 
 from prometheus_client import Counter
 
-import hermit_tube.lib.wsgi.cloud_storage as cloud_storage
+from hermit_tube.backend import cloud_storage
 
 # remove profile tombstones after 30d
 DELETE_HORIZON = 30 * 24 * 3600

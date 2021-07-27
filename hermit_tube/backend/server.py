@@ -8,8 +8,7 @@ from urllib.parse import urlparse
 import yaml
 
 from flask import (
-    Flask, url_for, session, redirect, render_template, request,
-    send_from_directory, jsonify, g, Response)
+    Flask, url_for, session, redirect, request, jsonify, g, Response)
 from flask.logging import default_handler
 
 from authlib.integrations.flask_client import OAuth
@@ -18,9 +17,8 @@ from prometheus_client import (
     Histogram, multiprocess, generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST,
     Gauge, Counter, Histogram)
 
-from hermit_tube.lib.common import generate_template_context
 from hermit_tube.lib.util import root, sha1
-from hermit_tube.lib.wsgi import user_state
+from hermit_tube.backend import user_state
 
 path = os.path.abspath(__file__)
 while 'lib' in path:
@@ -44,10 +42,7 @@ HIST_REQUESTS = Histogram('ht_latency', 'Latency of requests',
 CTR_VIDEO_PLAY = Counter('ht_video_play', 'Videos played by channel/series',
                          labelnames=['channel', 'series'])
 
-app = Flask(
-    __name__, 
-    template_folder='../../templates',
-    static_url_path='')
+app = Flask(__name__)
 app.config.update(flask_config)
 
 
@@ -69,7 +64,6 @@ oauth.register(
     }
 )
 
-STATIC_DIR = os.path.join(path, 'templates/static').replace('\\', '/')
 MULTIPROCESS = bool(os.getenv('PROMETHEUS_MULTIPROC_DIR'))
 
 @app.before_first_request
@@ -140,9 +134,8 @@ def _get_domain(referrer):
 
 @app.route('/')
 def homepage():
-    user = session.get('user_hash')
-    context = generate_template_context(config)
-    return render_template('wsgi/wsgi.html', user=user, **context)
+    return redirect(flask_config['CORS_ORIGINS'][0], code=302)
+
 
 @app.route("/metrics")
 def metrics():
@@ -179,11 +172,6 @@ def logout():
     if user_hash is not None:
         app.logger.info(f"User {user_hash} logged out")
     return redirect(request.args.get('r') or '/')
-
-
-@app.route('/static/<path:path>')
-def send_static(path):
-    return send_from_directory(STATIC_DIR, path)
 
 
 @app.route('/play_count')
