@@ -1,12 +1,12 @@
 """
-Reads from the database and produces html files.
+Reads from the database and produces html/js files.
 """
 
-from hermit_tube.lib.common import (
-    Context, generate_template_context)
-from hermit_tube.lib.models import (
-    Video, Channel, Series, Misc, init_database)
-from hermit_tube.lib.util import root, sha1
+from hermit_tube.lib.common import filter_video
+from hermit_tube.lib.models import Video, Channel, Series, init_database
+from hermit_tube.lib import schema
+from hermit_tube.lib.util import root, sha1, load_config, load_credentials
+from hermit_tube.frontend import template_context
 
 import argparse
 from glob import glob
@@ -23,10 +23,10 @@ import peewee as pw
 
 TEMPLATE_DIR = 'frontend/templates/'
 
-def render_static(config: Dict):
+def render_static(config: schema.Playlist, creds: schema.Credentials):
     os.makedirs(root('output/static'), exist_ok=True)
     env = Environment(loader=PackageLoader('hermit_tube.frontend'))
-    context = generate_template_context(config)
+    context = template_context.generate_context(config, creds)
     for html_file in glob(root(F'{TEMPLATE_DIR}**/*.html'), recursive=True):
         if 'wsgi' in html_file:  # auth site
             continue
@@ -55,21 +55,21 @@ def render_static(config: Dict):
             fp.write(content)
             fp.write('\n\n')
 
-def render_series(context: Context):
-    slug = context.series_config['slug']
-    videos = (Video.select(Video, Channel, Series)
+def render_series(config: schema.Playlist, series: schema.PlaylistSeries):
+    videos: list[Video] = (
+        Video.select(Video, Channel, Series)
         .join(Channel, on=(Video.channel == Channel.name), attr='ch')
         .join_from(Video, Series)
-        .where(Video.series.slug == slug)
+        .where(Video.series.slug == series.slug)
         .order_by(Video.published_at)
     )
-    data = {'series': slug, 'channels': {}, 'videos': []}
+    data = {'series': series.slug, 'channels': {}, 'videos': []}
 
     channels = {}
     descs = {}
     for video in videos:
-        ch = video.ch
-        if context.filter_video(video):
+        ch: Channel = video.ch
+        if filter_video(series, video):
             continue
         descs[video.video_id] = video.description
         data['videos'].append({
@@ -95,10 +95,10 @@ def render_series(context: Context):
         str(cid): channels[cid] for cid in sorted(channels.keys())
     }
 
-    data['descriptions'] = render_descriptions_by_hash(slug, descs)
-    with open(root(f'output/data/{slug}/{slug}.json'), 'w') as fp:
+    data['descriptions'] = render_descriptions_by_hash(series.slug, descs)
+    with open(root(f'output/data/{series.slug}/{series.slug}.json'), 'w') as fp:
         fp.write(json.dumps(data))
-    render_updates(context)
+    render_updates(config, series)
 
 def render_descriptions_by_hash(slug: str, descs: Dict[str, str]):
     os.makedirs(root(f'output/data/{slug}/desc'), exist_ok=True)
@@ -132,32 +132,30 @@ def render_descriptions_by_hash(slug: str, descs: Dict[str, str]):
     return sigs
 
 
-def render_updates(context: Context):
+def render_updates(config: schema.Playlist, series: schema.PlaylistSeries):
     """Renders json files for the last 10 videos published."""
-    slug = context.series_config['slug']
-    os.makedirs(root(f'output/data/{slug}/updates'), exist_ok=True)
-    vid_hash, vid_id = render_updates_for_series(context)
-    with open(root(f'output/data/{slug}/updates.json'), 'w') as f:
+    os.makedirs(root(f'output/data/{series.slug}/updates'), exist_ok=True)
+    vid_hash, vid_id = render_updates_for_series(series)
+    with open(root(f'output/data/{series.slug}/updates.json'), 'w') as f:
         f.write(json.dumps({
             'id': vid_id,
             'hash': vid_hash,
-            'version': context.config['version'],
+            'version': config.version,
             'promos': [] # TODO....
         }))
 
-def render_updates_for_series(context: Context) -> Tuple[str, str]:
+def render_updates_for_series(series: schema.PlaylistSeries) -> Tuple[str, str]:
     """Generates the hashed update files, returning the last one."""
-    slug = context.series_config['slug']
     prev_hash = None
     prev_id = None
 
-    videos = (
+    videos: list[Video] = (
         Video.select()
         .join_from(Video, Series)
-        .where(Video.series.slug == slug)
+        .where(Video.series.slug == series.slug)
         .order_by(Video.published_at.desc())
     )
-    videos = [v for v in videos if not context.filter_video(v)]
+    videos = [v for v in videos if not filter_video(series, v)]
     for vid in reversed(videos[0:30]):
         vid_data = {
             'id': vid.video_id,
@@ -170,8 +168,9 @@ def render_updates_for_series(context: Context) -> Tuple[str, str]:
                 'id': prev_id,
             },
         }
-        vid_hash = sha1(f'{slug}/{vid.video_id}')
-        with open(root(f'output/data/{slug}/updates/{vid_hash}.json'), 'w') as f:
+        vid_hash = sha1(f'{series.slug}/{vid.video_id}')
+        filename = f'output/data/{series.slug}/updates/{vid_hash}.json'
+        with open(root(filename), 'w') as f:
             f.write(json.dumps(vid_data))
         prev_hash = vid_hash
         prev_id = vid.video_id
@@ -208,27 +207,23 @@ def build_argparser(parser: argparse.ArgumentParser):
 
 
 def main(args: argparse.Namespace):
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    with open(root('playlists.yaml')) as fp:
-        config = yaml.safe_load(fp)
-    with open(root('credentials.yaml')) as fp:
-        config['creds'] = yaml.safe_load(fp)
+    config = load_config()
+    creds = load_credentials()
     init_database()
 
     if args.quick:
-        for series in config['series']:
-            context = Context(config=config, series_config=series)
-            render_updates(context)
+        for series in config.series:
+            render_updates(config, series)
     else:
         clear_directory(root('output'))
 
-        for series in config['series']:
-            print(f'Processing {series["slug"]}')
-            if args.series and series['slug'] not in args.series:
+        for series in config.series:
+            print(f'Processing {series.slug}')
+            if args.series and series.slug not in args.series:
                 continue
-            render_series(Context(config=config, series_config=series))
+            render_series(config, series)
 
-    render_static(config)
+    render_static(config, creds)
     copytree(root('frontend/templates/static'), root('output/static'))
 
 

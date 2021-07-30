@@ -5,23 +5,24 @@
 # currently 11339 videos in system
 # => scan entire library = 227 quota, or 12 runs, or 2 hours
 
-from hermit_tube.lib.common import Context, chunk
-from hermit_tube.lib.models import (
-    Misc, Series, Channel, Playlist, Video, pw, db, init_database)
-from hermit_tube.lib import trends
-from hermit_tube.lib.util import root
-
 import argparse
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import datetime
 import json
 import os
 import re
 import socket
 import traceback
-from typing import Dict, List
+import time
+from typing import Optional
 import urllib.request, urllib.parse
 import yaml
+
+from hermit_tube.lib.common import filter_video
+from hermit_tube.lib.models import (
+    Misc, Series, Channel, Playlist, Video, pw, db, init_database)
+from hermit_tube.lib import trends, schema
+from hermit_tube.lib.util import root, load_credentials, load_config, chunk
 
 API_URL = 'https://www.googleapis.com/youtube/v3/'
 YT_PLAYLIST = re.compile(r'https://www.youtube.com/playlist\?list=([^&]+)')
@@ -33,21 +34,30 @@ ISO8601_DUR = re.compile(
 
 
 @dataclass
+class Context:
+    """A dataclass of convenience fields, useful for branching contexts."""
+    cost: int = 0
+    quota: int = None
+    channels: list[str] = field(default_factory=list)
+    now: int = field(default_factory=lambda: int(time.time()))
+
+
+@dataclass
 class YouTubeRequest:
     endpoint: str
-    args: Dict
+    args: dict
     cost: int = 1
     etag: str = None
 
 
 def _yt_get(ctx: Context, req: YouTubeRequest):
-    req.args['key'] = ctx.api_key
+    req.args['key'] = load_credentials().api_key
     request = urllib.request.Request(
         f'{API_URL}{req.endpoint}?{urllib.parse.urlencode(req.args)}')
     # NOTE: https://issuetracker.google.com/issues/176760791
     # if req.etag:
     #     request.add_header('if-none-match', f'"{req.etag}"')
-    ctx.cost.add(req.cost)
+    ctx.cost += req.cost
     try:
         for timeout in [5, 10, 20, 40, 80]:
             try:
@@ -68,7 +78,7 @@ def _yt_get(ctx: Context, req: YouTubeRequest):
         raise
     return data
 
-def _yt_get_generator(ctx: Context, response: Dict, req: YouTubeRequest):
+def _yt_get_generator(ctx: Context, response: dict, req: YouTubeRequest):
     """Yields an item from a response, making additional requests as needed."""
     while True:
         for item in response['items']:
@@ -91,40 +101,40 @@ def get_yt_channel_id(channel_name: str):
     """Normalize a channel name into an id."""
     return channel_name.lower().replace(' ', '')
 
-def load_yt_channel(ctx: Context, channel: Dict):
+def load_yt_channel(ctx: Context, channel: schema.PlaylistChannel) -> Channel:
     """Creates or retrieves a channel record, ensuring it is up to date."""
     with db.atomic():
         chan, created = Channel.get_or_create(
-            name=get_yt_channel_id(channel['name']),
-            channel_type=channel.get('type', 'youtube'),
-            defaults={'tag': channel['name']})
+            name=get_yt_channel_id(channel.name),
+            channel_type=channel.type,
+            defaults={'tag': channel.name})
         if created:
-            chan.id = Channel.select(pw.fn.MAX(Channel.id)).scalar() + 1
-            if 'channel' in channel:
-                channel_name = channel['channel']
-                channel = _yt_get(ctx, YouTubeRequest(
+            max_id = Channel.select(pw.fn.MAX(Channel.id)).scalar() or 0
+            chan.id = max_id + 1
+            if channel.channel:
+                channel_name = channel.channel
+                ch_resp = _yt_get(ctx, YouTubeRequest(
                     endpoint='channels', args={'forUsername': channel_name}))
-                if 'items' not in channel:
+                if 'items' not in ch_resp:
                     raise ValueError("Unable to find channel " + channel_name)
-                channel_id = channel['items'][0]['id']
-            elif YT_PLAYLIST.match(channel.get('playlist', '')):
-                playlist_id = YT_PLAYLIST.match(channel['playlist'])[1]
+                channel_id = ch_resp['items'][0]['id']
+            elif YT_PLAYLIST.match(channel.playlist or ''):
+                playlist_id = YT_PLAYLIST.match(channel.playlist)[1]
                 args =  {'playlistId': playlist_id, 'part': 'id,snippet'}
-                playlist = _yt_get(ctx, YouTubeRequest(
+                playlist_resp = _yt_get(ctx, YouTubeRequest(
                     endpoint='playlistItems', args=args))
-                if 'items' not in playlist:
+                if 'items' not in playlist_resp:
                     raise ValueError("Unable to find playlist {} ({})".format(
                         playlist_id, channel['name']))
-                channel_id = playlist['items'][0]['snippet']['channelId']
+                channel_id = playlist_resp['items'][0]['snippet']['channelId']
             else:
-                raise ValueError(f"Unrecognized channel: {channel}")
+                raise ValueError(f"Unrecognized channel: {channel.as_dict()}")
             chan.channel_id = channel_id
             chan.save()
-
     update_yt_channel(ctx, [chan.channel_id])
-    return ctx.copy(channel=chan)
+    return chan
 
-def update_yt_channel(ctx: Context, chan_ids: List[str]):
+def update_yt_channel(ctx: Context, chan_ids: list[str]):
     chans = (
         Channel.select(
             Channel,
@@ -147,7 +157,7 @@ def update_yt_channel(ctx: Context, chan_ids: List[str]):
     items = _yt_get(ctx, YouTubeRequest(
         endpoint='channels', args=chan_args))['items']
     for item in items:
-        chan = chan_map[item['id']]
+        chan: Channel = chan_map[item['id']]
         chan.last_scanned = ctx.now
 
         chan.title = item['snippet']['title']
@@ -166,17 +176,19 @@ def update_yt_channel(ctx: Context, chan_ids: List[str]):
         Channel.video_count, Channel.view_count])
     print(f"Updated {cnt} rows from {len(chan_map)}")
     '''
-    return ctx.copy(channel=chan)
     
 
-def process_yt_playlist(ctx: Context, ch_name: str, p_id: str):
+def process_yt_playlist(ctx: Context, series: schema.PlaylistSeries,
+                        channel: schema.PlaylistChannel):
+    playlist = YT_PLAYLIST.match(channel.playlist)[1]
+    play, _ = Playlist.get_or_create(
+        playlist_id=playlist, playlist_type='youtube_pl',
+        channel=channel.record)
     args = {
-        'playlistId': p_id, 
+        'playlistId': playlist, 
         'maxResults': 50,
         'part':  'snippet,contentDetails'
     }
-    play, _ = Playlist.get_or_create(
-        playlist_id=p_id, playlist_type='youtube_pl', channel=ctx.channel)
     req = YouTubeRequest('playlistItems', args, etag=play.etag)
     try:
         videos = _yt_get(ctx, req)
@@ -187,18 +199,21 @@ def process_yt_playlist(ctx: Context, ch_name: str, p_id: str):
     play.save()
     for i, result in enumerate(_yt_get_generator(ctx, videos, req)):
         update_video(ctx, result['snippet']['resourceId']['videoId'], result,
-                     defaults={'playlist': play, 'series': ctx.series, 
-                               'channel': get_yt_channel_id(ch_name)})
-    print(f'    Playlist ID {p_id} ({i+1})')
+                     series=series, defaults={
+                         'playlist': play,
+                         'series': series.record, 
+                         'channel': get_yt_channel_id(channel.name)})
+    print(f'    Playlist ID {playlist} ({i+1})')
 
 
-def _parse_ts(dt_str):
+def _parse_ts(dt_str: str):
     dt = datetime.datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
     return int(dt.timestamp())
 
 
-def update_video(ctx: Context, video_id: str, result: Dict,
-                 filter_vid: bool = True, defaults: Dict = None):
+def update_video(ctx: Context, video_id: str, result: dict,
+                 defaults: dict = None,
+                 series: Optional[schema.PlaylistSeries] = None):
     """Write a video to the database"""
     vid, _ = Video.get_or_create(
             video_type='youtube', 
@@ -251,51 +266,35 @@ def update_video(ctx: Context, video_id: str, result: Dict,
             except (ValueError, TypeError):
                 pass
     
-    if filter_vid and ctx.filter_video(vid):
+    if series and filter_video(series, vid):
         return
     vid.save()
 
 
-def process_channel(ctx: Context, channel: Dict):
-    print('  Processing channel', channel['name'])
-    ctx_ = load_yt_channel(ctx, channel)
-    if 'playlist' in channel and YT_PLAYLIST.match(channel['playlist']):
-        playlist_id = YT_PLAYLIST.match(channel['playlist'])[1]
+def process_channel(ctx: Context, series: schema.PlaylistSeries,
+                    channel: schema.PlaylistChannel):
+    print('  Processing channel', channel.name)
+    channel.record = load_yt_channel(ctx, channel)
+    if channel.playlist and YT_PLAYLIST.match(channel.playlist):
+        playlist_id = YT_PLAYLIST.match(channel.playlist)[1]
         print('    Processing playlist', playlist_id)
-        process_yt_playlist(ctx_, channel['name'], playlist_id)
-    elif 'channel' in channel:
-        with db.atomic():
-            chan, created = Channel.get_or_create(
-                name=get_yt_channel_id(channel['name']),
-                channel_type=channel.get('type', 'youtube'),
-                defaults={'tag': channel['name']})
-            if created:
-                chan.id = Channel.select(pw.fn.MAX(Channel.id)).scalar() + 1
-                channel_name = channel['channel']
-                channel = _yt_get(ctx, YouTubeRequest(
-                    endpoint='channels', args={'forUsername': channel_name}))
-                if 'items' not in channel:
-                    raise ValueError("Unable to find channel " + channel_name)
-                channel_id = channel['items'][0]['id']
-                chan.channel_id = channel_id
-                chan.save()
-    else:
-        raise ValueError("Cannot parse {}".format(channel))
+        process_yt_playlist(ctx, series, channel)
 
-def process_series(ctx: Context, channels: List[Dict[str,str]]):
-    print("Working on series", ctx.series.slug)
+def process_series(ctx: Context, series: schema.PlaylistSeries):
+    print("Working on series", series.slug)
     videos = {}
-    for channel in channels:
-        if ctx.channels and channel['name'] not in ctx.channels:
+    for channel in series.channels:
+        # filter for cli specified channels
+        if ctx.channels and channel.name not in ctx.channels:
             continue
         try:
-            process_channel(ctx, channel)
+            process_channel(ctx, series, channel)
         except Exception:
             traceback.print_exc()
 
         # explicit videos
-        ch_id = get_yt_channel_id(channel['name'])
-        for video in channel.get('videos', []):
+        ch_id = get_yt_channel_id(channel.name)
+        for video in (channel.videos or []):
             videos[video] = ch_id
 
     if not videos:
@@ -311,7 +310,7 @@ def process_series(ctx: Context, channels: List[Dict[str,str]]):
     def _get_defaults(vid):
         return {
             'defaults': {
-                'series': ctx.series,
+                'series': series.record,
                 'channel': videos[vid['id']],
             }
         }
@@ -320,7 +319,7 @@ def process_series(ctx: Context, channels: List[Dict[str,str]]):
     if missing_vids:
         print(f'  WARNING: Videos not found: {", ".join(missing_vids)}')
     
-def get_video_by_ids(ctx: Context, video_ids: list[str], kwargs_func: None):
+def get_video_by_ids(ctx: Context, video_ids: list[str], kwargs_func=None):
     expected_video_ids = set(video_ids)
     received_video_ids = set()
 
@@ -342,7 +341,7 @@ def get_video_by_ids(ctx: Context, video_ids: list[str], kwargs_func: None):
 
 def scan_videos(ctx: Context):
     """Use the remaining quota to update video metadata."""
-    if ctx.quota is None or ctx.cost.value >= ctx.quota:
+    if ctx.quota is None or ctx.cost >= ctx.quota:
         return
     # Given video (A) (last_scan_dur = 1w, pub_dur = 1mo) and video (B) 
     # (last_scan_dur = 10m, pub_dur = 1d), rescan scoring can be calculated
@@ -356,8 +355,8 @@ def scan_videos(ctx: Context):
     #   rate_factor = log(scan_time_a / scan_time_b, pub_time_a / pub_time_b)
     rate_factor = 2.033320232
     
-    count = 50 * (ctx.quota - ctx.cost.value)
-    all_videos = Video.select(
+    count = 50 * (ctx.quota - ctx.cost)
+    all_videos: list[Video] = Video.select(
         Video.video_id,
         ((ctx.now - Video.last_scanned) / pw.fn.power(
             ctx.now - Video.published_at, rate_factor
@@ -380,9 +379,7 @@ def scan_videos(ctx: Context):
         print(f'    End:   {videos[-1].video_id} ({videos[-1].score}, '
               f'{videos[-1].last_scanned}, {videos[-1].published_at})')
 
-        missing_videos = get_video_by_ids(
-            ctx, list(expected_video_ids), 
-            kwargs_func=lambda _: {'filter_vid': False})
+        missing_videos = get_video_by_ids(ctx, list(expected_video_ids))
 
         if missing_videos:
             print(f'    Tomstoning Videos {", ".join(missing_videos)}')
@@ -393,7 +390,7 @@ def scan_videos(ctx: Context):
             ).execute()
 
 
-def get_misc(key, default=None):
+def get_misc(key, default=None) -> Misc:
     rec, _ = Misc.get_or_create(key=key, defaults={'value': default})
     return rec.value
 
@@ -430,7 +427,7 @@ def update_stats(api_cost):
     set_misc('latest_channel_title', latest.ch_tag)
     set_misc('latest_channel_id', latest.ch_id)
 
-def build_argparser(parser):
+def build_argparser(parser: argparse.ArgumentParser):
     parser.add_argument('--series', '-s', nargs='*')
     parser.add_argument('--channel', '-c', nargs='*')
     parser.add_argument('--full', '-f', action='store_true')
@@ -447,31 +444,30 @@ def main(args: argparse.Namespace):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     with open(root('credentials.yaml')) as fp:
         creds = yaml.safe_load(fp)
+    creds = load_credentials()
     init_database()
-    ctx.api_key = creds['api_key']
 
     with open(root('playlists.yaml')) as fp:
         config = yaml.safe_load(fp)
-
+    config = load_config()
 
     try:
-        for series in config['series']:
-            if args.series and series['slug'] not in args.series:
+        for series in config.series:
+            if args.series and series.slug not in args.series:
                 continue
-            if not args.series and not args.full and not series.get('active', True):
+            if not args.series and not args.full and not series.active:
                 continue
-            series_, _ = Series.get_or_create(
-                    slug=series['slug'],
-                    defaults={'title': series['title']})
-            if series_.title != series['title']:
-                series_.title = series['title']
-                series_.save()
-            c_ctx = ctx.copy(series=series_, series_config=series)
-            process_series(c_ctx, series['channels'])
+            series.record, _ = Series.get_or_create(
+                slug=series.slug,
+                defaults={'title': series.title})
+            if series.record.title != series.title:
+                series.record.title = series.title
+                series.record.save()
+            process_series(ctx, series)
         scan_videos(ctx)
     finally:
-        update_stats(ctx.cost.value)
-        print('api cost:', ctx.cost.value)
+        update_stats(ctx.cost)
+        print('api cost:', ctx.cost)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
