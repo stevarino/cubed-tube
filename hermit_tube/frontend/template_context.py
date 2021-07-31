@@ -14,7 +14,7 @@ def generate_context(config: schema.Playlist, creds: schema.Credentials):
     assert len(defaults) == 1, 'Only one series should be marked default'
     default_series = defaults[0]
     series_list = [[s.slug, s.title] for s in config.series]
-    api_domain = (creds.wsgi and creds.wsgi.DOMAIN) or ''
+    api_domain = (creds.backend and creds.backend.domain) or ''
     context = {
         'title': config.title,
         'window_vars': {

@@ -9,6 +9,8 @@ _cache = {
     'client': None,
 }
 
+CLOUD_CONFIG = load_credentials().cloud_storage
+
 class BucketException(Exception):
     pass
 
@@ -19,8 +21,8 @@ def get_session(cache=True):
     if cache and _cache['session']:
         return _cache['session']
     session = boto3.Session(
-        aws_access_key_id=load_credentials().bucket.access_key,
-        aws_secret_access_key=load_credentials().bucket.secret)
+        aws_access_key_id=CLOUD_CONFIG.access_key,
+        aws_secret_access_key=CLOUD_CONFIG.secret)
     if cache:
         _cache['session'] = session
     return session
@@ -29,7 +31,7 @@ def get_client(session=None, cache=True):
     if cache and _cache['client']:
         return _cache['client']
     session = session or get_session()
-    client = session.client('s3', endpoint_url=load_credentials().bucket.url)
+    client = session.client('s3', endpoint_url=CLOUD_CONFIG.url)
     if cache:
         _cache['client'] = client
     return client
@@ -37,7 +39,7 @@ def get_client(session=None, cache=True):
 def list_objects(prefix=None, client=None, bucket=None):
     # NOTE: Max of 1000 objects. Consider adding pagination if this is bad...
     client = client or get_client()
-    kwargs = {'Bucket': bucket or load_credentials().bucket.name}
+    kwargs = {'Bucket': bucket or CLOUD_CONFIG.name}
     if prefix:
         kwargs['Prefix'] = prefix
     objs = client.list_objects(**kwargs)
@@ -46,7 +48,7 @@ def list_objects(prefix=None, client=None, bucket=None):
 
 def put_object(key: str, value: str, client=None, bucket=None):
     client = client or get_client()
-    bucket = bucket or load_credentials().bucket.name
+    bucket = bucket or CLOUD_CONFIG.name
     response = client.put_object(Bucket=bucket, Key=key, Body=value)
     response_meta = response.get('ResponseMetadata', {})
     if response_meta.get('HTTPStatusCode', 0)  != 200:
@@ -55,7 +57,7 @@ def put_object(key: str, value: str, client=None, bucket=None):
 
 def get_object(key: str, client=None, bucket=None):
     client = client or get_client()
-    bucket = bucket or load_credentials().bucket.name
+    bucket = bucket or CLOUD_CONFIG.name
     try:
         response = client.get_object(Bucket=bucket, Key=key)
         return response['Body'].read()
@@ -66,7 +68,7 @@ def get_object(key: str, client=None, bucket=None):
 
 def del_objects(keys: list[str], client=None, bucket=None):
     client = client or get_client()
-    bucket = bucket or load_credentials().bucket.name
+    bucket = bucket or CLOUD_CONFIG.name
     response = client.delete_objects(Bucket=bucket, Delete={
         'Objects': [{'Key': k} for k in keys]})
     response_meta = response.get('ResponseMetadata', {})

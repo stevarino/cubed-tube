@@ -30,22 +30,22 @@ def sha1(value: Union[str, bytes]) -> str:  # pylint: disable=unsubscriptable-ob
         value = value.encode('utf-8')
     return hashlib.sha1(value).hexdigest()
 
-def load_credentials(ttl: timedelta=None) -> schema.Credentials:
+def load_credentials(ttl: int=0) -> schema.Credentials:
     """Loads the credentials (secrets) file"""
     return _load_config_file('credentials.yaml', schema.Credentials, ttl)
 
-def load_config(ttl: timedelta=None) -> schema.Playlist:
+def load_config(ttl: int=0) -> schema.Playlist:
     """Loads the playlists (configuration) file"""
     return _load_config_file('playlists.yaml', schema.Playlist, ttl)
 
 _config_file_cache: dict[str, tuple[datetime, schema.Schema]] = {}
 
 def _load_config_file(
-        file: str, _type: schema.Schema, ttl: timedelta) -> schema.Schema:
+        file: str, _type: schema.Schema, ttl: int) -> schema.Schema:
     now = datetime.now()
     if file in _config_file_cache:
         dt, obj = _config_file_cache[file]
-        if not ttl or now - dt < ttl:
+        if not ttl or (now - dt).total_seconds() < ttl:
             return obj
     with open(root(file)) as fp:
         obj = _type.from_dict(**yaml.safe_load(fp))

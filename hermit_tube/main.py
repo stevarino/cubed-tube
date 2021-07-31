@@ -5,14 +5,16 @@ import os.path
 from hermit_tube.frontend import render
 from hermit_tube.scraper import scraper
 
+
 def run_wsgi_server(args):
     from hermit_tube.backend import app
     app.run(debug=True, use_reloader=False)
 
-def run_tests(args):
-    import unittest
-    from hermit_tube import test
-    unittest.main()
+
+def run_worker(args):
+    from hermit_tube.worker.worker import loop
+    loop()
+
 
 def run_compress(args):
     from hermit_tube.lib.trends import compress_trends
@@ -23,14 +25,12 @@ def run_compress(args):
         (30 * 24 * 3600, 24 * 3600),
     ])
 
+
 SUBCOMMANDS = {
     'frontend': render,
     'scraper': scraper,
     'backend': run_wsgi_server,
-    'scan': scraper,
-    'render': render,
-    'wsgi': run_wsgi_server,
-    'test': run_tests,
+    'worker': run_worker,
     'compress': run_compress,
 }
 

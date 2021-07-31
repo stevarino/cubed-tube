@@ -52,8 +52,8 @@ class Schema:
 
         return cls(**kwargs)
 
-    def as_dict(self, allow_none=True):
-        return asdict(self, lambda items: {
+    def as_dict(self, allow_none=False):
+        return asdict(self, dict_factory=lambda items: {
             k: v for k, v in items if allow_none or v is not None
         })
 
@@ -85,31 +85,33 @@ class Playlist(Schema):
     series: list[PlaylistSeries]
 
 @dataclass
-class CredentialsBackend(Schema):
+class ConfigMemcache(Schema):
+    host: str
+    write_frequency: Optional[int]
+
+@dataclass
+class ConfigBackend(Schema):
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
     SECRET_KEY: str
-    CORS_ORIGINS: list[str]
-    DOMAIN: str
-    USER_SALT: Optional[str]
+    cors_origins: list[str]
+    domain: str
+    user_salt: Optional[str]
+    memcache: Optional[ConfigMemcache]
 
 @dataclass
-class CredentialsBucket(Schema):
+class ConfigCloud(Schema):
     name: str
     url: str
     access_key: str
     secret: str
 
 @dataclass
-class CredentialsScraper(Schema):
+class ConfigScraper(Schema):
     yt_api_key: str
 
 @dataclass
 class Credentials(Schema):
-    salt: Optional[str]
-    api_key: Optional[str]
-    wsgi: Optional[CredentialsBackend]
-    backend: Optional[CredentialsBackend]
-    bucket: Optional[CredentialsBucket]
-    cloud: Optional[CredentialsBucket]
-    scraper: Optional[CredentialsScraper]
+    scraper: ConfigScraper
+    backend: Optional[ConfigBackend]
+    cloud_storage: Optional[ConfigCloud]

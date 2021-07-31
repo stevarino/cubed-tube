@@ -7,13 +7,10 @@ import typing
 from uuid import uuid4
 from peewee import Value
 
-from pymemcache.client import base as pymemcache_client
-from pymemcache.client.retrying import RetryingClient
-import pymemcache.exceptions
+from prometheus_client import Counter, Gauge
 
-from prometheus_client import Counter
-
-from hermit_tube.backend import cloud_storage
+from hermit_tube.backend import cloud_storage, memcached_client
+from hermit_tube.lib import util
 
 # remove profile tombstones after 30d
 DELETE_HORIZON = 30 * 24 * 3600
@@ -30,12 +27,10 @@ class Cache():
     def __init__(self,
                  miss_func: typing.Callable[[str], None],
                  write_func: typing.Callable[[str, dict], None],
-                 memcache: pymemcache_client.Client,
-                 deferred_writes: bool):
+                 memcache: memcached_client.Client):
         self.miss_func = miss_func
         self.write_func = write_func
         self.memcache = memcache
-        self.deferred_writes = deferred_writes
 
         self.mem_hits = Counter(
             'ht_memcache_hit', 
@@ -57,34 +52,23 @@ class Cache():
         #     'ht_cloud_reads', 'Count of cloud reads')
         self.cloud_writes = Counter(
             'ht_cloud_writes', 'Count of cloud writes')
-
-        if self.deferred_writes and not self.memcache:
-            raise ValueError("Cannot enable deferred_writes without memcache")
+        self.mem_buffer_size = Gauge(
+            'ht_memcache_buffwrite_size', 'Number of queued writes',
+            multiprocess_mode='max')
 
     @classmethod
     def cache(cls, force=False, cache_miss=None, cache_write=None,
-              memcache=None, deferred_writes=None):
+              memcache=None):
         """Factory static method"""
+        creds = util.load_credentials()
         if force or not cls._instance:
             if not cache_miss:
                 cache_miss = cls._cache_miss
             if not cache_write:
                 cache_write = cls._cache_write
-            if not memcache and os.getenv('memcache'):
-                host, port = os.getenv('memcache').split(':')
-                memcache = RetryingClient(
-                    pymemcache_client.Client((host, int(port))),
-                    attempts=3,
-                    retry_delay=0.1,
-                    retry_for=[
-                        pymemcache.exceptions.MemcacheUnexpectedCloseError,
-                        ConnectionAbortedError,
-                    ],
-                )
-            if deferred_writes is None:
-                deferred_writes = bool(os.getenv('deferred_writes'))
-            cls._instance = cls(cache_miss, cache_write, memcache,
-                                        deferred_writes)
+            if not memcache and creds.backend.memcache:
+                memcache = memcached_client.create_client(creds.backend.memcache)
+            cls._instance = cls(cache_miss, cache_write, memcache)
         return cls._instance
 
     @classmethod
@@ -113,27 +97,19 @@ class Cache():
         return result
 
     def write(self, key, value):
+        creds = util.load_credentials(30)
         self.mem_writes.inc()
         if self.memcache:
             self.memcache.set(key, json.dumps(value))
-        if self.deferred_writes:
+        if creds.backend.memcache and creds.backend.memcache.write_frequency:
             self.mem_buffer_writes.inc()
-            for i in range(3):
-                result = self.memcache.get('_deferred')
-                if result is None:
-                    LOGGER.info('adding')
-                    self.memcache.add('_deferred', '')
-                    result = b''
-                keys = result.decode("utf-8").split()
+            for _ in range(3):
+                keys, _ = memcached_client.get_deferred()
+                self.mem_buffer_size.set(len(keys))
                 if key in keys:
                     return
-                try:
-                    self.memcache.append('_deferred', key + ' ')
+                if memcached_client.append_deferred(key):
                     return
-                except:
-                    LOGGER.warning(
-                        'Failed to append to _deferred', exc_info=True)
-                    pass
                 self.mem_buffer_fails.inc()
         self.cloud_writes.inc()
         self.write_func(key, value)

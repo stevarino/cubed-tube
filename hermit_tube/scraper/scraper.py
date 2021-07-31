@@ -1,9 +1,32 @@
-# YouTube Quota Limit = 10k/day
-# crontab = */10 (6x/hour, 144/day)
-# => 69.4 quota/run (round down to 60)
-# playlist updating = ~40 quota/run
-# currently 11339 videos in system
-# => scan entire library = 227 quota, or 12 runs, or 2 hours
+"""
+scraper.py - Imports video data from YouTube
+
+This module is honestly a bit of a mess and should probably be refactored. I
+haven't figured out what that would look like yet.
+
+Function map (note that some are called in multiple stacks):
+
+  - main
+    - process_series -- Load/Create a series (hc7)
+      - process_channel -- Processes a channel (BdoubleO100)
+        - load_yt_channel -- Load/Create a channel, either by playlist or channel name
+        - process_yt_playlist -- If a channel has a playlist, get its videos
+          - update_video -- Write video data
+      - get_video_by_ids -- Update any explicitly listed videos (non-playlist)
+        - update_video -- YouTube record to database
+    - scan_videos -- Update video statistics/metadata regularly, focusing on new videos
+      - get_video_by_ids -- Read video data from YouTube
+        - update_video -- YouTube record to database
+
+
+YouTube Quota Math:
+    YouTube Quota Limit = 10k/day
+    crontab = */10 (6x/hour, 144/day)
+    => 69.4 quota/run (round down to 60)
+    playlist updating = ~40 quota/run
+    currently 11339 videos in system
+    => scan entire library = 227 quota, or 12 runs, or 2 hours
+"""
 
 import argparse
 from dataclasses import dataclass, field
@@ -51,7 +74,7 @@ class YouTubeRequest:
 
 
 def _yt_get(ctx: Context, req: YouTubeRequest):
-    req.args['key'] = load_credentials().api_key
+    req.args['key'] = load_credentials().scraper.yt_api_key
     request = urllib.request.Request(
         f'{API_URL}{req.endpoint}?{urllib.parse.urlencode(req.args)}')
     # NOTE: https://issuetracker.google.com/issues/176760791
@@ -404,7 +427,8 @@ def update_stats(api_cost):
     set_misc('last_scan_api', api_cost)
     set_misc('last_scan_time', now.strftime('%Y-%m-%d %H:%M:%S'))
 
-    dailies = json.loads(get_misc('dailies', '{}'))
+    dailies: dict = json.loads(get_misc('dailies', '{}'))
+    dailies = {k: dailies[k] for k in sorted(dailies.keys())[-30:]}
     ymd = now.strftime('%Y-%m-%d')
     dailies[ymd] = dailies.get(ymd, {'api': 0, 'scans': 0})
     dailies[ymd]['api'] += api_cost

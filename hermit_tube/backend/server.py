@@ -17,22 +17,21 @@ from prometheus_client import (
     Histogram, multiprocess, generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST,
     Gauge, Counter, Histogram)
 
-from hermit_tube.lib.util import root, sha1
+from hermit_tube.lib.util import root, sha1, load_credentials, load_config
 from hermit_tube.backend import user_state
 
 path = os.path.abspath(__file__)
 while 'lib' in path:
     path = os.path.dirname(path)
 
-with open(root('credentials.yaml'), 'r') as fp:
-    creds = yaml.safe_load(fp)
 with open(root('playlists.yaml'), 'r') as fp:
     config = yaml.safe_load(fp)
 
 flask_config = {
     'SEND_FILE_MAX_AGE_DEFAULT': 0
 }
-flask_config.update(creds['wsgi'])
+creds = load_credentials()
+flask_config.update(creds.backend.as_dict(False))
 
 
 CTR_REQUESTS = Counter('ht_requests', 'Number of requests to site',
@@ -41,6 +40,8 @@ HIST_REQUESTS = Histogram('ht_latency', 'Latency of requests',
                           labelnames=['path', 'method'])
 CTR_VIDEO_PLAY = Counter('ht_video_play', 'Videos played by channel/series',
                          labelnames=['channel', 'series'])
+CTR_USER_STATUS = Counter('ht_user_status', 'Count of users by status',
+                         labelnames=['status', 'is_mobile'])
 
 app = Flask(__name__)
 app.config.update(flask_config)
@@ -70,8 +71,9 @@ MULTIPROCESS = bool(os.getenv('PROMETHEUS_MULTIPROC_DIR'))
 def before_first_request():
     options = [
         ['Multiprocess', MULTIPROCESS],
-        ['Memcache', os.getenv('memcache')],
-        ['Deffered writes', os.getenv('deferred_writes')],
+        ['Memcache', creds.backend.memcache],
+        ['Deffered writes', creds.backend.memcache and 
+                            creds.backend.memcache.write_frequency],
     ]
     for mode, status in options:
         app.logger.info('%s mode %sabled', mode, ('en' if status else 'dis'))
@@ -106,10 +108,10 @@ def _allow_cors(func):
         res, code = func(*args, **kwargs)
         domain = _get_domain(request.referrer)
         if not domain:
-            domain = flask_config['CORS_ORIGINS'][0]
-        if domain not in flask_config['CORS_ORIGINS']:
+            domain = flask_config['cors_origins'][0]
+        if domain not in flask_config['cors_origins']:
             app.logger.error(f'Unrecognized referrer: "{domain}"')
-            domain = flask_config['CORS_ORIGINS'][0]
+            domain = flask_config['cors_origins'][0]
         res.headers['Access-Control-Allow-Origin'] = domain
         res.headers['Vary'] = 'Origin'
         res.headers['Access-Control-Allow-Credentials'] = 'true'
@@ -134,7 +136,7 @@ def _get_domain(referrer):
 
 @app.route('/')
 def homepage():
-    return redirect(flask_config['CORS_ORIGINS'][0], code=302)
+    return redirect(flask_config['cors_origins'][0], code=302)
 
 
 @app.route("/metrics")
@@ -160,7 +162,7 @@ def login():
 def auth():
     token = oauth.google.authorize_access_token()
     user = oauth.google.parse_id_token(token)
-    user_hash = sha1(creds['salt'] + user['email'])
+    user_hash = sha1(creds.backend.user_salt + user['email'])
     session['user_hash'] = user_hash
     app.logger.info(f"User {user_hash} logged in")
     return redirect(session.pop('redirect', None) or '/')
@@ -179,22 +181,18 @@ def play_count():
     CTR_VIDEO_PLAY.labels(
         channel=request.args.get('channel'),
         series=request.args.get('series'),
-    )
+    ).inc()
+    return _json({'ok': True})
 
 
-@app.route('/_status')
-def status():
-    # NOTE: This is being left unauthenticated (for now) as this project is
-    # just as much about being a learning resource as anything else.
-    cache = user_state.get_user_cache()
-    cache_data = {
-        'size': len(cache.cache),
-        'hits': cache.hits,
-        'misses': cache.misses,
-    }
-    return _json({
-        'cache': cache_data
-    })
+@app.route('/status')
+def user_status():
+    CTR_USER_STATUS.labels(
+        status=request.args.get('status'),
+        is_mobile=request.args.get('is_mobile'),
+    ).inc()
+    return _json({'ok': True})
+
 
 @app.route('/app/user_state', methods = ['POST', 'GET'])
 @_allow_cors
