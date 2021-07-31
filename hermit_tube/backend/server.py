@@ -100,6 +100,17 @@ def after_request(response: Response):
             method=request.method,
             status=response.status_code,
         ).inc()
+
+    # CORS code
+    domain = _get_domain(request.referrer)
+    if not domain:
+        domain = flask_config['cors_origins'][0]
+    if domain not in flask_config['cors_origins']:
+        app.logger.error(f'Unrecognized referrer: "{domain}"')
+        domain = flask_config['cors_origins'][0]
+    response.headers['Access-Control-Allow-Origin'] = domain
+    response.headers['Vary'] = 'Origin'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
     return response
 
 
@@ -176,8 +187,13 @@ def logout():
     return redirect(request.args.get('r') or '/')
 
 
-@app.route('/play_count')
+@app.route('/app//play_count')
 def play_count():
+    """
+    Gather play data on channel/series (not per video).
+
+    Useful for creator feedback and justification of site value.
+    """
     CTR_VIDEO_PLAY.labels(
         channel=request.args.get('channel'),
         series=request.args.get('series'),
@@ -185,8 +201,14 @@ def play_count():
     return _json({'ok': True})
 
 
-@app.route('/status')
+@app.route('/app/user_poll')
 def user_status():
+    """
+    Gather user load info (on site, watching video, on mobile or not).
+
+    Useful for estimating site load, forcasting resource needs, and
+    justifying my own time on this project. :-)
+    """
     CTR_USER_STATUS.labels(
         status=request.args.get('status'),
         is_mobile=request.args.get('is_mobile'),
@@ -195,7 +217,6 @@ def user_status():
 
 
 @app.route('/app/user_state', methods = ['POST', 'GET'])
-@_allow_cors
 def handle_user_state():
     return_value = {}
     user_hash = session.get('user_hash')

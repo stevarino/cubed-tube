@@ -39,6 +39,8 @@ var USER = {
     // Delay before state can be uploaded.
     STATE_UPLOAD_TIMER: 0,
     STATE_UPLOAD_NEEDED: false,
+
+    STATUS_TIMER: 0,
 }
 
 async function initUser() {
@@ -47,6 +49,7 @@ async function initUser() {
         initLocalState();
         return;
     }
+    USER.STATUS_TIMER = window.setInterval(sendUserStatus, 60000);
     await getUserState().catch(() => {
         initLocalState();
         createSeries(getSeries());
@@ -538,4 +541,11 @@ function logProfile() {
 
 function logProfiles() {
     logJson(listProfiles());
+}
+
+function sendUserStatus() {
+    makeGetRequest('/app/user_poll', {
+        status: PLAYER.video === null ? 'idle' : 'video',
+        is_mobile: isMobileView() ? '1' : '0',
+    });
 }

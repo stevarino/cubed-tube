@@ -56,12 +56,31 @@ function makeRequest({method='GET', url='', headers={}, params='', creds=false,
         // We'll need to stringify if we've been given an object
         // If we have a string, this is skipped.
         if (params && typeof params === 'object') {
-            params = Object.keys(params).map(function (key) {
-                return `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`;
-            }).join('&');
+            params = makeParams(params);
         }
         xhr.send(params);
-    });  
+    });
+}
+
+function makeGetRequest(endpoint, args) {
+    if (window.API_DOMAIN === '') return;
+    return makeRequest({
+        url: `//${window.API_DOMAIN}${endpoint}?${makeParams(args)}`, 
+        json: true,
+    });
+}
+
+
+/**
+ * Given an object, converts it into a key=val&key2=val2 string.
+ * 
+ * @param {Object} params 
+ * @returns String
+ */
+function makeParams(params) {
+    return Object.keys(params).map(function (key) {
+        return `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`;
+    }).join('&')
 }
 
 /**
