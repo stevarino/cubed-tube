@@ -154,9 +154,10 @@ def render_updates_for_series(series: schema.PlaylistSeries) -> Tuple[str, str]:
         .join_from(Video, Series)
         .where(Video.series.slug == series.slug)
         .order_by(Video.published_at.desc())
+        .limit(30)
     )
     videos = [v for v in videos if not filter_video(series, v)]
-    for vid in reversed(videos[0:30]):
+    for vid in reversed(videos):
         vid_data = {
             'id': vid.video_id,
             'ts': vid.published_at,

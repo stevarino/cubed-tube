@@ -42,6 +42,11 @@ var USER = {
 }
 
 async function initUser() {
+    if (window.API_DOMAIN == '') {
+        document.getElementById('login').style.display = 'none';
+        initLocalState();
+        return;
+    }
     await getUserState().catch(() => {
         initLocalState();
         createSeries(getSeries());
