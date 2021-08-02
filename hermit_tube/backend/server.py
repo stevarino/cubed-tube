@@ -41,7 +41,7 @@ HIST_REQUESTS = Histogram('ht_latency', 'Latency of requests',
 CTR_VIDEO_PLAY = Counter('ht_video_play', 'Videos played by channel/series',
                          labelnames=['channel', 'series'])
 CTR_USER_STATUS = Counter('ht_user_status', 'Count of users by status',
-                         labelnames=['status', 'is_mobile'])
+                         labelnames=['status', 'is_mobile', 'is_logged_in'])
 
 app = Flask(__name__)
 app.config.update(flask_config)
@@ -212,6 +212,7 @@ def user_status():
     CTR_USER_STATUS.labels(
         status=request.args.get('status'),
         is_mobile=request.args.get('is_mobile'),
+        is_logged_in=request.args.get('is_mobile'),
     ).inc()
     return _json({'ok': True})
 

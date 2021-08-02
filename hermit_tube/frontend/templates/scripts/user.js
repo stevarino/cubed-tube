@@ -547,5 +547,6 @@ function sendUserStatus() {
     makeGetRequest('/app/user_poll', {
         status: PLAYER.video === null ? 'idle' : 'video',
         is_mobile: isMobileView() ? '1' : '0',
+        is_logged_in: USER.LOGGED_IN ? '1': '0',
     });
 }
