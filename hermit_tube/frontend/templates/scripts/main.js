@@ -66,6 +66,8 @@ window.onload = function() {
         }
     });
 
+    document.getElementById('modal').addEventListener('click', hideModal);
+
     youtubeInit();
     initUser().finally(() => {
         loadSeries();
@@ -159,7 +161,7 @@ function markVideoActive(pos) {
  */
 function closeMenus() {
     document.querySelectorAll('#menu > li').forEach((li) => {
-        li.classList.remove(`active_hover`);
+        li.classList.remove('active_hover', 'active_click');
     });
     document.body.classList.remove('menu_active');
 }
@@ -260,17 +262,19 @@ function initDropdown() {
         };
     });
 
+    document.getElementById('form').addEventListener(
+        'click', (e) => {e.stopPropagation()});
+
     // doc-id/callback list of buttons.
     let buttons = {
-        profile_new: createProfile,
-        profile_rename: renameProfile,
-        profile_delete: deleteProfile,
         login: loginClick,
+        settings_link: showSettings,
     };
     for (const [id, callback] of Object.entries(buttons)) {
+        if (!document.getElementById(id)) continue;
         document.getElementById(id).addEventListener('click', (e) => {
             e.preventDefault();
-            callback();
+            callback(e);
         });
     }
 }

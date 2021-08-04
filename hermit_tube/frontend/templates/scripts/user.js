@@ -248,17 +248,6 @@ function loadSettings() {
             SETTINGS[key] = val;
             save = true;
         }
-        let checkbox = document.getElementById(`opt_${key}`);
-        if (checkbox === null) {
-            // page without settings
-            continue;
-        }
-        checkbox.checked = SETTINGS[key];
-        
-        checkbox.addEventListener('change', (e) => {
-            SETTINGS[key] = checkbox.checked;
-            saveSettings();
-        });
     }
     if (save) {
         saveSettings();
@@ -332,29 +321,29 @@ function createProfile() {
     changeProfile();
 }
 
-function deleteProfile() {
-    let profile = getProfile();
+function deleteProfile(profile) {
+    if (profile === undefined) {
+        profile = getProfile();
+    }
     if (listProfiles().length <= 1) {
         // TODO: Put note here about minimum profile counts...
         return;
     }
-    let newProfile = listProfiles()[1];
-    let profiles = STATE[getSeries()];
-    let i = getProfileIndex(profile)
-    if (i == -1) {
-        return console.error("Profile not found.", profile, profiles);
+    let i = getProfileIndex(profile);
+    if (i == SETTINGS.profile) {
+        SETTINGS.profile = getProfileIndex(listProfiles()[1]);
     }
+    let profiles = STATE[getSeries()];
     profiles[i] = {id: profile.id, ts: (new Date().getTime())};
-    let j = getProfileIndex(newProfile);
-    SETTINGS.profile = j;
-
 
     saveState();
     changeProfile();
 }
 
-function renameProfile() {
-    let profile = getProfile();
+function renameProfile(profile) {
+    if (profile === undefined) {
+        profile = getProfile();
+    }
     let name = prompt("New profile name:", profile.profile);
     if (name === null) {
         return;

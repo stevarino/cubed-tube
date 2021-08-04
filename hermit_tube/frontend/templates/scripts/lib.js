@@ -1,3 +1,5 @@
+ON_MODAL_CLOSE = null;
+
 function clearObject(obj) {
     Object.keys(obj).forEach(function(key) { delete obj[key]; });
 }
@@ -94,7 +96,7 @@ function makeParams(params) {
     Object.keys(properties).forEach((k) => {
         if (['innerText', 'innerHTML'].includes(k)) {
             el[k] = properties[k];
-        } else if (['click', 'mouseenter', 'mouseleave'].includes(k)) {
+        } else if (['change', 'click', 'mouseenter', 'mouseleave'].includes(k)) {
             el.addEventListener(k, properties[k]);
         } else {
             el.setAttribute(k, properties[k]);
@@ -134,4 +136,25 @@ function parseQueryString(url, multiple_vals) {
         }
     });
     return args;
+}
+
+function showModal(onclose) {
+    let container = document.getElementById('modal');
+    document.body.classList.add('modal');
+    container.style.display = 'block';
+    ON_MODAL_CLOSE = onclose;
+    return container;
+}
+
+function hideModal() {
+    let container = document.getElementById('modal');
+    container.style.display = 'none';
+    container.classList.remove(
+        ...Array.from(container.classList.values())
+    );
+    document.body.classList.remove('modal');
+    if (ON_MODAL_CLOSE !== null) {
+        ON_MODAL_CLOSE();
+        ON_MODAL_CLOSE = null;
+    }
 }

@@ -18,9 +18,8 @@ var PLAYER = {
 function youtubeInit() {
     let tag = makeElement('script', {src: 'https://www.youtube.com/iframe_api'})
     var firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);  
-    
-    document.getElementById('player').addEventListener('click', closePlayer);
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
     // don't bubble up to #player if full screen
     document.getElementById('player_controls').addEventListener('click', (e) => {
         if (isFullScreen()) e.stopPropagation();
@@ -55,11 +54,10 @@ function loadPlayer(e) {
     if (link.tagName.toLowerCase() == 'img') {
         link = link.parentElement;
     }
-    let container = document.getElementById('player');
-    document.body.classList.add('modal');
-    container.style.display = 'block';
+    showModal(destroyPlayer);
     history.pushState({'view': 'player'}, document.title);
-    sendPlayStats(link.getAttribute('data-video-id'))
+    PLAYER.video = link.getAttribute('data-video-id');
+    sendPlayStats();
     console.log('playing video ', PLAYER.video);
     PLAYER.obj = new YT.Player('player_iframe', {
         height: '390',
@@ -76,8 +74,8 @@ function loadPlayer(e) {
     });
     PLAYER.obj.getIframe().focus();
     if (SETTINGS.use_fullscreen) {
-        container.requestFullscreen();
-        screen.orientation.lock('landscape');
+        document.getElementById('modal').requestFullscreen();
+        screen.orientation.lock('landscape').then().catch();
     }
     e.preventDefault();
     return false;
@@ -99,9 +97,9 @@ function loadPlayer(e) {
 function onPlayerStateChange(e) {
     PLAYER.state = e.data;
     if (PLAYER.state === 2) {
-        document.getElementById('player').classList.add('paused');
+        document.getElementById('modal').classList.add('paused');
     } else {
-        document.getElementById('player').classList.remove('paused');
+        document.getElementById('modal').classList.remove('paused');
     }
     if (PLAYER.state != 0) {
         return;
@@ -119,7 +117,8 @@ function playNextVideo(forward=true) {
         closePlayer();
         return;
     }
-    sendPlayStats(videoId);
+    PLAYER.video = videoId;
+    sendPlayStats();
     PLAYER.obj.loadVideoById({ 'videoId': videoId });
 }
 
@@ -127,17 +126,18 @@ function playPrevVideo() {
     playNextVideo(false);
 }
 
+function closePlayer() {
+    hideModal();
+}
+
 /**
  * Destroys the embedded YouTube player, resets state, and restores the site.
  */
-function closePlayer() {
-    document.getElementById('player').style.display = 'none';
+function destroyPlayer() {
     PLAYER.obj.destroy();
     PLAYER.obj = null;
     PLAYER.state = null;
-    document.body.classList.remove('modal');
     document.getElementById('player_iframe').innerHTML = '';
-    document.getElementById('player').classList.remove('paused');
 
     if (PLAYER.video) {
         let vid = ELEMENT_BY_VIDEO_ID[PLAYER.video];
@@ -179,9 +179,9 @@ function isFullScreen() {
 
 function onFullScreenChange(e) {
     if (isFullScreen()) {
-        document.getElementById('player').classList.add('fullscreen');
+        document.getElementById('modal').classList.add('fullscreen');
     } else {
-        document.getElementById('player').classList.remove('fullscreen');
+        document.getElementById('modal').classList.remove('fullscreen');
     }
 }
 
@@ -189,7 +189,7 @@ function toggleFullScreen() {
     if (isFullScreen()) {
         document.exitFullscreen();
     } else {
-        document.getElementById('player').requestFullscreen();
+        document.getElementById('modal').requestFullscreen();
     }
 }
 
@@ -212,10 +212,9 @@ function handleMediaButtons(e) {
     }
 }
 
-function sendPlayStats(vidId) {
-    PLAYER.video = vidId;
+function sendPlayStats() {
     makeGetRequest('/app/play_count',{
-        channel: ELEMENT_BY_VIDEO_ID[vidId].getAttribute('data-channel'),
+        channel: ELEMENT_BY_VIDEO_ID[PLAYER.video].getAttribute('data-channel'),
         series: getSeries(),
     });
 }

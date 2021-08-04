@@ -462,7 +462,7 @@ h1 svg.triangle polygon {
     color: #fff;
 }
 
-#player {
+#modal {
     display: none;
     position: fixed;
     top: 0;
@@ -473,15 +473,15 @@ h1 svg.triangle polygon {
     z-index: 99;
 }
 
-#player .play {
+#modal .play {
     display: none;
 }
 
-#player.paused .paws {
+#modal.paused .paws {
     display: none;
 }
 
-#player.paused .play {
+#modal.paused .play {
     display: inline;
 }
 
@@ -494,7 +494,7 @@ h1 svg.triangle polygon {
     z-index: 100;
 }
 
-#player.fullscreen #player_wrap {
+#modal.fullscreen #player_wrap {
     top: 0;
     left: 0;
     right: 0;
@@ -507,7 +507,7 @@ h1 svg.triangle polygon {
     margin: 0;
 }
 
-#player iframe {
+#modal iframe {
     width: 100%;
     height: 100%;
     margin: 0;
@@ -523,7 +523,7 @@ h1 svg.triangle polygon {
     font-size: 5vh;
 }
 
-#player.fullscreen #player_controls {
+#modal.fullscreen #player_controls {
     display: none;
     top: calc(50vh - 0.5em);
     left: 0;
@@ -535,7 +535,7 @@ h1 svg.triangle polygon {
     filter: opacity(0.5);
 }
 
-#player.fullscreen.paused #player_controls {
+#modal.fullscreen.paused #player_controls {
     display: block;
 }
 
@@ -544,8 +544,69 @@ h1 svg.triangle polygon {
     cursor: pointer;
 }
 
-#player.fullscreen #player_controls .material-icons {
+#modal.fullscreen #player_controls .material-icons {
     margin: 0 0.4em;
+}
+
+#modal #form {
+    display: none;
+    position: absolute;
+    top: 5vh;
+    height: 0;
+    left: 10vh;
+    right: 10vh;
+    max-width: 40em;
+    margin: 0 auto;
+    padding: 0 2em;
+    background: rgba(247, 240, 222, 0.95);
+}
+
+#modal.form #player_controls, #modal.form #player_wrap {
+    display: none;
+}
+
+#modal.form #form {
+    display: block;
+    bottom: 5vh;
+    height: auto;
+}
+
+#form label, #form p {
+    display: flex;
+    padding: 1em;
+    border-top: 1px solid #000;
+}
+
+#form label {
+    cursor: pointer;
+}
+
+#form h2 + label, #form h2 + p {
+    border-top: 0;
+}
+
+#form label span {
+    flex-grow: 20;
+}
+
+#form label input {
+    margin: 0 2em;
+}
+
+#form p {
+    margin: 0;
+}
+
+#form p span.label {
+    vertical-align: middle;
+    line-height: 24px;
+    flex-grow: 20;
+    margin: 0;
+}
+
+#form p .delete_profile, #form p .rename_profile {
+    margin: 0 0 0 0.5em;
+    cursor: pointer;
 }
 
 @media only screen and (min-width: 62rem) {

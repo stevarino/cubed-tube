@@ -44,22 +44,8 @@
                     <li class='submenus'>
                         <a href='#' onclick='return false'>Profile</a>
                         <ul id="settings" aria-label='submenu'>
-                            <li><label for='opt_player' class='menu_checkbox'>
-                                <input type='checkbox' id='opt_player' name='opt_player' />
-                                Embedded Player
-                            </label></li>
-                            <li><label for='opt_use_fullscreen' class='menu_checkbox'>
-                                <input type='checkbox' id='opt_use_fullscreen' name='opt_use_fullscreen' />
-                                Fullscreen
-                            </label></li>
-                            <li><label for='opt_autoplay' class='menu_checkbox'>
-                                <input type='checkbox' id='opt_autoplay' name='opt_autoplay' />
-                                Autoplay next video
-                            </label></li>
-                            <li class='hr'></li>
+                            <li><a href='#' id='settings_link'>Open Settings</a></li>
                             <li><a href='#' id='profile_new'>New Profile</a></li>
-                            <li><a href='#' id='profile_rename'>Rename Profile</a></li>
-                            <li><a href='#' id='profile_delete'>Delete Profile</a></li>
                             <li class='hr' id='profile_sep'></li>
                         </ul>
                     </li>
@@ -81,7 +67,7 @@
                 {% endblock content %}
             </div>
         </div>
-        <div id="player">
+        <div id="modal">
             <div id='player_wrap'>
                 <div id='player_iframe'></div>
                 <div id='player_pause'></div>
@@ -94,6 +80,7 @@
                 <span class='material-icons full'>fullscreen</span>
                 <span class='material-icons next'>skip_next</span>
             </div>
+            <div id='form'></div>
         </div>
     <script async src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.2/pako.min.js" integrity="sha512-IjkvjWp4tSkhkQRb9gFwCcMhBWZLPKc7Zo8ifb6qxORyehV072QgRVG3F0fwAaJh0fnEFNLc2+XggoC5wvW24g==" crossorigin="anonymous"></script>
     <script>
