@@ -269,6 +269,7 @@ function initDropdown() {
     let buttons = {
         login: loginClick,
         settings_link: showSettings,
+        profile_new: createProfile,
     };
     for (const [id, callback] of Object.entries(buttons)) {
         if (!document.getElementById(id)) continue;
