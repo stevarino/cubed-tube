@@ -7,7 +7,7 @@ with open(README, "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="cubedtube", # Replace with your own username
-    version="0.1.0",
+    version="0.1.1",
     author="stevarino",
     author_email="stevarino@hermit.tube",
     description="A video viewing webapp that organizes videos into channels and series",
