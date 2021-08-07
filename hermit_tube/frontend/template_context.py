@@ -9,7 +9,7 @@ import datetime
 from hermit_tube.lib import schema
 from hermit_tube.lib.models import Misc, Video, Channel, pw
 
-def generate_context(config: schema.Playlist, creds: schema.Credentials):
+def generate_context(config: schema.Configuration, creds: schema.Credentials):
     defaults = [s.slug for s in config.series if s.default]
     assert len(defaults) == 1, 'Only one series should be marked default'
     default_series = defaults[0]
@@ -23,17 +23,23 @@ def generate_context(config: schema.Playlist, creds: schema.Credentials):
             'backend_version': json.dumps(config.version),
             'API_DOMAIN': json.dumps(api_domain)
         },
-        'default_series': json.dumps(default_series),
-        'series_list': json.dumps(series_list),
-        'now': str(int(datetime.datetime.now().timestamp())),
-        'version': config.version,
-        'api_domain': api_domain,
+        'page': {
+            'menu_links': generate_link_menus(config),
+            'title': config.title,
+            'header': config.site.header,
+        },
     }
 
     context['channel_counts'] = json.dumps(get_videos_by_channel())
     for data in Misc.select():
         context[data.key] = data.value
     return context
+
+
+def generate_link_menus(config: schema.Configuration):
+    if not config.site.menu_links:
+        return []
+    return [link.as_dict() for link in config.site.menu_links]
 
 
 def get_videos_by_channel():

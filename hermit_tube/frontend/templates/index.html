@@ -17,13 +17,7 @@
     <body>
         <div id='wrap'>
             <div id='header'>
-                <h1>
-                    <a href='/'>Hermit<span
-                        class='outline'><svg
-                        class='triangle' viewBox="0 0 100 100">
-                            <polygon points="100,50 25,6.7 25,93.3" />
-                    </svg><span>Tube</span></span></a>
-                </h1>
+                {% if page.header %}{{ page.header }}{% else %}<h1><a href='/'>{{ page.title }}</a></h1>{% endif %}
                 <div class='menu-button'>
                     <div class="menu-icon">
                         <span class="line-1"></span>
@@ -49,14 +43,20 @@
                             <li class='hr' id='profile_sep'></li>
                         </ul>
                     </li>
+                    {% for link in page.menu_links %}
                     <li class='submenus'>
-                        <a href='#' onclick='return false'>About</a>
-                        <ul id="seasons" aria-label='submenu'>
-                            <li><a href='/about/'>About</a></li>
-                            <li><a href='/privacy/'>Privacy</a></li>
-                            <li><a href='https://github.com/stevarino/hermit-tube'>Github</a></li>
-                        </ul>
+                        {% if 'href' in link %}
+                            <a href='{{ link.href }}'>{{ link['text'] }}</a>
+                        {% else %}
+                            <a href='#' onclick='return false'>{{ link.text }}</a>
+                            <ul id="seasons" aria-label='submenu'>
+                                {% for sublink in link.links %}
+                                    <li><a href='{{ sublink.href }}'>{{ sublink.text }}</a></li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
                     </li>
+                    {% endfor %}
                     <li><a href='#' id='login'>Log In</a></li>
                     {% endblock %}
                 </ul>

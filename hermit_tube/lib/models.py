@@ -9,11 +9,7 @@ import peewee as pw
 
 FILENAME = 'db.sqlite3'
 
-new_db = not os.path.exists(util.root(FILENAME))
-db = pw.SqliteDatabase(util.root(FILENAME))
-
-if not new_db:
-    model_migration.run(db)
+db = pw.SqliteDatabase(None)
 
 class BaseModel(pw.Model):
     class Meta:
@@ -127,4 +123,13 @@ def power(base, exponent):
 MODELS = BaseModel.__subclasses__()
 
 def init_database():
+    new_db = not os.path.exists(FILENAME)
+    print(os.getcwd(), new_db)
+    # import sys
+    # sys.exit()
+    db.init(os.path.join(os.getcwd(), FILENAME),
+            pragmas={'journal_mode': 'wal'})
+    if not new_db:
+        model_migration.run(db)
+
     db.create_tables(MODELS)

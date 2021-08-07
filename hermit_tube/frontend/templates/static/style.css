@@ -5,6 +5,7 @@
     --bg-color: #f7f0de;
     --bold-color: #541003;
     --accent-color: #09405e;
+    --text-color: #151400;
     --bg-alpha: rgba(247, 240, 222, 0.95);
     font-size: calc(2 * var(--fsize));
 }
@@ -12,8 +13,8 @@
 body {
     font-family: sans-serif;
     margin: 0;
-    color: #151400;
-    background: #f7f0de
+    color: var(--text-color);
+    background: var(--bg-color);
 }
 
 body.modal {

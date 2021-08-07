@@ -2,7 +2,7 @@
 from hermit_tube.lib import schema, models
 
 
-def filter_video(series: schema.PlaylistSeries, video: models.Video):
+def filter_video(series: schema.ConfigSeries, video: models.Video):
     """Returns true if a video should not be saved to the database."""
     if not video.published_at:
         return True

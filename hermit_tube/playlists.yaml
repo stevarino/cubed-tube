@@ -1,5 +1,6 @@
 title: HermitTube
 version: '20210731'
+
 series:
   - title: HermitCraft Season 8
     slug: hc8
@@ -473,3 +474,24 @@ series:
       playlist: https://www.youtube.com/playlist?list=PLp57jNhoiUe0ZSM0YWRDa8miyTvwKGVrD
     - name: Xisuma
       playlist: https://www.youtube.com/playlist?list=PL5F968FA0F2323D39
+
+site:
+  menu_links:
+    - text: About
+      links:
+        - text: About
+          href: /about/
+        - text: Privacy Policy
+          href: /privacy/
+        - text: Github
+          href: https://github.com/stevarino/hermit-tube
+
+  header:
+    <h1>
+        <a href='/'>Hermit<span
+            class='outline'><svg
+            class='triangle' viewBox="0 0 100 100">
+                <polygon points="100,50 25,6.7 25,93.3" />
+        </svg><span>Tube</span></span></a>
+    </h1>
+

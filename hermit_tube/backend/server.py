@@ -17,31 +17,28 @@ from prometheus_client import (
     Histogram, multiprocess, generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST,
     Gauge, Counter, Histogram)
 
-from hermit_tube.lib.util import root, sha1, load_credentials, load_config
+from hermit_tube.lib.util import sha1, load_credentials
 from hermit_tube.backend import user_state
-
-path = os.path.abspath(__file__)
-while 'lib' in path:
-    path = os.path.dirname(path)
-
-with open(root('playlists.yaml'), 'r') as fp:
-    config = yaml.safe_load(fp)
 
 flask_config = {
     'SEND_FILE_MAX_AGE_DEFAULT': 0
 }
 creds = load_credentials()
-flask_config.update(creds.backend.as_dict(False))
+flask_config.update(creds.backend.as_dict())
 
 
-CTR_REQUESTS = Counter('ht_requests', 'Number of requests to site',
-                       labelnames=['path', 'method', 'status'])
-HIST_REQUESTS = Histogram('ht_latency', 'Latency of requests',
-                          labelnames=['path', 'method'])
-CTR_VIDEO_PLAY = Counter('ht_video_play', 'Videos played by channel/series',
-                         labelnames=['channel', 'series'])
-CTR_USER_STATUS = Counter('ht_user_status', 'Count of users by status',
-                         labelnames=['status', 'is_mobile', 'is_logged_in'])
+CTR_REQUESTS = Counter(
+    'ht_requests', 'Number of requests to site',
+    labelnames=['path', 'method', 'status'])
+HIST_REQUESTS = Histogram(
+    'ht_latency', 'Latency of requests',
+    labelnames=['path', 'method'])
+CTR_VIDEO_PLAY = Counter(
+    'ht_video_play', 'Videos played by channel/series',
+    labelnames=['channel', 'series'])
+CTR_USER_STATUS = Counter(
+    'ht_user_status', 'Count of users by status',
+    labelnames=['status', 'is_mobile', 'is_logged_in'])
 
 app = Flask(__name__)
 app.config.update(flask_config)
@@ -114,22 +111,6 @@ def after_request(response: Response):
     return response
 
 
-def _allow_cors(func):
-    def _wrapper(*args, **kwargs):
-        res, code = func(*args, **kwargs)
-        domain = _get_domain(request.referrer)
-        if not domain:
-            domain = flask_config['cors_origins'][0]
-        if domain not in flask_config['cors_origins']:
-            app.logger.error(f'Unrecognized referrer: "{domain}"')
-            domain = flask_config['cors_origins'][0]
-        res.headers['Access-Control-Allow-Origin'] = domain
-        res.headers['Vary'] = 'Origin'
-        res.headers['Access-Control-Allow-Credentials'] = 'true'
-        return res, code
-    return _wrapper
-
-
 def _json(data):
     """
     Returns a json response object with 200 status code, useful as browsers consider 4xx
@@ -147,11 +128,17 @@ def _get_domain(referrer):
 
 @app.route('/')
 def homepage():
+    """
+    Unsure what to do here, bounce them to the frontend?
+    """
     return redirect(flask_config['cors_origins'][0], code=302)
 
 
 @app.route("/metrics")
 def metrics():
+    """
+    Metric collection. Used by Prometheus to gether metrics for all replicas.
+    """
     if MULTIPROCESS:
         registry = CollectorRegistry()
         multiprocess.MultiProcessCollector(registry)
@@ -163,6 +150,9 @@ def metrics():
 
 @app.route('/login')
 def login():
+    """
+    Send user to Google with OAuth request. Initiates user login flow.
+    """
     session.pop('redirect', None)
     if request.args.get('r'):
         session['redirect'] = request.args.get('r')
@@ -171,6 +161,9 @@ def login():
 
 @app.route('/auth')
 def auth():
+    """
+    Handle user returning from Google with OAuth token. Finalizes login flow.
+    """
     token = oauth.google.authorize_access_token()
     user = oauth.google.parse_id_token(token)
     user_hash = sha1(creds.backend.user_salt + user['email'])
@@ -181,6 +174,9 @@ def auth():
 
 @app.route('/logout')
 def logout():
+    """
+    Delete the user token from sessions.
+    """
     user_hash = session.pop('user_hash', None)
     if user_hash is not None:
         app.logger.info(f"User {user_hash} logged out")
@@ -219,6 +215,11 @@ def user_status():
 
 @app.route('/app/user_state', methods = ['POST', 'GET'])
 def handle_user_state():
+    """
+    Get/Set user state.
+    
+    The main funciton of the backend which ties into the user_state module.
+    """
     return_value = {}
     user_hash = session.get('user_hash')
         
@@ -236,6 +237,7 @@ def handle_user_state():
         except user_state.UserNotFound:
             return _json({'error': 'unknown'})
     return _json(return_value)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

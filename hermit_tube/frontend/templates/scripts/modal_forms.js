@@ -19,7 +19,6 @@ function showSettings(e) {
             id: `option_${key}`,
             name: `option_${key}`,
             change: (e) => {
-                console.log(e);
                 SETTINGS[key] = e.target.checked;
                 saveSettings();
             }
@@ -27,7 +26,6 @@ function showSettings(e) {
         if (SETTINGS[key]) {
             checkbox.checked = 'checked';
         }
-        console.log(checkbox);
 
         form.appendChild(makeElement(
             'label', {for: `option_${key}`},

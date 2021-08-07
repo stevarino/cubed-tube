@@ -17,6 +17,7 @@ CNT_ERRORS = Counter('ht_worker_errors', 'Number of errros')
 CNT_UPLOADS = Counter('ht_worker_uploads', 'Number of errros')
 DEFERRED_LAST_CHECK: Optional[datetime] = None
 LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.INFO)
 
 def check_writes(attempt = 0):
     global DEFERRED_LAST_CHECK
@@ -33,7 +34,6 @@ def check_writes(attempt = 0):
     keys, cas = memcached_client.get_deferred()
     if not keys:
         return
-    print(keys)
     if not memcached_client.set_deferred('', cas):
         LOGGER.warning('CAS conflict on check_writes(%s)', attempt)
         return check_writes(attempt + 1)

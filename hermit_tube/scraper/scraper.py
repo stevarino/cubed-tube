@@ -32,20 +32,16 @@ import argparse
 from dataclasses import dataclass, field
 import datetime
 import json
-import os
 import re
 import socket
 import traceback
 import time
 from typing import Optional
 import urllib.request, urllib.parse
-import yaml
 
 from hermit_tube.lib.common import filter_video
-from hermit_tube.lib.models import (
-    Misc, Series, Channel, Playlist, Video, pw, db, init_database)
-from hermit_tube.lib import trends, schema
-from hermit_tube.lib.util import root, load_credentials, load_config, chunk
+from hermit_tube.lib import trends, schema, models as m
+from hermit_tube.lib.util import load_credentials, load_config, chunk
 
 API_URL = 'https://www.googleapis.com/youtube/v3/'
 YT_PLAYLIST = re.compile(r'https://www.youtube.com/playlist\?list=([^&]+)')
@@ -124,15 +120,18 @@ def get_yt_channel_id(channel_name: str):
     """Normalize a channel name into an id."""
     return channel_name.lower().replace(' ', '')
 
-def load_yt_channel(ctx: Context, channel: schema.PlaylistChannel) -> Channel:
+def load_yt_channel(ctx: Context, channel: schema.ConfigChannel
+                    ) -> m.Channel:
     """Creates or retrieves a channel record, ensuring it is up to date."""
-    with db.atomic():
-        chan, created = Channel.get_or_create(
+    with m.db.atomic():
+        chan, created = m.Channel.get_or_create(
             name=get_yt_channel_id(channel.name),
             channel_type=channel.type,
             defaults={'tag': channel.name})
         if created:
-            max_id = Channel.select(pw.fn.MAX(Channel.id)).scalar() or 0
+            max_id = m.Channel.select(
+                m.pw.fn.MAX(m.Channel.id)
+            ).scalar() or 0
             chan.id = max_id + 1
             if channel.channel:
                 channel_name = channel.channel
@@ -159,14 +158,14 @@ def load_yt_channel(ctx: Context, channel: schema.PlaylistChannel) -> Channel:
 
 def update_yt_channel(ctx: Context, chan_ids: list[str]):
     chans = (
-        Channel.select(
-            Channel,
-            Channel.channel_id.in_(chan_ids).alias('targeted')
+        m.Channel.select(
+            m.Channel,
+            m.Channel.channel_id.in_(chan_ids).alias('targeted')
         )
         .where(
-            Channel.last_scanned.is_null() | 
-            (Channel.last_scanned <= (ctx.now - 24*3600)))
-        .order_by(pw.SQL('targeted').desc())
+            m.Channel.last_scanned.is_null() | 
+            (m.Channel.last_scanned <= (ctx.now - 24*3600)))
+        .order_by(m.pw.SQL('targeted').desc())
         .limit(50))
     
     chan_map = {c.channel_id: c for c in chans if c.channel_id}
@@ -180,7 +179,7 @@ def update_yt_channel(ctx: Context, chan_ids: list[str]):
     items = _yt_get(ctx, YouTubeRequest(
         endpoint='channels', args=chan_args))['items']
     for item in items:
-        chan: Channel = chan_map[item['id']]
+        chan: m.Channel = chan_map[item['id']]
         chan.last_scanned = ctx.now
 
         chan.title = item['snippet']['title']
@@ -201,10 +200,10 @@ def update_yt_channel(ctx: Context, chan_ids: list[str]):
     '''
     
 
-def process_yt_playlist(ctx: Context, series: schema.PlaylistSeries,
-                        channel: schema.PlaylistChannel):
+def process_yt_playlist(ctx: Context, series: schema.ConfigSeries,
+                        channel: schema.ConfigChannel):
     playlist = YT_PLAYLIST.match(channel.playlist)[1]
-    play, _ = Playlist.get_or_create(
+    play, _ = m.Playlist.get_or_create(
         playlist_id=playlist, playlist_type='youtube_pl',
         channel=channel.record)
     args = {
@@ -236,9 +235,9 @@ def _parse_ts(dt_str: str):
 
 def update_video(ctx: Context, video_id: str, result: dict,
                  defaults: dict = None,
-                 series: Optional[schema.PlaylistSeries] = None):
+                 series: Optional[schema.ConfigSeries] = None):
     """Write a video to the database"""
-    vid, _ = Video.get_or_create(
+    vid, _ = m.Video.get_or_create(
             video_type='youtube', 
             video_id=video_id,
             defaults=defaults)
@@ -294,8 +293,8 @@ def update_video(ctx: Context, video_id: str, result: dict,
     vid.save()
 
 
-def process_channel(ctx: Context, series: schema.PlaylistSeries,
-                    channel: schema.PlaylistChannel):
+def process_channel(ctx: Context, series: schema.ConfigSeries,
+                    channel: schema.ConfigChannel):
     print('  Processing channel', channel.name)
     channel.record = load_yt_channel(ctx, channel)
     if channel.playlist and YT_PLAYLIST.match(channel.playlist):
@@ -303,7 +302,7 @@ def process_channel(ctx: Context, series: schema.PlaylistSeries,
         print('    Processing playlist', playlist_id)
         process_yt_playlist(ctx, series, channel)
 
-def process_series(ctx: Context, series: schema.PlaylistSeries):
+def process_series(ctx: Context, series: schema.ConfigSeries):
     print("Working on series", series.slug)
     videos = {}
     for channel in series.channels:
@@ -322,8 +321,8 @@ def process_series(ctx: Context, series: schema.PlaylistSeries):
 
     if not videos:
         return
-    query = Video.select(Video.video_id).where(
-        Video.video_id.in_(list(videos.keys())))
+    query = m.Video.select(m.Video.video_id).where(
+        m.Video.video_id.in_(list(videos.keys())))
     db_vids = set(v.video_id for v in query)
     new_vids = list(set(videos.keys()) - db_vids)
     if not new_vids:
@@ -347,7 +346,7 @@ def get_video_by_ids(ctx: Context, video_ids: list[str], kwargs_func=None):
     received_video_ids = set()
 
     for chunked_ids in chunk(video_ids, len(video_ids), 50):
-        with db.atomic():
+        with m.db.atomic():
             chan_args = dict(
                 id=','.join(chunked_ids),
                 part='statistics,snippet,contentDetails')
@@ -379,19 +378,19 @@ def scan_videos(ctx: Context):
     rate_factor = 2.033320232
     
     count = 50 * (ctx.quota - ctx.cost)
-    all_videos: list[Video] = Video.select(
-        Video.video_id,
-        ((ctx.now - Video.last_scanned) / pw.fn.power(
-            ctx.now - Video.published_at, rate_factor
+    all_videos: list[m.Video] = m.Video.select(
+        m.Video.video_id,
+        ((ctx.now - m.Video.last_scanned) / m.pw.fn.power(
+            ctx.now - m.Video.published_at, rate_factor
         )).alias('score'),
-        Video.last_scanned,
-        Video.published_at
+        m.Video.last_scanned,
+        m.Video.published_at
     ).where(
-        Video.title.is_null(False) & Video.tombstone.is_null()
+        m.Video.title.is_null(False) & m.Video.tombstone.is_null()
     ).order_by(
-        Video.last_scanned.is_null(False),
-        pw.SQL('score').desc(),
-        Video.published_at.desc()
+        m.Video.last_scanned.is_null(False),
+        m.pw.SQL('score').desc(),
+        m.Video.published_at.desc()
     ).limit(count)
 
     for i, videos in enumerate(chunk(all_videos, count, 50)):
@@ -406,19 +405,19 @@ def scan_videos(ctx: Context):
 
         if missing_videos:
             print(f'    Tomstoning Videos {", ".join(missing_videos)}')
-            Video.update(
+            m.Video.update(
                 tombstone=ctx.now
             ).where(
-                Video.video_id.in_(missing_videos)
+                m.Video.video_id.in_(missing_videos)
             ).execute()
 
 
-def get_misc(key, default=None) -> Misc:
-    rec, _ = Misc.get_or_create(key=key, defaults={'value': default})
+def get_misc(key, default=None) -> m.Misc:
+    rec, _ = m.Misc.get_or_create(key=key, defaults={'value': default})
     return rec.value
 
 def set_misc(key, val):
-    rec, _ = Misc.get_or_create(key=key)
+    rec, _ = m.Misc.get_or_create(key=key)
     rec.value = val
     rec.save()
 
@@ -436,12 +435,14 @@ def update_stats(api_cost):
     set_misc('dailies', json.dumps(dailies, sort_keys=True, indent=2))
 
     latest = (
-        Video.select(
-            Video, 
-            Channel.tag.alias('ch_tag'), 
-            Channel.channel_id.alias('ch_id')
-        ).join(Channel, on=(Video.channel == Channel.name), attr='ch')
-        .order_by(Video.published_at.desc())
+        m.Video.select(
+            m.Video, 
+            m.Channel.tag.alias('ch_tag'), 
+            m.Channel.channel_id.alias('ch_id')
+        ).join(
+            m.Channel, on=(m.Video.channel == m.Channel.name),
+            attr='ch'
+        ).order_by(m.Video.published_at.desc())
         .limit(1)
     ).objects().first()
 
@@ -452,27 +453,21 @@ def update_stats(api_cost):
     set_misc('latest_channel_id', latest.ch_id)
 
 def build_argparser(parser: argparse.ArgumentParser):
-    parser.add_argument('--series', '-s', nargs='*')
-    parser.add_argument('--channel', '-c', nargs='*')
-    parser.add_argument('--full', '-f', action='store_true')
+    series_help = ('Specify one ore more series to explicitly scan (default '
+                   'is active only)'),
+    channel_help = 'Only scan the specified channels (default is all)'
+    full_help = 'Scan all series - useful for new databases'
+    parser.add_argument('--series', '-s', nargs='*', help=series_help)
+    parser.add_argument('--channel', '-c', nargs='*', help=channel_help)
+    parser.add_argument('--full', '-f', action='store_true', help=full_help)
     parser.add_argument('--quota', type=int)
     parser.add_argument('--migrate_trends', action='store_true')
 
 
 def main(args: argparse.Namespace):
-    ctx = Context()
+    ctx = Context(quota = args.quota, channels = args.channel)
 
-    ctx.channels = args.channel
-    ctx.quota = args.quota
-
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    with open(root('credentials.yaml')) as fp:
-        creds = yaml.safe_load(fp)
-    creds = load_credentials()
-    init_database()
-
-    with open(root('playlists.yaml')) as fp:
-        config = yaml.safe_load(fp)
+    m.init_database()
     config = load_config()
 
     try:
@@ -481,7 +476,7 @@ def main(args: argparse.Namespace):
                 continue
             if not args.series and not args.full and not series.active:
                 continue
-            series.record, _ = Series.get_or_create(
+            series.record, _ = m.Series.get_or_create(
                 slug=series.slug,
                 defaults={'title': series.title})
             if series.record.title != series.title:

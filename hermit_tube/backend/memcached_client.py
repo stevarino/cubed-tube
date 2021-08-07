@@ -12,7 +12,7 @@ CLIENT: Optional[Client] = None
 LOGGER = logging.getLogger(__name__)
 _DEFERRED = '_deferred'
 
-def create_client(mc_config: schema.ConfigMemcache) -> Client:
+def create_client(mc_config: schema.CredMemcache) -> Client:
     """Return a retrying memcached client"""
     global CLIENT
     if not mc_config:

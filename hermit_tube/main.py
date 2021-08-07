@@ -34,15 +34,9 @@ SUBCOMMANDS = {
     'compress': run_compress,
 }
 
-def main(args: argparse.Namespace):
-    if args.subparser in SUBCOMMANDS:
-        SUBCOMMANDS[args.subparser](args)
-    else:
-        raise ValueError(f'Unrecognized argument: {args.subparser}')
-
-if __name__ == "__main__":
-    os.chdir(os.path.dirname(__file__))
+def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--directory', '-d',  help='Work directory for configuration/output')
     subparsers = parser.add_subparsers(dest='subparser')
 
     for name, module in list(SUBCOMMANDS.items()):
@@ -51,4 +45,15 @@ if __name__ == "__main__":
             SUBCOMMANDS[name] = module.main
             module.build_argparser(subparser)
 
-    main(parser.parse_args())
+    args = parser.parse_args()
+    if not args.subparser:
+        parser.print_help()
+    elif args.subparser in SUBCOMMANDS:
+        if args.directory:
+            os.chdir(args.directory)
+        SUBCOMMANDS[args.subparser](args)
+    else:
+        raise ValueError(f'Unrecognized argument: {args.subparser}')
+
+if __name__ == "__main__":
+    main()
