@@ -8,7 +8,7 @@ with open(os.path.join(DIR, "README.md"), "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="cubedtube", # Replace with your own username
-    version="0.1.4",
+    version="0.1.9",
     author="stevarino",
     author_email="stevarino@hermit.tube",
     description="A video viewing webapp that organizes videos into channels and series",
@@ -19,9 +19,9 @@ setuptools.setup(
         "Bug Tracker": "https://github.com/stevarino/cubed-tube/issues",
     },
     packages=setuptools.find_packages(),
-    package_data={'cubed_tube.frontend.templates': ['**/*']},
+    package_data={'cubed_tube.frontend.templates': ['*', '**/*']},
     install_requires=[
-        'Authlib>=0.15.3',
+        'Authlib<=0.15.4',  # Authlib 1.0a has signature changes
         'awscli>=1.19.97',
         'boto3>=1.17.97',
         'Flask>=1.1.2',
@@ -30,6 +30,7 @@ setuptools.setup(
         'prometheus-client>=0.11.0',
         'pymemcache>=3.5.0',
         'PyYAML>=5.3.1',
+        'requests>=2.0'
     ],
     classifiers=[
     ],

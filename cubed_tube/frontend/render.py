@@ -19,7 +19,7 @@ from typing import Dict, Tuple
 
 from jinja2 import Environment, PackageLoader
 
-TEMPLATE_DIR = 'frontend/templates/'
+TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), 'templates')
 
 def render_static(config: schema.Configuration, creds: schema.Credentials):
     os.makedirs('./output/static', exist_ok=True)
@@ -27,10 +27,9 @@ def render_static(config: schema.Configuration, creds: schema.Credentials):
     context = template_context.generate_context(config, creds)
     
     out_file = os.path.join("output", 'index.html')
-    os.makedirs(os.path.dirname(out_file), exist_ok=True)
     print(f'writing {out_file}')
-    with open(out_file, 'w') as pf_in:
-        pf_in.write(env.get_template('index.html').render(**context))
+    with open(out_file, 'w') as fp:
+        fp.write(env.get_template('index.html').render(**context))
 
     if os.path.exists('./content'):
         for html_file in glob(f'./content/**/*.html', recursive=True):
@@ -41,19 +40,17 @@ def render_static(config: schema.Configuration, creds: schema.Credentials):
             out_file = os.path.join('output', *dirs)
             os.makedirs(os.path.dirname(out_file), exist_ok=True)
             print(f'writing {out_file}')
-            with open(out_file, 'w') as fp_out:
-                with open(html_file, 'r') as pf_in:
-                    fp_out.write(
-                        env.from_string(pf_in.read()).render(**context))
+            with open(out_file, 'w') as fp, open(html_file, 'r') as fp_in:
+                fp.write(env.from_string(fp_in.read()).render(**context))
 
 
     # join javascript files together
     re_global_var = re.compile(r'^(?:function|var|const) (\w+)', re.MULTILINE)
     global_namespace = {}
-    with open(os.path.join("output", 'script.js'), 'w') as pf_in:
-        for js_file in glob(f'{TEMPLATE_DIR}scripts/*.js'):
-            filename = js_file.replace('\\', '/').split(TEMPLATE_DIR)[-1]
-            pf_in.write(f'/*\n * {filename}\n */\n\n')
+    with open(os.path.join("output", 'script.js'), 'w') as fp_in:
+        for js_file in glob(f'{TEMPLATE_DIR}/scripts/*.js'):
+            filename = os.path.basename(js_file.replace('\\', '/'))
+            fp_in.write(f'/*\n * {filename}\n */\n\n')
             with open(js_file, 'r') as js_contents:
                 content = js_contents.read()
             for match in re_global_var.findall(content):
@@ -62,8 +59,8 @@ def render_static(config: schema.Configuration, creds: schema.Credentials):
                         f'{match} found in {global_namespace[match]} '
                         f'and {filename}')
                 global_namespace[match] = filename
-            pf_in.write(content)
-            pf_in.write('\n\n')
+            fp_in.write(content)
+            fp_in.write('\n\n')
 
 def render_series(config: schema.Configuration, series: schema.ConfigSeries):
     videos: list[Video] = (
@@ -235,7 +232,7 @@ def main(args: argparse.Namespace):
             render_series(config, series)
 
     render_static(config, creds)
-    copytree('frontend/templates/static', 'output/static')
+    copytree(os.path.join(TEMPLATE_DIR, 'static'), 'output/static')
 
 
 if __name__ == "__main__":
