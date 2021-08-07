@@ -39,9 +39,9 @@ import time
 from typing import Optional
 import urllib.request, urllib.parse
 
-from hermit_tube.lib.common import filter_video
-from hermit_tube.lib import trends, schema, models as m
-from hermit_tube.lib.util import load_credentials, load_config, chunk
+from cubed_tube.lib.common import filter_video
+from cubed_tube.lib import trends, schema, models as m
+from cubed_tube.lib.util import load_credentials, load_config, chunk
 
 API_URL = 'https://www.googleapis.com/youtube/v3/'
 YT_PLAYLIST = re.compile(r'https://www.youtube.com/playlist\?list=([^&]+)')

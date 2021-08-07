@@ -6,8 +6,8 @@ from collections import defaultdict
 import json
 import datetime
 
-from hermit_tube.lib import schema
-from hermit_tube.lib.models import Misc, Video, Channel, pw
+from cubed_tube.lib import schema
+from cubed_tube.lib.models import Misc, Video, Channel, pw
 
 def generate_context(config: schema.Configuration, creds: schema.Credentials):
     defaults = [s.slug for s in config.series if s.default]

@@ -2,11 +2,11 @@
 Reads from the database and produces html/js files.
 """
 
-from hermit_tube.lib.common import filter_video
-from hermit_tube.lib.models import Video, Channel, Series, init_database
-from hermit_tube.lib import schema
-from hermit_tube.lib.util import sha1, load_config, load_credentials
-from hermit_tube.frontend import template_context
+from cubed_tube.lib.common import filter_video
+from cubed_tube.lib.models import Video, Channel, Series, init_database
+from cubed_tube.lib import schema
+from cubed_tube.lib.util import sha1, load_config, load_credentials
+from cubed_tube.frontend import template_context
 
 import argparse
 from glob import glob
@@ -25,7 +25,7 @@ TEMPLATE_DIR = 'frontend/templates/'
 
 def render_static(config: schema.Configuration, creds: schema.Credentials):
     os.makedirs('./output/static', exist_ok=True)
-    env = Environment(loader=PackageLoader('hermit_tube.frontend'))
+    env = Environment(loader=PackageLoader('cubed_tube.frontend'))
     context = template_context.generate_context(config, creds)
     
     out_file = os.path.join("output", 'index.html')

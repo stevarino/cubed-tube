@@ -9,8 +9,8 @@ from peewee import Value
 
 from prometheus_client import Counter, Gauge
 
-from hermit_tube.backend import cloud_storage, memcached_client
-from hermit_tube.lib import util
+from cubed_tube.backend import cloud_storage, memcached_client
+from cubed_tube.lib import util
 
 # remove profile tombstones after 30d
 DELETE_HORIZON = 30 * 24 * 3600

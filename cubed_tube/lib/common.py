@@ -1,5 +1,5 @@
 
-from hermit_tube.lib import schema, models
+from cubed_tube.lib import schema, models
 
 
 def filter_video(series: schema.ConfigSeries, video: models.Video):

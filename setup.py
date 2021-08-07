@@ -4,14 +4,17 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="hermit_tube", # Replace with your own username
-    version="0.0.1",
+    name="cubedtube", # Replace with your own username
+    version="0.1.0",
     author="stevarino",
     author_email="stevarino@hermit.tube",
-    description="Watch HermitCraft videos!",
+    description="A video viewing webapp that organizes videos into channels and series",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/stevarino/hermit-tube",
+    url="https://github.com/stevarino/cubed-tube",
+    project_urls={
+        "Bug Tracker": "https://github.com/stevarino/cubed-tube/issues",
+    },
     packages=setuptools.find_packages(),
     classifiers=[
     ],

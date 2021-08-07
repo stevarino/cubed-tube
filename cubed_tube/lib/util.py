@@ -8,12 +8,12 @@ import os.path
 from typing import Union
 import yaml
 
-from hermit_tube.lib import schema
+from cubed_tube.lib import schema
 
 def root(*paths):
     """Returns a path relative to the root of the app"""
     path = os.path.abspath(__file__).replace('\\', '/')
-    while 'hermit_tube/lib' in path:
+    while 'cubed_tube/lib' in path:
         path = os.path.dirname(path).replace('\\', '/')
     return os.path.join(path, *paths)
 

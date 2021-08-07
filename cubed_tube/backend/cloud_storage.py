@@ -2,7 +2,7 @@ import boto3
 from botocore.exceptions import ClientError
 import json
 
-from hermit_tube.lib.util import load_credentials
+from cubed_tube.lib.util import load_credentials
 
 _cache = {
     'session': None,

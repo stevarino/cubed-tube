@@ -6,7 +6,7 @@ from pymemcache.client.base import Client
 from pymemcache.client.retrying import RetryingClient
 import pymemcache.exceptions
 
-from hermit_tube.lib import schema
+from cubed_tube.lib import schema
 
 CLIENT: Optional[Client] = None
 LOGGER = logging.getLogger(__name__)

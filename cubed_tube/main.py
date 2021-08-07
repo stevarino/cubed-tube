@@ -2,22 +2,22 @@ import argparse
 import os
 import os.path
 
-from hermit_tube.frontend import render
-from hermit_tube.scraper import scraper
+from cubed_tube.frontend import render
+from cubed_tube.scraper import scraper
 
 
 def run_wsgi_server(args):
-    from hermit_tube.backend import app
+    from cubed_tube.backend import app
     app.run(debug=True, use_reloader=False)
 
 
 def run_worker(args):
-    from hermit_tube.worker.worker import loop
+    from cubed_tube.worker.worker import loop
     loop()
 
 
 def run_compress(args):
-    from hermit_tube.lib.trends import compress_trends
+    from cubed_tube.lib.trends import compress_trends
     compress_trends([
         # after 1 week, keep hourly
         (7 * 24 * 3600, 3600),

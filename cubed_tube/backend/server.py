@@ -17,8 +17,8 @@ from prometheus_client import (
     Histogram, multiprocess, generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST,
     Gauge, Counter, Histogram)
 
-from hermit_tube.lib.util import sha1, load_credentials
-from hermit_tube.backend import user_state
+from cubed_tube.lib.util import sha1, load_credentials
+from cubed_tube.backend import user_state
 
 flask_config = {
     'SEND_FILE_MAX_AGE_DEFAULT': 0

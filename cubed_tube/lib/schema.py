@@ -140,9 +140,9 @@ class ConfigSite(Schema):
 @dataclass
 class Configuration(Schema):
     title: str
-    version: str
     series: list[ConfigSeries]
     site: Optional[ConfigSite]
+    version: str = ''
 
 @dataclass
 class CredMemcache(Schema):

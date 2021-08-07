@@ -1,4 +1,4 @@
-from hermit_tube.lib import model_migration, util
+from cubed_tube.lib import model_migration, util
 
 import datetime
 import os

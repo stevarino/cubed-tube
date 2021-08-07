@@ -3,8 +3,8 @@ Houses high-level trend interface for linear data-point storage/retrieval.
 """
 
 from os import times
-from hermit_tube.lib import common
-from hermit_tube.lib import models as m
+from cubed_tube.lib import common
+from cubed_tube.lib import models as m
 
 from time import time
 from typing import List, Tuple

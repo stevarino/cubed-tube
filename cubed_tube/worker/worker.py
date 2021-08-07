@@ -8,8 +8,8 @@ from botocore.parsers import LOG
 
 from prometheus_client import start_http_server, Counter
 
-from hermit_tube.lib import util
-from hermit_tube.backend import memcached_client, cloud_storage
+from cubed_tube.lib import util
+from cubed_tube.backend import memcached_client, cloud_storage
 
 
 
