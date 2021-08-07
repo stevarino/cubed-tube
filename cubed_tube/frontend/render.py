@@ -18,7 +18,6 @@ import shutil
 from typing import Dict, Tuple
 
 from jinja2 import Environment, PackageLoader
-import peewee as pw
 
 TEMPLATE_DIR = 'frontend/templates/'
 
