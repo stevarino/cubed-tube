@@ -8,7 +8,7 @@ with open(os.path.join(DIR, "README.md"), "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="cubedtube", # Replace with your own username
-    version="0.1.3",
+    version="0.1.4",
     author="stevarino",
     author_email="stevarino@hermit.tube",
     description="A video viewing webapp that organizes videos into channels and series",
@@ -34,7 +34,7 @@ setuptools.setup(
     classifiers=[
     ],
     entry_points = {
-        'console_scripts': ['cubedtube=cubed_tube:main'],
+        'console_scripts': ['cubedtube=cubed_tube.main:main'],
     },
     python_requires='>=3.6',
 )
