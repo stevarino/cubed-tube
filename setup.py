@@ -1,13 +1,14 @@
-import setuptools
+import glob
 import os.path
+import setuptools
 
-README = os.path.join(os.path.dirname(__file__), "README.md")
-with open(README, "r", encoding="utf-8") as fh:
+DIR = os.path.dirname(__file__)
+with open(os.path.join(DIR, "README.md"), "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="cubedtube", # Replace with your own username
-    version="0.1.1",
+    version="0.1.2",
     author="stevarino",
     author_email="stevarino@hermit.tube",
     description="A video viewing webapp that organizes videos into channels and series",
@@ -18,8 +19,7 @@ setuptools.setup(
         "Bug Tracker": "https://github.com/stevarino/cubed-tube/issues",
     },
     packages=setuptools.find_packages(),
-    package_data={'': ['frontend/templates/**/**']},
-    include_package_data=True,
+    package_data={'cubed_tube.frontend.templates': ['**/*']},
     install_requires=[
         'Authlib>=0.15.3',
         'awscli>=1.19.97',

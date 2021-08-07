@@ -16,7 +16,6 @@ import os
 import re
 import shutil
 from typing import Dict, Tuple
-import yaml
 
 from jinja2 import Environment, PackageLoader
 import peewee as pw
