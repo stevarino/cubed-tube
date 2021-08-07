@@ -3,8 +3,6 @@ from copy import deepcopy
 from dataclasses import dataclass, is_dataclass, asdict, fields, MISSING, Field
 from typing import Optional, Union, Any, get_origin, get_args
 
-from peewee import Value
-
 class MissingFieldError(ValueError):
     pass
 

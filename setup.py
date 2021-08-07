@@ -1,6 +1,8 @@
 import setuptools
+import os.path
 
-with open("README.md", "r", encoding="utf-8") as fh:
+README = os.path.join(os.path.dirname(__file__), "README.md")
+with open(README, "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
@@ -16,7 +18,23 @@ setuptools.setup(
         "Bug Tracker": "https://github.com/stevarino/cubed-tube/issues",
     },
     packages=setuptools.find_packages(),
+    package_data={'': ['frontend/templates/**/**']},
+    include_package_data=True,
+    install_requires=[
+        'Authlib>=0.15.3',
+        'awscli>=1.19.97',
+        'boto3>=1.17.97',
+        'Flask>=1.1.2',
+        'Jinja2>=3.0',
+        'peewee>=3.13.3',
+        'prometheus-client>=0.11.0',
+        'pymemcache>=3.5.0',
+        'PyYAML>=5.3.1',
+    ],
     classifiers=[
     ],
+    entry_points = {
+        'console_scripts': ['cubedtube=cubed_tube:main'],
+    },
     python_requires='>=3.6',
 )
