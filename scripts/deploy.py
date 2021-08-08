@@ -34,11 +34,17 @@ from pygit2 import Repository
 import build.__main__ as build
 import twine.__main__ as twine
 
+def formatter(version: list[int]):
+    output = '.'.join(str(x) for x in version[0:3])
+    if versions[branch].get('label'):
+        output += versions[branch]['label'] + str(version[3])
+    return output
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--major', action='store_true')
 parser.add_argument('--minor', action='store_true')
 parser.add_argument('--patch', action='store_true')
-parser.add_argument('--skip_inc', action='store_true', help='Do not increment version')
+parser.add_argument('--increment', action='store_true', help='Increment version')
 parser.add_argument('--keep', action='store_true', help='Do not delete old packages')
 parser.add_argument('--build', action='store_true', help='Run build util')
 parser.add_argument('--deploy', action='store_true', help='Upload packags')
@@ -58,6 +64,8 @@ if branch not in versions:
 
 version = versions[branch]['version']
 master = versions['master']['version']
+prev = versions[branch].get('prev')
+current = formatter(version)
 
 if branch != 'master' and  tuple(master) >= tuple(version[0:3]):
     for i, n in enumerate(master):
@@ -71,7 +79,7 @@ def inc(version: list[int], index: int):
     for i in range(index+1, len(version)):
         version[i] = 0
 
-if not args.skip_inc:
+if args.increment:
     if args.major:
         inc(version, 0)
     elif args.minor:
@@ -81,19 +89,21 @@ if not args.skip_inc:
     else:
         inc(version, len(version)-1)
 
-versions['current'] = '.'.join(str(x) for x in version[0:3])
-if versions[branch].get('label'):
-    versions['current'] += versions[branch]['label'] + str(version[3])
+str_version = formatter(version)
+if str_version != current:
+    versions[branch]['prev'] = current
+versions['current'] = str_version
 
-print(f'Using version {versions["current"]}')
+print(f'{versions[branch].get("prev", "?")} -> {versions["current"]}')
 
-print()
 for i in range(3):
-    print(f'{3-i}!', end='')
+    print(f'\r  {3-i}!', end='')
     for i in range(10):
         print('.', end='')
-    print('\r')
-print('Let\'s Go!')
+        sys.stdout.flush()
+        time.sleep(0.1)
+    print('\r' + (' '*20), end='')
+print('\nLet\'s Go!')
 
 with open('versions.json', 'w') as fp:
     fp.write(json.dumps(versions, indent=2))
