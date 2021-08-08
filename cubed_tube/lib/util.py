@@ -4,13 +4,13 @@ util.py - Collection of convenience funcitons
 
 from datetime import datetime
 import hashlib
-from typing import Union
+from typing import Union, Dict
 import yaml
 
 from cubed_tube.lib import schema
 
 
-_config_file_cache: dict[str, tuple[datetime, schema.Schema]] = {}
+_config_file_cache: Dict[str, tuple[datetime, schema.Schema]] = {}
 
 
 def chunk(items, count, chunk_size):

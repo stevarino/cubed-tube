@@ -1,6 +1,6 @@
 
 import logging
-from typing import Optional, Any
+from typing import Optional, Any, List
 
 from pymemcache.client.base import Client
 from pymemcache.client.retrying import RetryingClient
@@ -32,7 +32,7 @@ def create_client(mc_config: schema.CredMemcache) -> Client:
     return client
 
 
-def get_deferred() -> tuple[list[str], int]:
+def get_deferred() -> tuple[List[str], int]:
     result, cas = CLIENT.gets(_DEFERRED)
     if result is not None:
         if result:

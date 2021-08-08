@@ -1,9 +1,9 @@
 
 from dataclasses import dataclass
-from typing import Optional, Any, Union
+from typing import Optional, Union, List
 import unittest
 
-from hermit_tube.lib.schema import Schema
+from cubed_tube.lib.schema import Schema
 
 
 @dataclass
@@ -48,7 +48,7 @@ class TestDataClass(unittest.TestCase):
     def test_list(self):
         @dataclass
         class Foos(Schema):
-            foos: list[Foo]
+            foos: List[Foo]
 
         data = {'foos': [{'foo': 'a'}, {'foo': 'b'}]}
         foos = Foos.from_dict(data)
@@ -60,7 +60,7 @@ class TestDataClass(unittest.TestCase):
     def test_opt_list(self):        
         @dataclass
         class OptFoos(Schema):
-            foos: Optional[list[Foo]]
+            foos: Optional[List[Foo]]
 
         data = {'foos': [{'foo': 'a'}, {'foo': 'b'}]}
         foos = OptFoos.from_dict(data)
@@ -70,7 +70,7 @@ class TestDataClass(unittest.TestCase):
     def test_list_opts(self):        
         @dataclass
         class OptFoos(Schema):
-            foos: Optional[list[Optional[Foo]]]
+            foos: Optional[List[Optional[Foo]]]
 
         data = {'foos': [{'foo': 'a'}, {'foo': 'b'}, None]}
         foos = OptFoos.from_dict(data)
@@ -79,7 +79,7 @@ class TestDataClass(unittest.TestCase):
     def test_union(self):
         @dataclass
         class FooOrBar(Schema):
-            items: list[Union[Foo, Bar, None]]
+            items: List[Union[Foo, Bar, None]]
         
         data = {'items': [
             {'foo': 'a'},
@@ -96,7 +96,7 @@ class TestDataClass(unittest.TestCase):
 
         @dataclass
         class MaybeFooOrBar(Schema):
-            items: Optional[list[Union[Foo, Bar, None]]]
+            items: Optional[List[Union[Foo, Bar, None]]]
         
         obj = FooOrBar.from_dict(data)
         self.assertEqual(obj.as_dict(), data)

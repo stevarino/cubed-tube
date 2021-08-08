@@ -36,7 +36,7 @@ import re
 import socket
 import traceback
 import time
-from typing import Optional
+from typing import Optional, List
 import urllib.request, urllib.parse
 
 from cubed_tube.lib.common import filter_video
