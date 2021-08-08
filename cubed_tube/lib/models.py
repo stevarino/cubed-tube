@@ -1,23 +1,27 @@
-from cubed_tube.lib import model_migration, util
+"""
+models.py -- SQL ORM models and other database utilities.
+"""
 
-import datetime
-import os
-import os.path
-from typing import Dict
+import os, os.path
 
 import peewee as pw
 
-FILENAME = 'db.sqlite3'
+from cubed_tube.lib import model_migration
 
-db = pw.SqliteDatabase(None)
+
+FILENAME = 'db.sqlite3'
+DATABASE = pw.SqliteDatabase(None)
+
 
 class BaseModel(pw.Model):
     class Meta:
-        database = db
+        database = DATABASE
+
 
 class Misc(BaseModel):
     key = pw.CharField(primary_key=True, unique=True)
     value = pw.CharField(null=True)
+
 
 class Channel(BaseModel):
     name = pw.CharField(primary_key=True, unique=True)
@@ -35,9 +39,11 @@ class Channel(BaseModel):
     tag = pw.IntegerField(null=True)
     id = pw.IntegerField(null=True)
 
+
 class Series(BaseModel):
     slug = pw.CharField(primary_key=True, unique=True)
     title = pw.CharField()
+
 
 class Playlist(BaseModel):
     playlist_id = pw.CharField(primary_key=True, unique=True)
@@ -45,6 +51,7 @@ class Playlist(BaseModel):
     key = pw.CharField(null=True)
     channel = pw.ForeignKeyField(Channel, backref='playlists')
     etag = pw.CharField(null=True)
+
 
 class Video(BaseModel):
     video_type = pw.CharField(default='youtube')
@@ -68,15 +75,6 @@ class Video(BaseModel):
             (('video_type', 'video_id'), True),
         )
 
-# class Statistic(BaseModel):
-#     statistic_id = pw.AutoField()
-#     video = pw.ForeignKeyField(Video, backref='statistics')
-#     timestamp = pw.IntegerField(null=True)
-#     views = pw.IntegerField(null=True)
-#     likes = pw.IntegerField(null=True)
-#     dislikes = pw.IntegerField(null=True)
-#     favorites = pw.IntegerField(null=True)
-#     comments = pw.IntegerField(null=True)
 
 class TrendPoint(BaseModel):
     point_id = pw.AutoField()
@@ -113,23 +111,22 @@ class VideoTrends(BaseModel):
     comments = pw.ForeignKeyField(TrendSeries, null=True)
 
 
-@db.func('power')
+@DATABASE.func('power')
 def power(base, exponent):
     """As far as I know, this does not exist"""
     if base is None or exponent is None:
         return None
     return base ** exponent
 
+
 MODELS = BaseModel.__subclasses__()
+
 
 def init_database():
     new_db = not os.path.exists(FILENAME)
-    print(os.getcwd(), new_db)
-    # import sys
-    # sys.exit()
-    db.init(os.path.join(os.getcwd(), FILENAME),
+    DATABASE.init(os.path.join(os.getcwd(), FILENAME),
             pragmas={'journal_mode': 'wal'})
     if not new_db:
-        model_migration.run(db)
+        model_migration.run(DATABASE)
 
-    db.create_tables(MODELS)
+    DATABASE.create_tables(MODELS)

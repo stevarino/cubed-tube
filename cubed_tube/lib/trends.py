@@ -2,7 +2,6 @@
 Houses high-level trend interface for linear data-point storage/retrieval.
 """
 
-from os import times
 from cubed_tube.lib import common
 from cubed_tube.lib import models as m
 
@@ -148,7 +147,7 @@ def compress_trends(rules: List[Tuple[int, int]]):
     i = 0
 
     for chunk in common.chunk(query, total, 100):
-        with m.db.atomic():
+        with m.DATABASE.atomic():
             print(status.format(i, total), end='')
             for series in chunk:
                 i += 1
@@ -195,4 +194,4 @@ def compress_trends(rules: List[Tuple[int, int]]):
                     series.point_count = pt_count
                     series.save()
     print("\nVacuuming...")
-    m.db.execute_sql('VACUUM')
+    m.DATABASE.execute_sql('VACUUM')

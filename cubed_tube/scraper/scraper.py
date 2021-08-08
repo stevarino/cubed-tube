@@ -123,7 +123,7 @@ def get_yt_channel_id(channel_name: str):
 def load_yt_channel(ctx: Context, channel: schema.ConfigChannel
                     ) -> m.Channel:
     """Creates or retrieves a channel record, ensuring it is up to date."""
-    with m.db.atomic():
+    with m.DATABASE.atomic():
         chan, created = m.Channel.get_or_create(
             name=get_yt_channel_id(channel.name),
             channel_type=channel.type,
@@ -346,7 +346,7 @@ def get_video_by_ids(ctx: Context, video_ids: list[str], kwargs_func=None):
     received_video_ids = set()
 
     for chunked_ids in chunk(video_ids, len(video_ids), 50):
-        with m.db.atomic():
+        with m.DATABASE.atomic():
             chan_args = dict(
                 id=','.join(chunked_ids),
                 part='statistics,snippet,contentDetails')
