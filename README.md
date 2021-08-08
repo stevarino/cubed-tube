@@ -14,7 +14,7 @@ all of the [HermitCraft](http://hermitcraft.com) seasons and follow your hermits
 in order. However as the project developed and I became more familiar with the
 YouTube space, a general solution seemed ideal.
 
-Want to build your own? Check the tutorial!
+Want to build your own? [Check out the tutorial!](https://github.com/stevarino/cubed-tube/blob/master/docs/tutorial.md)
 
 ## Motivation
 
@@ -51,3 +51,4 @@ have any questions, I would love to hear from you.
 
  - Cross platform video viewing (youtube/twitch/etc).
  - Promotion videos between videos (livestream announcements, events, etc)
+ - Better CSS/Theming support.
