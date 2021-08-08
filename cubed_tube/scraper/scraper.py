@@ -57,7 +57,7 @@ class Context:
     """A dataclass of convenience fields, useful for branching contexts."""
     cost: int = 0
     quota: int = None
-    channels: list[str] = field(default_factory=list)
+    channels: List[str] = field(default_factory=list)
     now: int = field(default_factory=lambda: int(time.time()))
 
 
@@ -156,7 +156,7 @@ def load_yt_channel(ctx: Context, channel: schema.ConfigChannel
     update_yt_channel(ctx, [chan.channel_id])
     return chan
 
-def update_yt_channel(ctx: Context, chan_ids: list[str]):
+def update_yt_channel(ctx: Context, chan_ids: List[str]):
     chans = (
         m.Channel.select(
             m.Channel,
@@ -341,7 +341,7 @@ def process_series(ctx: Context, series: schema.ConfigSeries):
     if missing_vids:
         print(f'  WARNING: Videos not found: {", ".join(missing_vids)}')
     
-def get_video_by_ids(ctx: Context, video_ids: list[str], kwargs_func=None):
+def get_video_by_ids(ctx: Context, video_ids: List[str], kwargs_func=None):
     expected_video_ids = set(video_ids)
     received_video_ids = set()
 
@@ -378,7 +378,7 @@ def scan_videos(ctx: Context):
     rate_factor = 2.033320232
     
     count = 50 * (ctx.quota - ctx.cost)
-    all_videos: list[m.Video] = m.Video.select(
+    all_videos: List[m.Video] = m.Video.select(
         m.Video.video_id,
         ((ctx.now - m.Video.last_scanned) / m.pw.fn.power(
             ctx.now - m.Video.published_at, rate_factor
