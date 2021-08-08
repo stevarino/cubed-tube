@@ -8,3 +8,4 @@ build
 **/*.sqbpro
 *.egg-info
 notes.txt
+versions.json
