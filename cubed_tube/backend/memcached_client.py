@@ -6,11 +6,11 @@ from pymemcache.client.base import Client
 from pymemcache.client.retrying import RetryingClient
 import pymemcache.exceptions
 
-from cubed_tube.lib import schema
+from cubed_tube.lib import schema, util
 
 CLIENT: Optional[Client] = None
 LOGGER = logging.getLogger(__name__)
-_DEFERRED = '_deferred'
+_DEFERRED = (util.load_credentials().site_name or '') + '/_deferred'
 
 def create_client(mc_config: schema.CredMemcache) -> Client:
     """Return a retrying memcached client"""

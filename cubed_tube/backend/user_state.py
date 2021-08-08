@@ -115,7 +115,11 @@ class Cache():
         self.write_func(key, value)
         
 def _key(user_hash: str):
-    return f'user_state/{user_hash[0:2]}/{user_hash}.json'
+    creds = util.load_credentials()
+    prefix = ''
+    if creds.site_name:
+        prefix = creds.site_name + '/'
+    return f'{prefix}user_state/{user_hash[0:2]}/{user_hash}.json'
 
 def lookup_user(user_hash: str):
     """Returns the user from cache/file, or throws UserNotFound."""
