@@ -154,6 +154,7 @@ class CredBackend(Schema):
     SECRET_KEY: str
     cors_origins: List[str]
     domain: str
+    # NOTE: user_salt should not be changed even if leaked.
     user_salt: Optional[str]
     memcache: Optional[CredMemcache]
     worker_port: Optional[int]
