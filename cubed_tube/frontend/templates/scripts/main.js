@@ -27,6 +27,7 @@ var ELEMENT_BY_VIDEO_ID = {}
 
 window.onload = function() {
     loadSettings();
+    let userPromise = initUser().then(renderProfileMenu);
     initDropdown()
     if (document.getElementById('loading') === null) {
         if (document.getElementById('channels') !== null) {
@@ -69,9 +70,8 @@ window.onload = function() {
     document.getElementById('modal').addEventListener('click', hideModal);
 
     youtubeInit();
-    initUser().finally(() => {
+    userPromise.finally(() => {
         loadSeries();
-        renderProfileMenu();
     });
 }
 
