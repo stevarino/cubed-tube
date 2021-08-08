@@ -170,6 +170,7 @@ class CredScraper(Schema):
 
 @dataclass
 class Credentials(Schema):
+    site_name: Optional[str]
     scraper: CredScraper
     backend: Optional[CredBackend]
     cloud_storage: Optional[CredCloud]

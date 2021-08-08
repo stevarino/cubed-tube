@@ -1,17 +1,23 @@
 import os
 import shutil
 
+from cubed_tube.lib import util
+
+creds = util.load_credentials()
+
+if not creds.site_name:
+    raise ValueError('site_name missing from credentials.yaml')
+
 workers = 5
 
 raw_env = [
     'PROMETHEUS_MULTIPROC_DIR=./prometheus_multiproc',
-    'memcache=localhost:11211',
 ]
 
-bind = 'unix:hermit-tube.socket'
+bind = f'unix:{creds.site_name}.socket'
 
-accesslog = '/var/www/hermit.tube/logs/access.log'
-errorlog = '/var/www/hermit.tube/logs/error.log'
+accesslog = f'/var/www/{creds.site_name}/logs/access.log'
+errorlog = f'/var/www/{creds.site_name}/logs/error.log'
 loglevel = 'info'
 enable_stdio_inheritance = True
 
@@ -22,21 +28,6 @@ def on_starting(server):
     server.log.info("on_starting")
     shutil.rmtree('./prometheus_multiproc')
     os.mkdir('./prometheus_multiproc')
-
-def when_ready(server):
-    server.log.info("server ready")
-
-def pre_fork(server, worker):
-    worker.log.info("pre_fork")
-
-def pre_exec(server):
-    server.log.info("Forked child, re-executing.")
-
-def when_ready(server):
-    server.log.info("Server is ready. Spawning workers")
-
-def worker_int(worker):
-    worker.log.info("worker received INT or QUIT signal")
 
 def worker_exit(server, worker):
     from prometheus_client import multiprocess
