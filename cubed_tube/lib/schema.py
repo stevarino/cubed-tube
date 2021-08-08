@@ -156,6 +156,7 @@ class CredBackend(Schema):
     domain: str
     user_salt: Optional[str]
     memcache: Optional[CredMemcache]
+    worker_port: Optional[int]
 
 @dataclass
 class CredCloud(Schema):

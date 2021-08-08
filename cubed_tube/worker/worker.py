@@ -55,7 +55,7 @@ def check_writes(attempt = 0):
 
 def loop():
     creds = util.load_credentials()
-    start_http_server(3900)
+    start_http_server(creds.backend.worker_port or 3900)
     memcached_client.create_client(creds.backend.memcache)
     LOGGER.info("Worker started")
     while True:
