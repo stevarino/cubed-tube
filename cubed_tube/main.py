@@ -26,12 +26,18 @@ def run_compress(args):
     ])
 
 
+def print_site_name(args):
+    from cubed_tube.lib import util
+    print(util.load_credentials().site_name)
+
+
 SUBCOMMANDS = {
     'frontend': render,
     'scraper': scraper,
     'backend': run_wsgi_server,
     'worker': run_worker,
     'compress': run_compress,
+    'site_name': print_site_name,
 }
 
 def main():
