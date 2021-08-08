@@ -23,6 +23,7 @@ def generate_context(config: schema.Configuration, creds: schema.Credentials):
             'backend_version': json.dumps(config.version),
             'API_DOMAIN': json.dumps(api_domain)
         },
+        'stats': get_overall_video_stats(),
         'page': {
             'menu_links': generate_link_menus(config),
             'title': config.title,
@@ -40,6 +41,21 @@ def generate_link_menus(config: schema.Configuration):
     if not config.site.menu_links:
         return []
     return [link.as_dict() for link in config.site.menu_links]
+
+def get_overall_video_stats():
+    '''
+        select 
+            count(*), 
+            sum(video.length) / 3600.0,
+            (max(video.published_at) - min(video.published_at)) / 3600.0 / 24 / 365
+        from video
+    '''
+    return Video.select(
+        pw.fn.COUNT().alias('count'),
+        pw.fn.SUM(Video.length).alias('seconds'),
+        pw.fn.MIN(Video.published_at).alias('first'),
+        pw.fn.MAX(Video.published_at).alias('last')
+    ).dicts()[0]
 
 
 def get_videos_by_channel():
