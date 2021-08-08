@@ -1,14 +1,20 @@
-import glob
 import os.path
 import setuptools
+import json
 
 DIR = os.path.dirname(__file__)
-with open(os.path.join(DIR, "README.md"), "r", encoding="utf-8") as fh:
-    long_description = fh.read()
+print('working from ', DIR)
+with open(os.path.join(DIR, "README.md"), "r", encoding="utf-8") as fp:
+    long_description = fp.read()
+
+with open(os.path.join(DIR, 'versions.json')) as fp:
+    versions = json.load(fp)
+VERSION = versions['current']
+
 
 setuptools.setup(
     name="cubedtube", # Replace with your own username
-    version="0.1.10.dev5",
+    version=VERSION,
     author="stevarino",
     author_email="stevarino@hermit.tube",
     description="A video viewing webapp that organizes videos into channels and series",
