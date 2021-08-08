@@ -15,7 +15,7 @@ import json
 import os
 import re
 import shutil
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 from jinja2 import Environment, PackageLoader
 
@@ -63,7 +63,7 @@ def render_static(config: schema.Configuration, creds: schema.Credentials):
             fp_in.write('\n\n')
 
 def render_series(config: schema.Configuration, series: schema.ConfigSeries):
-    videos: list[Video] = (
+    videos: List[Video] = (
         Video.select(Video, Channel, Series)
         .join(Channel, on=(Video.channel == Channel.name), attr='ch')
         .join_from(Video, Series)
@@ -156,7 +156,7 @@ def render_updates_for_series(series: schema.ConfigSeries) -> Tuple[str, str]:
     prev_hash = None
     prev_id = None
 
-    videos: list[Video] = (
+    videos: List[Video] = (
         Video.select()
         .join_from(Video, Series)
         .where(Video.series.slug == series.slug)

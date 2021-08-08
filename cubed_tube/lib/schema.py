@@ -1,7 +1,7 @@
 
 from copy import deepcopy
 from dataclasses import dataclass, is_dataclass, asdict, fields, MISSING, Field
-from typing import Optional, Union, Any, get_origin, get_args
+from typing import Optional, Union, Any, List, get_origin, get_args
 
 class MissingFieldError(ValueError):
     pass
@@ -78,14 +78,14 @@ class Schema:
                 return None
             raise MissingFieldError(f'{_path}: Received None')
 
-        # foo: list[Foo]
+        # foo: List[Foo]
         if get_origin(type_) is list:
             return [
                 cls._check_type(field_args[0], item, f'{_path}[{i}]') 
                 for i, item in enumerate(value)
             ]
 
-        # foo: dict[str, Foo]
+        # foo: Dict[str, Foo]
         if get_origin(type_) is dict and is_dataclass(field_args[1]):
             return {
                 key: cls._check_type(field_args[1], val, f'{_path}.{key}')
@@ -105,7 +105,7 @@ class ConfigChannel(Schema):
     name: str
     playlist: Optional[str]
     channel: Optional[str]
-    videos: Optional[list[str]]
+    videos: Optional[List[str]]
     type: Optional[str] = 'youtube'
     record: Optional[Any] = None
 
@@ -113,9 +113,9 @@ class ConfigChannel(Schema):
 class ConfigSeries(Schema):
     title: str
     slug: str
-    channels: list[ConfigChannel]
+    channels: List[ConfigChannel]
     start: Optional[int]
-    ignore_video_ids: Optional[list[str]]
+    ignore_video_ids: Optional[List[str]]
     default: bool = False
     active: bool = True
     record: Optional[Any] = None
@@ -128,17 +128,17 @@ class ConfigLink(Schema):
 @dataclass
 class ConfigLinkList(Schema):
     text: str
-    links: list[ConfigLink]
+    links: List[ConfigLink]
 
 @dataclass
 class ConfigSite(Schema):
-    menu_links: Optional[list[Union[ConfigLink, ConfigLinkList]]]
+    menu_links: Optional[List[Union[ConfigLink, ConfigLinkList]]]
     header: Optional[str]
 
 @dataclass
 class Configuration(Schema):
     title: str
-    series: list[ConfigSeries]
+    series: List[ConfigSeries]
     site: Optional[ConfigSite]
     version: str = ''
 
@@ -152,7 +152,7 @@ class CredBackend(Schema):
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
     SECRET_KEY: str
-    cors_origins: list[str]
+    cors_origins: List[str]
     domain: str
     user_salt: Optional[str]
     memcache: Optional[CredMemcache]

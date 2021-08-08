@@ -1,6 +1,7 @@
 import boto3
 from botocore.exceptions import ClientError
 import json
+from typing import List
 
 from cubed_tube.lib.util import load_credentials
 
@@ -66,7 +67,7 @@ def get_object(key: str, client=None, bucket=None):
             raise NoSuchKey(f'Unable to find key {key}')
         raise
 
-def del_objects(keys: list[str], client=None, bucket=None):
+def del_objects(keys: List[str], client=None, bucket=None):
     client = client or get_client()
     bucket = bucket or CLOUD_CONFIG.name
     response = client.delete_objects(Bucket=bucket, Delete={
