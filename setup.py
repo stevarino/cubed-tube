@@ -25,6 +25,7 @@ setuptools.setup(
         'awscli>=1.19.97',
         'boto3>=1.17.97',
         'Flask>=1.1.2',
+        'gunicorn>=20.0.0',
         'Jinja2>=3.0',
         'peewee>=3.13.3',
         'prometheus-client>=0.11.0',
