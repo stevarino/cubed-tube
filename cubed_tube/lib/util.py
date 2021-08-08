@@ -2,20 +2,15 @@
 util.py - Collection of convenience funcitons
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import hashlib
-import os.path
 from typing import Union
 import yaml
 
 from cubed_tube.lib import schema
 
-def root(*paths):
-    """Returns a path relative to the root of the app"""
-    path = os.path.abspath(__file__).replace('\\', '/')
-    while 'cubed_tube/lib' in path:
-        path = os.path.dirname(path).replace('\\', '/')
-    return os.path.join(path, *paths)
+
+_config_file_cache: dict[str, tuple[datetime, schema.Schema]] = {}
 
 
 def chunk(items, count, chunk_size):
@@ -30,15 +25,16 @@ def sha1(value: Union[str, bytes]) -> str:  # pylint: disable=unsubscriptable-ob
         value = value.encode('utf-8')
     return hashlib.sha1(value).hexdigest()
 
+
 def load_credentials(ttl: int=0) -> schema.Credentials:
     """Loads the credentials (secrets) file"""
     return _load_config_file('credentials.yaml', schema.Credentials, ttl)
+
 
 def load_config(ttl: int=0) -> schema.Configuration:
     """Loads the playlists (configuration) file"""
     return _load_config_file('playlists.yaml', schema.Configuration, ttl)
 
-_config_file_cache: dict[str, tuple[datetime, schema.Schema]] = {}
 
 def _load_config_file(
         file: str, _type: schema.Schema, ttl: int) -> schema.Schema:
