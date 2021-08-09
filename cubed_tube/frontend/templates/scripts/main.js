@@ -28,7 +28,10 @@ var ELEMENT_BY_VIDEO_ID = {}
 window.onload = function() {
     loadSettings();
     let userPromise = initUser().then(renderProfileMenu);
-    initDropdown()
+    initDropdown();
+
+    document.getElementById('modal').addEventListener('click', hideModal);
+
     if (document.getElementById('loading') === null) {
         if (document.getElementById('channels') !== null) {
             document.getElementById('channels').style.display = 'none';
@@ -66,8 +69,6 @@ window.onload = function() {
             // console.log(e.key);
         }
     });
-
-    document.getElementById('modal').addEventListener('click', hideModal);
 
     youtubeInit();
     userPromise.finally(() => {
