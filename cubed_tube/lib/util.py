@@ -4,7 +4,7 @@ util.py - Collection of convenience funcitons
 
 from datetime import datetime
 import hashlib
-from typing import Union, Dict
+from typing import Union, Dict, cast
 import yaml
 
 from cubed_tube.lib import schema
@@ -34,6 +34,11 @@ def load_credentials(ttl: int=0) -> schema.Credentials:
 def load_config(ttl: int=0) -> schema.Configuration:
     """Loads the playlists (configuration) file"""
     return _load_config_file('playlists.yaml', schema.Configuration, ttl)
+
+def ensure_str(text: Union[str,bytes], encoding='utf-8'):
+    if type(text) is bytes:
+        return cast(bytes, text).decode(encoding)
+    return text
 
 
 def _load_config_file(
