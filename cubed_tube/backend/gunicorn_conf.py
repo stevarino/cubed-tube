@@ -9,13 +9,7 @@ if not creds.site_name:
     raise ValueError('site_name missing from credentials.yaml')
 
 workers = 5
-
-raw_env = [
-    'PROMETHEUS_MULTIPROC_DIR=./prometheus_multiproc',
-]
-
 bind = f'unix:{creds.site_name}.socket'
-
 accesslog = f'/var/www/{creds.site_name}/logs/access.log'
 errorlog = f'/var/www/{creds.site_name}/logs/error.log'
 loglevel = 'info'

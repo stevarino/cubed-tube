@@ -17,7 +17,7 @@ from prometheus_client import (
     Histogram, multiprocess, generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST,
     Gauge, Counter, Histogram)
 
-from cubed_tube.lib.util import sha1, load_credentials
+from cubed_tube.lib.util import sha1, load_credentials, ensure_str
 from cubed_tube.backend import user_state
 
 flask_config = {
@@ -99,7 +99,7 @@ def after_request(response: Response):
         ).inc()
 
     # CORS code
-    domain = _get_domain(request.referrer)
+    domain = _get_domain(request.referrer))
     if not domain:
         domain = flask_config['cors_origins'][0]
     if domain not in flask_config['cors_origins']:
@@ -119,8 +119,10 @@ def _json(data):
     return jsonify(data), 200
 
 def _get_domain(referrer):
+    if not referrer:
+        return ''
     try:
-        parts = urlparse(referrer)
+        parts = urlparse(ensure_str(referrer))
         return f'{parts.scheme}://{parts.netloc}'
     except:
         return ''
