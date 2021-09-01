@@ -495,6 +495,12 @@ h1 svg.triangle polygon {
     z-index: 100;
 }
 
+/* Safari workaround */
+#modal.fullscreen:-webkit-full-screen {
+    width: 100%;
+    height: 100%;
+}
+
 #modal.fullscreen #player_wrap {
     top: 0;
     left: 0;
