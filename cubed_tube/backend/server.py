@@ -18,7 +18,7 @@ from prometheus_client import (
     Gauge, Counter, Histogram)
 
 from cubed_tube.lib.util import sha1, load_credentials, ensure_str
-from cubed_tube.backend import user_state
+from cubed_tube.backend import user_state, actions
 
 flask_config = {
     'SEND_FILE_MAX_AGE_DEFAULT': 0
@@ -238,7 +238,19 @@ def handle_user_state():
             return_value['state'] = user_state.lookup_user(user_hash)
         except user_state.UserNotFound:
             return _json({'error': 'unknown'})
+    if actions.user_is_known(user_hash):
+        return_value['has_roles'] = 1
     return _json(return_value)
+
+
+@app.route('/app/user_roles', methods=['GET'])
+def get_user_actions():
+    user_hash = session.get('user_hash')
+        
+    if not user_hash:
+        return _json({'error': 'unauthenticated'})
+    
+    return _json({'actions': actions.get_user_actions(user_hash)})
 
 
 if __name__ == '__main__':

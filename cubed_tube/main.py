@@ -1,9 +1,13 @@
 import argparse
+import logging
 import os
 import os.path
 
 from cubed_tube.frontend import render
 from cubed_tube.scraper import scraper
+
+
+logging.basicConfig(level=logging.INFO)
 
 
 def run_wsgi_server(args):

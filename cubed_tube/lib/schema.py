@@ -1,7 +1,7 @@
 
 from copy import deepcopy
 from dataclasses import dataclass, is_dataclass, asdict, fields, MISSING, Field
-from typing import Optional, Union, Any, List, get_origin, get_args
+from typing import Optional, Union, Any, List, Dict, get_origin, get_args
 
 class MissingFieldError(ValueError):
     pass
@@ -95,9 +95,26 @@ class Schema:
         return value
 
     def as_dict(self, allow_none=False):
-        return asdict(self, dict_factory=lambda items: {
-            k: v for k, v in items if allow_none or v is not None
-        })
+        def _dict_factory(items):
+            final = {}
+            for k, v in items:
+                if not allow_none and v is None:
+                    continue
+                final[k] = self._serialize_value(v, allow_none=allow_none)
+            return final
+        return asdict(self, dict_factory=_dict_factory)
+
+
+    def _serialize_value(self, value, allow_none=False):
+        if isinstance(value, Schema):
+            return value.as_dict(allow_none=allow_none)
+        if isinstance(value, list):
+            return [self._serialize_value(v, allow_none=allow_none)
+                    for v in value]
+        if isinstance(value, dict):
+            return {k: self._serialize_value(v, allow_none=allow_none)
+                    for k, v in value.items()}
+        return value
 
 
 @dataclass
@@ -120,6 +137,10 @@ class ConfigSeries(Schema):
     active: bool = True
     record: Optional[Any] = None
 
+    def get_channels(self):
+        """Returns a list of channels in the series."""
+        return [channel.name for channel in self.channels]
+
 @dataclass
 class ConfigLink(Schema):
     text: str
@@ -141,6 +162,18 @@ class Configuration(Schema):
     series: List[ConfigSeries]
     site: Optional[ConfigSite]
     version: str = ''
+
+    def get_channels(self) -> List[str]:
+        """Returns a list of channels across all series, sorted."""
+        channels = set()
+        for series in self.series:
+            channels.update(series.get_channels())
+        return sorted(channels)
+
+    def get_series(self) -> List[str]:
+        """Returns a list of series (by slug) in order of appearance."""
+        return [series.slug for series in self.series]
+            
 
 @dataclass
 class CredMemcache(Schema):
@@ -171,8 +204,14 @@ class CredScraper(Schema):
     yt_api_key: str
 
 @dataclass
+class CredRoles(Schema):
+    admin: Optional[List[str]]
+    creator: Optional[Dict[str, List[str]]]
+
+@dataclass
 class Credentials(Schema):
     site_name: str
     scraper: CredScraper
     backend: Optional[CredBackend]
     cloud_storage: Optional[CredCloud]
+    roles: Optional[CredRoles]

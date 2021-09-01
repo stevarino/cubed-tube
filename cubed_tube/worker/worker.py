@@ -8,9 +8,8 @@ from botocore.parsers import LOG
 
 from prometheus_client import start_http_server, Counter
 
-from cubed_tube.lib import util
-from cubed_tube.backend import memcached_client, cloud_storage
-
+from cubed_tube.lib import util, models
+from cubed_tube.backend import memcached_client, cloud_storage, actions
 
 
 CNT_ERRORS = Counter('ht_worker_errors', 'Number of errros')
@@ -19,25 +18,29 @@ DEFERRED_LAST_CHECK: Optional[datetime] = None
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
 
+
+
+
 def check_writes(attempt = 0):
     global DEFERRED_LAST_CHECK
-    creds = util.load_credentials(ttl=10)
+    creds = util.load_credentials(ttl=30)
     write_frequency = creds.backend.memcache.write_frequency
     if not write_frequency:
         return
     horizon = timedelta(seconds=write_frequency)
     now = datetime.now()
-    if DEFERRED_LAST_CHECK and now - DEFERRED_LAST_CHECK < horizon:
-        return
-    DEFERRED_LAST_CHECK = now
 
     keys, cas = memcached_client.get_deferred()
+    if DEFERRED_LAST_CHECK and now - DEFERRED_LAST_CHECK < horizon:
+        return
+
+    DEFERRED_LAST_CHECK = now
     if not keys:
         return
     if not memcached_client.set_deferred('', cas):
         LOGGER.warning('CAS conflict on check_writes(%s)', attempt)
         return check_writes(attempt + 1)
-        
+
     for chunked_keys in util.chunk(keys, len(keys), 50):
         contents = memcached_client.CLIENT.get_many(chunked_keys)
         missing = set(chunked_keys) - set(contents.keys())
@@ -50,7 +53,6 @@ def check_writes(attempt = 0):
                 continue
             cloud_storage.put_object(key, contents[key])
             CNT_UPLOADS.inc()
-        
 
 
 def loop():
@@ -58,6 +60,10 @@ def loop():
     start_http_server(creds.backend.worker_port or 3900)
     memcached_client.create_client(creds.backend.memcache)
     LOGGER.info("Worker started")
+    
+    models.init_database()
+    models.DATABASE.close()
+
     while True:
         try:
             check_writes()

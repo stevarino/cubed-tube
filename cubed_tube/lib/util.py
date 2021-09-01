@@ -4,13 +4,13 @@ util.py - Collection of convenience funcitons
 
 from datetime import datetime
 import hashlib
-from typing import Union, Dict, cast
+from typing import Optional, Union, Dict, cast, TypeVar, Callable
 import yaml
 
 from cubed_tube.lib import schema
 
 
-_config_file_cache: Dict[str, tuple[datetime, schema.Schema]] = {}
+T = TypeVar('T')
 
 
 def chunk(items, count, chunk_size):
@@ -26,29 +26,42 @@ def sha1(value: Union[str, bytes]) -> str:  # pylint: disable=unsubscriptable-ob
     return hashlib.sha1(value).hexdigest()
 
 
-def load_credentials(ttl: int=0) -> schema.Credentials:
+def cache_func(func: Callable[[], T]) -> T:
+    """Decorator which caches a zero-argument function"""
+    func._cache_dt = None
+    func._cache_value = None
+    func._test_data = None
+    def wrapper(ttl: int=0, now: datetime=None, _test_data=None):
+        now = now or datetime.now()
+        if _test_data is not None:
+            func._test_data = _test_data
+            return _test_data
+        if func._test_data is not None:
+            return func._test_data
+        if func._cache_dt:
+            if not ttl or (now - func._cache_dt).total_seconds() < ttl:
+                return func._cache_value
+        func._cache_value = func()
+        func._cache_dt = now
+        return func._cache_value
+    return wrapper
+
+
+@cache_func
+def load_credentials() -> schema.Credentials:
     """Loads the credentials (secrets) file"""
-    return _load_config_file('credentials.yaml', schema.Credentials, ttl)
+    with open('credentials.yaml') as fp:
+        return schema.Credentials.from_dict(yaml.safe_load(fp))
 
 
-def load_config(ttl: int=0) -> schema.Configuration:
+@cache_func
+def load_config() -> schema.Configuration:
     """Loads the playlists (configuration) file"""
-    return _load_config_file('playlists.yaml', schema.Configuration, ttl)
+    with open('playlists.yaml') as fp:
+        return schema.Configuration.from_dict(yaml.safe_load(fp))
 
 def ensure_str(text: Union[str,bytes], encoding='utf-8'):
+    """An equivalent to six.ensure_str."""
     if type(text) is bytes:
         return cast(bytes, text).decode(encoding)
     return text
-
-
-def _load_config_file(
-        file: str, _type: schema.Schema, ttl: int) -> schema.Schema:
-    now = datetime.now()
-    if file in _config_file_cache:
-        dt, obj = _config_file_cache[file]
-        if not ttl or (now - dt).total_seconds() < ttl:
-            return obj
-    with open(file) as fp:
-        obj = _type.from_dict(yaml.safe_load(fp))
-        _config_file_cache[file] = (now, obj)
-    return _config_file_cache[file][1]
