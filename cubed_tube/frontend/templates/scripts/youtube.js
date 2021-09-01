@@ -33,7 +33,7 @@ function youtubeInit() {
     for (let i=0; i<buttons.length; i++) {
         buttons[i].addEventListener('click', handleMediaButtons)
     }
-    document.onfullscreenchange = onFullScreenChange;
+    fscreen_api.onfullscreenchange = onFullScreenChange;
 }
 
 function onYouTubeIframeAPIReady() {
@@ -74,8 +74,12 @@ function loadPlayer(e) {
     });
     PLAYER.obj.getIframe().focus();
     if (SETTINGS.use_fullscreen) {
-        document.getElementById('modal').requestFullscreen();
-        screen.orientation.lock('landscape').then().catch();
+        fscreen_api.requestFullscreen(document.getElementById('modal'));
+        try {
+            screen.orientation.lock('landscape').then().catch();
+        } catch (error) {
+            // expected
+        }
     }
     e.preventDefault();
     return false;
@@ -146,7 +150,7 @@ function destroyPlayer() {
     PLAYER.video = null;
 
     if (isFullScreen()) {
-        document.exitFullscreen();
+        fscreen_api.exitFullscreen();
     }
 
     if (history.state && history.state.view) {
@@ -174,7 +178,7 @@ function pausePlayer(e) {
 }
 
 function isFullScreen() {
-    return document.fullscreenElement !== null
+    return fscreen_api.fullscreenElement !== null
 }
 
 function onFullScreenChange(e) {
@@ -187,9 +191,9 @@ function onFullScreenChange(e) {
 
 function toggleFullScreen() {
     if (isFullScreen()) {
-        document.exitFullscreen();
+        fscreen_api.exitFullscreen();
     } else {
-        document.getElementById('modal').requestFullscreen();
+        fscreen_api.requestFullscreen(document.getElementById('modal'));
     }
 }
 
