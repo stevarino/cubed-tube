@@ -33,7 +33,11 @@ function youtubeInit() {
     for (let i=0; i<buttons.length; i++) {
         buttons[i].addEventListener('click', handleMediaButtons)
     }
-    fscreen_api.onfullscreenchange = onFullScreenChange;
+    try {
+        fscreen_api.onfullscreenchange = onFullScreenChange;
+    } catch (error) {
+        // pass
+    }
 }
 
 function onYouTubeIframeAPIReady() {
@@ -74,7 +78,11 @@ function loadPlayer(e) {
     });
     PLAYER.obj.getIframe().focus();
     if (SETTINGS.use_fullscreen) {
-        fscreen_api.requestFullscreen(document.getElementById('modal'));
+        try {
+            fscreen_api.requestFullscreen(document.getElementById('modal'));
+        } catch (error) {
+            console.log("requestFullscreen: ", error);
+        }
         try {
             screen.orientation.lock('landscape').then().catch();
         } catch (error) {
@@ -178,7 +186,11 @@ function pausePlayer(e) {
 }
 
 function isFullScreen() {
-    return fscreen_api.fullscreenElement !== null
+    try {
+        return fscreen_api.fullscreenElement !== null
+    } catch (error) {
+        return false;
+    }
 }
 
 function onFullScreenChange(e) {
@@ -193,7 +205,11 @@ function toggleFullScreen() {
     if (isFullScreen()) {
         fscreen_api.exitFullscreen();
     } else {
-        fscreen_api.requestFullscreen(document.getElementById('modal'));
+        try {
+            fscreen_api.requestFullscreen(document.getElementById('modal'));
+        } catch (error) {
+            // pass
+        }
     }
 }
 
