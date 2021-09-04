@@ -17,12 +17,13 @@ from prometheus_client import (
     Histogram, multiprocess, generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST,
     Gauge, Counter, Histogram)
 
-from cubed_tube.lib.util import sha1, load_credentials, ensure_str
+from cubed_tube.lib.util import load_config, sha1, load_credentials, ensure_str
 from cubed_tube.backend import user_state
 
 flask_config = {
     'SEND_FILE_MAX_AGE_DEFAULT': 0
 }
+config = load_config()
 creds = load_credentials()
 flask_config.update(creds.backend.as_dict())
 
@@ -40,6 +41,13 @@ CTR_USER_STATUS = Counter(
     'ht_user_status', 'Count of users by status',
     labelnames=['status', 'is_mobile', 'is_logged_in'])
 
+
+# init CTR_VIDEO_PLAY at 0
+for series in config.series:
+    for channel in series.get_channels():
+        CTR_VIDEO_PLAY.labels(channel=channel, series=series.slug).inc(0)
+
+
 app = Flask(__name__)
 app.config.update(flask_config)
 
@@ -51,6 +59,7 @@ loggers = [
 for logger in loggers:
     logger.addHandler(default_handler)
     logger.setLevel(logging.INFO)
+
 
 CONF_URL = 'https://accounts.google.com/.well-known/openid-configuration'
 oauth = OAuth(app)
@@ -64,6 +73,7 @@ oauth.register(
 
 MULTIPROCESS = bool(os.getenv('PROMETHEUS_MULTIPROC_DIR'))
 
+
 @app.before_first_request
 def before_first_request():
     options = [
@@ -74,7 +84,6 @@ def before_first_request():
     ]
     for mode, status in options:
         app.logger.info('%s mode %sabled', mode, ('en' if status else 'dis'))
-
 
 
 @app.before_request
