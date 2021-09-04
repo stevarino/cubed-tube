@@ -126,6 +126,10 @@ class ConfigChannel(Schema):
     type: Optional[str] = 'youtube'
     record: Optional[Any] = None
 
+    def get_normalized_name(self):
+        """Returns a normalized channel name (lowercase, no spaces)"""
+        return self.name.lower().replace(' ', '')
+
 @dataclass
 class ConfigSeries(Schema):
     title: str
@@ -139,7 +143,7 @@ class ConfigSeries(Schema):
 
     def get_channels(self):
         """Returns a list of channels in the series."""
-        return [channel.name for channel in self.channels]
+        return [channel.get_normalized_name() for channel in self.channels]
 
 @dataclass
 class ConfigLink(Schema):

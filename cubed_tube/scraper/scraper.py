@@ -116,16 +116,12 @@ def _yt_get_many(ctx: Context, req: YouTubeRequest):
             break
         req.args['pageToken'] = items['nextPageToken']
 
-def get_yt_channel_id(channel_name: str):
-    """Normalize a channel name into an id."""
-    return channel_name.lower().replace(' ', '')
-
 def load_yt_channel(ctx: Context, channel: schema.ConfigChannel
                     ) -> m.Channel:
     """Creates or retrieves a channel record, ensuring it is up to date."""
     with m.DATABASE.atomic():
         chan, created = m.Channel.get_or_create(
-            name=get_yt_channel_id(channel.name),
+            name=channel.get_normalized_name(),
             channel_type=channel.type,
             defaults={'tag': channel.name})
         if created:
@@ -224,7 +220,7 @@ def process_yt_playlist(ctx: Context, series: schema.ConfigSeries,
                      series=series, defaults={
                          'playlist': play,
                          'series': series.record, 
-                         'channel': get_yt_channel_id(channel.name)})
+                         'channel': channel.get_normalized_name()})
     print(f'    Playlist ID {playlist} ({i+1})')
 
 
@@ -315,7 +311,7 @@ def process_series(ctx: Context, series: schema.ConfigSeries):
             traceback.print_exc()
 
         # explicit videos
-        ch_id = get_yt_channel_id(channel.name)
+        ch_id = channel.get_normalized_name()
         for video in (channel.videos or []):
             videos[video] = ch_id
 
