@@ -7,9 +7,12 @@ print('working from ', DIR)
 with open(os.path.join(DIR, "README.md"), "r", encoding="utf-8") as fp:
     long_description = fp.read()
 
-with open(os.path.join(DIR, 'versions.json')) as fp:
-    versions = json.load(fp)
-VERSION = versions['current']
+try:
+    with open(os.path.join(DIR, 'versions.json')) as fp:
+        versions = json.load(fp)
+    VERSION = versions['current']
+except OSError:
+    VERSION = '0.0.0'
 
 
 setuptools.setup(
