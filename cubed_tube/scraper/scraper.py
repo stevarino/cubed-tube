@@ -40,7 +40,7 @@ from typing import Optional, List
 import urllib.request, urllib.parse
 
 from cubed_tube.lib.common import filter_video
-from cubed_tube.lib import trends, schema, models as m
+from cubed_tube.lib import trends, schemas, models as m
 from cubed_tube.lib.util import load_credentials, load_config, chunk
 
 API_URL = 'https://www.googleapis.com/youtube/v3/'
@@ -116,7 +116,7 @@ def _yt_get_many(ctx: Context, req: YouTubeRequest):
             break
         req.args['pageToken'] = items['nextPageToken']
 
-def load_yt_channel(ctx: Context, channel: schema.ConfigChannel
+def load_yt_channel(ctx: Context, channel: schemas.ConfigChannel
                     ) -> m.Channel:
     """Creates or retrieves a channel record, ensuring it is up to date."""
     with m.DATABASE.atomic():
@@ -196,8 +196,8 @@ def update_yt_channel(ctx: Context, chan_ids: List[str]):
     '''
     
 
-def process_yt_playlist(ctx: Context, series: schema.ConfigSeries,
-                        channel: schema.ConfigChannel):
+def process_yt_playlist(ctx: Context, series: schemas.ConfigSeries,
+                        channel: schemas.ConfigChannel):
     playlist = YT_PLAYLIST.match(channel.playlist)[1]
     play, _ = m.Playlist.get_or_create(
         playlist_id=playlist, playlist_type='youtube_pl',
@@ -231,7 +231,7 @@ def _parse_ts(dt_str: str):
 
 def update_video(ctx: Context, video_id: str, result: dict,
                  defaults: dict = None,
-                 series: Optional[schema.ConfigSeries] = None):
+                 series: Optional[schemas.ConfigSeries] = None):
     """Write a video to the database"""
     vid, _ = m.Video.get_or_create(
             video_type='youtube', 
@@ -289,8 +289,8 @@ def update_video(ctx: Context, video_id: str, result: dict,
     vid.save()
 
 
-def process_channel(ctx: Context, series: schema.ConfigSeries,
-                    channel: schema.ConfigChannel):
+def process_channel(ctx: Context, series: schemas.ConfigSeries,
+                    channel: schemas.ConfigChannel):
     print('  Processing channel', channel.name)
     channel.record = load_yt_channel(ctx, channel)
     if channel.playlist and YT_PLAYLIST.match(channel.playlist):
@@ -298,7 +298,7 @@ def process_channel(ctx: Context, series: schema.ConfigSeries,
         print('    Processing playlist', playlist_id)
         process_yt_playlist(ctx, series, channel)
 
-def process_series(ctx: Context, series: schema.ConfigSeries):
+def process_series(ctx: Context, series: schemas.ConfigSeries):
     print("Working on series", series.slug)
     videos = {}
     for channel in series.channels:

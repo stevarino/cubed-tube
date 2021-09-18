@@ -1,4 +1,5 @@
 
+import json
 import logging
 import os
 import os.path
@@ -17,15 +18,23 @@ from prometheus_client import (
     Histogram, multiprocess, generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST,
     Gauge, Counter, Histogram)
 
-from cubed_tube.lib.util import load_config, sha1, load_credentials, ensure_str
+from cubed_tube.actions import actions
+from cubed_tube.backend import user_state
+from cubed_tube.lib import util
 from cubed_tube.backend import user_state
 
 flask_config = {
     'SEND_FILE_MAX_AGE_DEFAULT': 0
 }
-config = load_config()
-creds = load_credentials()
+config = util.load_config()
+creds = util.load_credentials()
 flask_config.update(creds.backend.as_dict())
+
+# init CTR_VIDEO_PLAY at 0
+channels_by_season = []
+for series in config.series:
+    for channel in series.get_channels():
+        channels_by_season.append((channel, series.slug))
 
 
 CTR_REQUESTS = Counter(
@@ -34,18 +43,13 @@ CTR_REQUESTS = Counter(
 HIST_REQUESTS = Histogram(
     'ht_latency', 'Latency of requests',
     labelnames=['path', 'method'])
-CTR_VIDEO_PLAY = Counter(
+CTR_VIDEO_PLAY = util.make_counter(
     'ht_video_play', 'Videos played by channel/series',
-    labelnames=['channel', 'series'])
+    labelnames=['channel', 'series'],
+    labelshape=channels_by_season)
 CTR_USER_STATUS = Counter(
     'ht_user_status', 'Count of users by status',
     labelnames=['status', 'is_mobile', 'is_logged_in'])
-
-
-# init CTR_VIDEO_PLAY at 0
-for series in config.series:
-    for channel in series.get_channels():
-        CTR_VIDEO_PLAY.labels(channel=channel, series=series.slug).inc(0)
 
 
 app = Flask(__name__)
@@ -78,9 +82,8 @@ MULTIPROCESS = bool(os.getenv('PROMETHEUS_MULTIPROC_DIR'))
 def before_first_request():
     options = [
         ['Multiprocess', MULTIPROCESS],
-        ['Memcache', creds.backend.memcache],
-        ['Deffered writes', creds.backend.memcache and 
-                            creds.backend.memcache.write_frequency],
+        ['Memcache', creds.backend.memcache.host],
+        ['Deffered writes', creds.backend.memcache.writes_enabled()],
     ]
     for mode, status in options:
         app.logger.info('%s mode %sabled', mode, ('en' if status else 'dis'))
@@ -131,7 +134,7 @@ def _get_domain(referrer):
     if not referrer:
         return ''
     try:
-        parts = urlparse(ensure_str(referrer))
+        parts = urlparse(util.ensure_str(referrer))
         return f'{parts.scheme}://{parts.netloc}'
     except:
         return ''
@@ -177,7 +180,7 @@ def auth():
     """
     token = oauth.google.authorize_access_token()
     user = oauth.google.parse_id_token(token)
-    user_hash = sha1(creds.backend.user_salt + user['email'])
+    user_hash = util.sha1(creds.backend.user_salt + user['email'])
     session['user_hash'] = user_hash
     app.logger.info(f"User {user_hash} logged in")
     return redirect(session.pop('redirect', None) or '/')
@@ -237,6 +240,7 @@ def handle_user_state():
     if not user_hash:
         return _json({'error': 'unauthenticated'})
 
+    creds = util.load_credentials(ttl=30)
     # POST - Uploading state
     if request.method == 'POST':
         upload_data = request.get_json(force=True)
@@ -246,20 +250,67 @@ def handle_user_state():
         try:
             return_value['state'] = user_state.lookup_user(user_hash)
         except user_state.UserNotFound:
-            return _json({'error': 'unknown'})
-    if actions.user_is_known(user_hash):
+            return_value['error'] = 'unknown'
+    if creds.roles.is_known(user_hash):
         return_value['has_roles'] = 1
     return _json(return_value)
 
 
-@app.route('/app/user_roles', methods=['GET'])
+@app.route('/app/actions', methods=['GET'])
 def get_user_actions():
     user_hash = session.get('user_hash')
-        
     if not user_hash:
         return _json({'error': 'unauthenticated'})
     
-    return _json({'actions': actions.get_user_actions(user_hash)})
+    return _json({'actions': [
+        a.as_dict() for a in actions.get_user_actions(user_hash) if a.listed
+    ]})
+
+
+@app.route('/app/request_action', methods=['POST'])
+def request_action():
+    user_hash = session.get('user_hash')
+    if not user_hash:
+        return _json({'error': 'unauthenticated'})
+
+    action = request.args.get('action')
+    if not action:
+        return _json({'error': 'unknown format'})
+    params = request.get_json(force=True)
+    try:
+        record = actions.enqueue_action_request(user_hash, action, params)
+    except ValueError as e:
+        return _json({'error': str(e)})
+    return _json({'record': record.as_dict()})
+
+
+@app.route('/app/action_status', methods=['GET'])
+def action_status():
+    user_hash = session.get('user_hash')
+    if not user_hash:
+        return _json({'error': 'unauthenticated'})
+
+    action_id = request.args.get('id')
+    since_time = float(request.args.get('t', '0'))
+    if not action_id:
+        return _json({'error': 'unknown format'})
+    
+    if not actions.find_action_record(user_hash, action_id):
+        return _json({'error': 'action not found'})
+
+    log = actions.cache.ActionLogger(action_id).queue.get()
+
+    records = []
+    if since_time == 0:
+        records = [json.loads(l) for l in log]
+    else:
+        for record in reversed(log):
+            record = json.loads(record)
+            if record['time'] <= since_time:
+                break
+            records.append(record)
+        records.reverse()
+    return _json({'records': records})
 
 
 if __name__ == '__main__':

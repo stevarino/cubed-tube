@@ -4,7 +4,7 @@ function showSettings(e) {
     closeMenus();
     let container = showModal(hideSettings);
     container.classList.add('form');
-    let form = document.getElementById('form')
+    let form = document.getElementById('form');
     form.appendChild(makeElement('h2', {innerText: 'Settings'}));
 
     let checkboxes = [

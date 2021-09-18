@@ -233,7 +233,7 @@ function handleMediaButtons(e) {
 }
 
 function sendPlayStats() {
-    makeGetRequest('/app/play_count',{
+    makeGetRequest('/app/play_count', {
         channel: ELEMENT_BY_VIDEO_ID[PLAYER.video].getAttribute('data-channel'),
         series: getSeries(),
     });

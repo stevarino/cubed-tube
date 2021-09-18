@@ -4,7 +4,7 @@ Reads from the database and produces html/js files.
 
 from cubed_tube.lib.common import filter_video
 from cubed_tube.lib.models import Video, Channel, Series, init_database
-from cubed_tube.lib import schema
+from cubed_tube.lib import schemas, util
 from cubed_tube.lib.util import sha1, load_config, load_credentials
 from cubed_tube.frontend import template_context
 
@@ -21,10 +21,10 @@ from jinja2 import Environment, PackageLoader
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), 'templates')
 
-def render_static(config: schema.Configuration, creds: schema.Credentials):
+def render_static():
     os.makedirs('./output/static', exist_ok=True)
     env = Environment(loader=PackageLoader('cubed_tube.frontend'))
-    context = template_context.generate_context(config, creds)
+    context = template_context.generate_context()
     
     out_file = os.path.join("output", 'index.html')
     print(f'writing {out_file}')
@@ -62,7 +62,7 @@ def render_static(config: schema.Configuration, creds: schema.Credentials):
             fp_in.write(content)
             fp_in.write('\n\n')
 
-def render_series(config: schema.Configuration, series: schema.ConfigSeries):
+def render_series(series: schemas.ConfigSeries):
     videos: List[Video] = (
         Video.select(Video, Channel, Series)
         .join(Channel, on=(Video.channel == Channel.name), attr='ch')
@@ -105,7 +105,7 @@ def render_series(config: schema.Configuration, series: schema.ConfigSeries):
     data['descriptions'] = render_descriptions_by_hash(series.slug, descs)
     with open(f'output/data/{series.slug}/{series.slug}.json', 'w') as fp:
         fp.write(json.dumps(data))
-    render_updates(config, series)
+    render_updates(series)
 
 def render_descriptions_by_hash(slug: str, descs: Dict[str, str]):
     os.makedirs(f'output/data/{slug}/desc', exist_ok=True)
@@ -139,8 +139,9 @@ def render_descriptions_by_hash(slug: str, descs: Dict[str, str]):
     return sigs
 
 
-def render_updates(config: schema.Configuration, series: schema.ConfigSeries):
+def render_updates(series: schemas.ConfigSeries):
     """Renders json files for the last 10 videos published."""
+    config = load_config()
     os.makedirs(f'output/data/{series.slug}/updates', exist_ok=True)
     vid_hash, vid_id = render_updates_for_series(series)
     with open(f'output/data/{series.slug}/updates.json', 'w') as f:
@@ -151,7 +152,7 @@ def render_updates(config: schema.Configuration, series: schema.ConfigSeries):
             'promos': [] # TODO....
         }))
 
-def render_updates_for_series(series: schema.ConfigSeries) -> Tuple[str, str]:
+def render_updates_for_series(series: schemas.ConfigSeries) -> Tuple[str, str]:
     """Generates the hashed update files, returning the last one."""
     prev_hash = None
     prev_id = None
@@ -221,7 +222,7 @@ def main(args: argparse.Namespace):
 
     if args.quick:
         for series in config.series:
-            render_updates(config, series)
+            render_updates(series)
     else:
         clear_directory('output')
 
@@ -229,9 +230,9 @@ def main(args: argparse.Namespace):
             print(f'Processing {series.slug}')
             if args.series and series.slug not in args.series:
                 continue
-            render_series(config, series)
+            render_series(series)
 
-    render_static(config, creds)
+    render_static()
     copytree(os.path.join(TEMPLATE_DIR, 'static'), 'output/static')
 
 

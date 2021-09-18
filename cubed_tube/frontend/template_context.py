@@ -4,12 +4,13 @@ General SQL-heavy functions for renderings
 
 from collections import defaultdict
 import json
-import datetime
 
-from cubed_tube.lib import schema
+from cubed_tube.lib import schemas, util
 from cubed_tube.lib.models import Misc, Video, Channel, pw
 
-def generate_context(config: schema.Configuration, creds: schema.Credentials):
+def generate_context():
+    config = util.load_config()
+    creds = util.load_credentials()
     defaults = [s.slug for s in config.series if s.default]
     assert len(defaults) == 1, 'Only one series should be marked default'
     default_series = defaults[0]
@@ -25,7 +26,7 @@ def generate_context(config: schema.Configuration, creds: schema.Credentials):
         },
         'stats': get_overall_video_stats(),
         'page': {
-            'menu_links': generate_link_menus(config),
+            'menu_links': generate_link_menus(),
             'title': config.title,
             'header': config.site.header,
         },
@@ -37,7 +38,8 @@ def generate_context(config: schema.Configuration, creds: schema.Credentials):
     return context
 
 
-def generate_link_menus(config: schema.Configuration):
+def generate_link_menus():
+    config = util.load_config()
     if not config.site.menu_links:
         return []
     return [link.as_dict() for link in config.site.menu_links]

@@ -576,6 +576,8 @@ h1 svg.triangle polygon {
     display: block;
     bottom: 5vh;
     height: auto;
+    overflow-y: scroll;
+    overflow-x: clip;
 }
 
 #form label, #form p {
@@ -614,6 +616,20 @@ h1 svg.triangle polygon {
 #form p .delete_profile, #form p .rename_profile {
     margin: 0 0 0 0.5em;
     cursor: pointer;
+}
+
+#form input[type=text], #form select {
+    width: 15em;
+    box-sizing: border-box;
+}
+
+#form h3 {
+    margin-bottom: 0;
+    font-size: 1em;
+}
+
+#form .action_response {
+    padding: 0.5em;
 }
 
 @media only screen and (min-width: 62rem) {

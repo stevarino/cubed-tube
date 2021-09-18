@@ -25,7 +25,10 @@ setuptools.setup(
         "Bug Tracker": "https://github.com/stevarino/cubed-tube/issues",
     },
     packages=setuptools.find_packages(),
-    package_data={'cubed_tube.frontend.templates': ['*', '**/*']},
+    package_data={
+        'cubed_tube.frontend.templates': ['*', '**/*'],
+        'cubed_tube.actions': ['*.yaml']
+    },
     install_requires=[
         'Authlib<=0.15.4',  # Authlib 1.0a has signature changes
         'awscli>=1.19.97',

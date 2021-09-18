@@ -4,7 +4,8 @@ import unittest
 from cubed_tube.lib import util
 
 class Data():
-    pass
+    def __init__(self) -> None:
+        self.value = 0
 
 class TestUtil(unittest.TestCase):
     def test_cache_func_linear(self):
@@ -25,17 +26,18 @@ class TestUtil(unittest.TestCase):
         @util.cache_func
         def func():
             raise ValueError('foo')
-        
+
         self.assertRaises(ValueError, func)
         self.assertRaises(ValueError, func)
-        
-        self.assertTrue(func(_test_data=True))
+
+        self.assertTrue(func(_test_value=True))
         self.assertTrue(func())
 
     def test_cache_func_invalidate(self):
         """Ensure explicit cache invalidation is possible."""
         data = Data()
         data.value = 0
+
         @util.cache_func
         def func():
             data.value += 1

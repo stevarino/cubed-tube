@@ -64,12 +64,17 @@ function makeRequest({method='GET', url='', headers={}, params='', creds=false,
     });
 }
 
-function makeGetRequest(endpoint, args) {
+function makeGetRequest(endpoint, args, creds) {
     if (window.API_DOMAIN === '') return;
-    return makeRequest({
-        url: `//${window.API_DOMAIN}${endpoint}?${makeParams(args)}`, 
+    let queryString = (args !== undefined) ? '?' + makeParams(args) : '';
+    let request = {
+        url: `//${window.API_DOMAIN}${endpoint}${queryString}`,
         json: true,
-    });
+    }
+    if (creds === true) {
+        request.creds = true;
+    }
+    return makeRequest(request);
 }
 
 
@@ -96,7 +101,7 @@ function makeParams(params) {
     Object.keys(properties).forEach((k) => {
         if (['innerText', 'innerHTML'].includes(k)) {
             el[k] = properties[k];
-        } else if (['change', 'click', 'mouseenter', 'mouseleave'].includes(k)) {
+        } else if (['change', 'click', 'mouseenter', 'mouseleave', 'keydown'].includes(k)) {
             el.addEventListener(k, properties[k]);
         } else {
             el.setAttribute(k, properties[k]);
@@ -153,7 +158,7 @@ function hideModal() {
         ...Array.from(container.classList.values())
     );
     document.body.classList.remove('modal');
-    if (ON_MODAL_CLOSE !== null) {
+    if (ON_MODAL_CLOSE !== null && ON_MODAL_CLOSE !== undefined) {
         ON_MODAL_CLOSE();
         ON_MODAL_CLOSE = null;
     }
