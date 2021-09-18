@@ -64,12 +64,17 @@ function makeRequest({method='GET', url='', headers={}, params='', creds=false,
     });
 }
 
-function makeGetRequest(endpoint, args) {
+function makeGetRequest(endpoint, args, creds) {
     if (window.API_DOMAIN === '') return;
-    return makeRequest({
-        url: `//${window.API_DOMAIN}${endpoint}?${makeParams(args)}`, 
+    let queryString = (args !== undefined) ? '?' + makeParams(args) : '';
+    let request = {
+        url: `//${window.API_DOMAIN}${endpoint}${queryString}`,
         json: true,
-    });
+    }
+    if (creds === true) {
+        request.creds = true;
+    }
+    return makeRequest(request);
 }
 
 
@@ -96,7 +101,7 @@ function makeParams(params) {
     Object.keys(properties).forEach((k) => {
         if (['innerText', 'innerHTML'].includes(k)) {
             el[k] = properties[k];
-        } else if (['change', 'click', 'mouseenter', 'mouseleave'].includes(k)) {
+        } else if (['change', 'click', 'mouseenter', 'mouseleave', 'keydown'].includes(k)) {
             el.addEventListener(k, properties[k]);
         } else {
             el.setAttribute(k, properties[k]);
@@ -153,8 +158,79 @@ function hideModal() {
         ...Array.from(container.classList.values())
     );
     document.body.classList.remove('modal');
-    if (ON_MODAL_CLOSE !== null) {
+    if (ON_MODAL_CLOSE !== null && ON_MODAL_CLOSE !== undefined) {
         ON_MODAL_CLOSE();
         ON_MODAL_CLOSE = null;
     }
 }
+
+/**
+ * https://github.com/rafgraph/fscreen
+ */
+
+var fscreen_api = (() => {
+    const key = {
+        fullscreenEnabled: 0,
+        fullscreenElement: 1,
+        requestFullscreen: 2,
+        exitFullscreen: 3,
+        fullscreenchange: 4,
+        fullscreenerror: 5,
+        fullscreen: 6,
+    };
+    
+    const webkit = [
+        'webkitFullscreenEnabled',
+        'webkitFullscreenElement',
+        'webkitRequestFullscreen',
+        'webkitExitFullscreen',
+        'webkitfullscreenchange',
+        'webkitfullscreenerror',
+        '-webkit-full-screen',
+    ];
+    
+    const moz = [
+        'mozFullScreenEnabled',
+        'mozFullScreenElement',
+        'mozRequestFullScreen',
+        'mozCancelFullScreen',
+        'mozfullscreenchange',
+        'mozfullscreenerror',
+        '-moz-full-screen',
+    ];
+    
+    const ms = [
+        'msFullscreenEnabled',
+        'msFullscreenElement',
+        'msRequestFullscreen',
+        'msExitFullscreen',
+        'MSFullscreenChange',
+        'MSFullscreenError',
+        '-ms-fullscreen',
+    ];
+    
+    const vendor =
+        ('fullscreenEnabled' in document && Object.keys(key)) ||
+        (webkit[0] in document && webkit) ||
+        (moz[0] in document && moz) ||
+        (ms[0] in document && ms) ||
+        [];
+        
+        // prettier-ignore
+    return {
+        requestFullscreen: element => element[vendor[key.requestFullscreen]](),
+        requestFullscreenFunction: element => element[vendor[key.requestFullscreen]],
+        get exitFullscreen() { return document[vendor[key.exitFullscreen]].bind(document); },
+        get fullscreenPseudoClass() { return `:${vendor[key.fullscreen]}`; },
+        addEventListener: (type, handler, options) => document.addEventListener(vendor[key[type]], handler, options),
+        removeEventListener: (type, handler, options) => document.removeEventListener(vendor[key[type]], handler, options),
+        get fullscreenEnabled() { return Boolean(document[vendor[key.fullscreenEnabled]]); },
+        set fullscreenEnabled(val) {},
+        get fullscreenElement() { return document[vendor[key.fullscreenElement]]; },
+        set fullscreenElement(val) {},
+        get onfullscreenchange() { return document[`on${vendor[key.fullscreenchange]}`.toLowerCase()]; },
+        set onfullscreenchange(handler) { return document[`on${vendor[key.fullscreenchange]}`.toLowerCase()] = handler; },
+        get onfullscreenerror() { return document[`on${vendor[key.fullscreenerror]}`.toLowerCase()]; },
+        set onfullscreenerror(handler) { return document[`on${vendor[key.fullscreenerror]}`.toLowerCase()] = handler; },
+    };
+})();

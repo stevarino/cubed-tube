@@ -33,7 +33,11 @@ function youtubeInit() {
     for (let i=0; i<buttons.length; i++) {
         buttons[i].addEventListener('click', handleMediaButtons)
     }
-    document.onfullscreenchange = onFullScreenChange;
+    try {
+        fscreen_api.onfullscreenchange = onFullScreenChange;
+    } catch (error) {
+        // pass
+    }
 }
 
 function onYouTubeIframeAPIReady() {
@@ -74,8 +78,16 @@ function loadPlayer(e) {
     });
     PLAYER.obj.getIframe().focus();
     if (SETTINGS.use_fullscreen) {
-        document.getElementById('modal').requestFullscreen();
-        screen.orientation.lock('landscape').then().catch();
+        try {
+            fscreen_api.requestFullscreen(document.getElementById('modal'));
+        } catch (error) {
+            console.log("requestFullscreen: ", error);
+        }
+        try {
+            screen.orientation.lock('landscape').then().catch();
+        } catch (error) {
+            // expected
+        }
     }
     e.preventDefault();
     return false;
@@ -146,7 +158,7 @@ function destroyPlayer() {
     PLAYER.video = null;
 
     if (isFullScreen()) {
-        document.exitFullscreen();
+        fscreen_api.exitFullscreen();
     }
 
     if (history.state && history.state.view) {
@@ -174,7 +186,11 @@ function pausePlayer(e) {
 }
 
 function isFullScreen() {
-    return document.fullscreenElement !== null
+    try {
+        return fscreen_api.fullscreenElement !== null
+    } catch (error) {
+        return false;
+    }
 }
 
 function onFullScreenChange(e) {
@@ -187,9 +203,13 @@ function onFullScreenChange(e) {
 
 function toggleFullScreen() {
     if (isFullScreen()) {
-        document.exitFullscreen();
+        fscreen_api.exitFullscreen();
     } else {
-        document.getElementById('modal').requestFullscreen();
+        try {
+            fscreen_api.requestFullscreen(document.getElementById('modal'));
+        } catch (error) {
+            // pass
+        }
     }
 }
 
@@ -213,7 +233,7 @@ function handleMediaButtons(e) {
 }
 
 function sendPlayStats() {
-    makeGetRequest('/app/play_count',{
+    makeGetRequest('/app/play_count', {
         channel: ELEMENT_BY_VIDEO_ID[PLAYER.video].getAttribute('data-channel'),
         series: getSeries(),
     });

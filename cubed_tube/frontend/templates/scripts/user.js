@@ -41,6 +41,10 @@ var USER = {
     STATE_UPLOAD_NEEDED: false,
 
     STATUS_TIMER: 0,
+
+    // site actions for admins/creators
+    HAS_ACTIONS: false,
+    ACTIONS: null,
 }
 
 async function initUser() {
@@ -54,6 +58,9 @@ async function initUser() {
         initLocalState();
         createSeries(getSeries());
     });
+    if (USER.HAS_ACTIONS) {
+        initActions();
+    }
     STATE = await migrateState(STATE);
 }
 
@@ -84,6 +91,7 @@ function callBackendServer(request) {
 
     return new Promise((resolve, reject) => {
         makeRequest(request).then((response) => {
+            USER.HAS_ACTIONS = response.has_roles !== undefined;
             if (response.error === undefined) {
                 // Received user state.
                 markUserLoggedIn();

@@ -1,0 +1,147 @@
+actions:
+- name: Update cubed-tube
+  id: deploy
+  group: ADMIN
+  form:
+    fields:
+      - id: version
+        regex: ^[0-9.a-z]+$
+  actions:
+    - run_command: ['echo', 'pip', 'install', 'cubedtube={version}']
+
+- name: List Action Records
+  id: list_actions
+  group: CREATOR
+  form: 
+    fields: 
+      - text: Display all actions recently taken.
+  actions:
+    - function: list_actions
+    # note: link to get_action
+
+- name: Create Promo
+  id: create_promo
+  group: CREATOR
+  form:
+    fields: 
+    - id: video_id
+      regex: ^[0-9.a-z]+$
+    - id: start
+    - id: end
+    - id: frequency
+      enum: ['once', 'daily']
+  actions: 
+    - function: create_promo
+
+- name: List Promos
+  id: list_promos
+  group: CREATOR
+  form:
+    fields:
+      - text: Display all actions recently taken.
+  actions:
+    # note: link to remove_promo
+    - function: list_promos
+
+- name: Disable Memcached
+  id: disable_memcached
+  group: ADMIN
+  form:
+    fields:
+      - text: Disable Memcached Web Writes
+  actions:
+    - function: disable_memcached
+    - function: wait
+      kwargs: {seconds: 3}
+    - function: flush_user_state
+
+- name: Enable Memcached
+  id: enable_memcached
+  group: ADMIN
+  form:
+    fields:
+      - text: Enable Memcached Web Writes
+  actions:
+    - function: enable_memcached
+
+- name: Fetch Action Logs
+  id: fetch_action_logs
+  group: CREATOR
+  listed: False
+  form:
+    fields:
+      - text: Pull logs for a given action id
+      - id: action_id
+  actions:
+    - function: fetch_action_logs
+
+- name: Memcached stats
+  id: memcached_stats
+  group: ADMIN
+  form:
+    fields:
+      - id: args
+  actions:
+    - function: memcached_stats
+
+- name: Memcached keys
+  id: memcached_keys
+  group: ADMIN
+  form:
+    fields:
+      - text: Recursively lists all keys in memcached
+  actions:
+    - function: memcached_keys
+
+
+- name: Manage Videos
+  id: manage_videos
+  group: ADMIN
+  form:
+    fields:
+      - id: video_ids
+        type: textarea
+      - id: intent
+        enum: ['move', 'delete', 'undelete']
+      - id: series
+        enum_class: SERIES
+      - id: channel
+        enum_class: CHANNELS
+  actions:
+    - function: manage_videos
+
+    # {
+    #     'name': 'Add Video'
+    #     'id': 'add_video'
+    #     'group': 'CREATOR'
+    #     'form': {
+    #         'fields': [
+    #             {
+    #                 'id': 'series'
+    #                 'enum_class': 'SERIES'
+    #             }
+    #             {
+    #                 'id': 'channel'
+    #                 'enum_class': 'CHANNELS'
+    #             }
+    #             {
+    #                 'id': 'video_id'
+    #                 'regex': '^[0-9.a-z]+$'
+    #             }
+    #         ]
+    #     }
+    # }
+    
+    # {
+    #     'name': 'Restart Workers'
+    #     'id': 'restart'
+    #     'group': 'ADMIN'
+    #     'form': {
+    #         'fields': [{
+    #             'text': 'Restart the backend workers. Be sure to test this in dev first!'
+    #         }]
+    #     }
+    #     'actions': [
+    #         {'run_command': ['scripts/restart.sh']}
+    #     ]
+    # }

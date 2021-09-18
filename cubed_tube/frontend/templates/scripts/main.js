@@ -28,7 +28,10 @@ var ELEMENT_BY_VIDEO_ID = {}
 window.onload = function() {
     loadSettings();
     let userPromise = initUser().then(renderProfileMenu);
-    initDropdown()
+    initDropdown();
+
+    document.getElementById('modal').addEventListener('click', hideModal);
+
     if (document.getElementById('loading') === null) {
         if (document.getElementById('channels') !== null) {
             document.getElementById('channels').style.display = 'none';
@@ -66,8 +69,6 @@ window.onload = function() {
             // console.log(e.key);
         }
     });
-
-    document.getElementById('modal').addEventListener('click', hideModal);
 
     youtubeInit();
     userPromise.finally(() => {
@@ -220,20 +221,7 @@ function initDropdown() {
     document.body.addEventListener('click', clickHandler);
 
     document.querySelectorAll("#menu > li").forEach((menu) => {
-        menu.childNodes.forEach((el) => {
-            if (el.nodeType == 1 && el.tagName.toLowerCase() == 'a') {
-                el.addEventListener('keydown', (e) => {
-                    if (e.key == ' ' || e.key.toLowerCase() == 'enter') {
-                        console.log('keydown', e);
-                        e.preventDefault();
-                        e.stopPropagation();
-                        clickHandler(e);
-                    }
-                });
-            }
-        });
-        menu.addEventListener('mouseenter', (e) => hoverMenu(e, 'add'));
-        menu.addEventListener('mouseleave', (e) => hoverMenu(e, 'remove'));
+        addMenuEventListeners(menu, clickHandler);
     });
     let dropdown = document.getElementById('seasons');
     if (dropdown === null) {
@@ -278,6 +266,23 @@ function initDropdown() {
             callback(e);
         });
     }
+}
+
+function addMenuEventListeners(li_element) {
+    li_element.addEventListener('mouseenter', (e) => hoverMenu(e, 'add'));
+    li_element.addEventListener('mouseleave', (e) => hoverMenu(e, 'remove'));
+    
+    li_element.childNodes.forEach((el) => {
+        if (el.nodeType == 1 && el.tagName.toLowerCase() == 'a') {
+            el.addEventListener('keydown', (e) => {
+                if (e.key == ' ' || e.key.toLowerCase() == 'enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    clickHandler(e);
+                }
+            });
+        }
+    });
 }
 
 /**

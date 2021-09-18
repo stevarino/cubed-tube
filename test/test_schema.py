@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Optional, Union, List
 import unittest
 
-from cubed_tube.lib.schema import Schema
+from cubed_tube.lib.schemas import Schema
 
 
 @dataclass

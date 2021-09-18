@@ -52,6 +52,8 @@ class Cache():
         #     'ht_cloud_reads', 'Count of cloud reads')
         self.cloud_writes = Counter(
             'ht_cloud_writes', 'Count of cloud writes')
+
+        # TODO: Move this to worker this.
         self.mem_buffer_size = Gauge(
             'ht_memcache_buffwrite_size', 'Number of queued writes',
             multiprocess_mode='max')
@@ -66,8 +68,8 @@ class Cache():
                 cache_miss = cls._cache_miss
             if not cache_write:
                 cache_write = cls._cache_write
-            if not memcache and creds.backend.memcache:
-                memcache = memcached_client.create_client(creds.backend.memcache)
+            if not memcache and creds.backend.memcache.host:
+                memcache = memcached_client.create_client()
             cls._instance = cls(cache_miss, cache_write, memcache)
         return cls._instance
 
@@ -101,16 +103,14 @@ class Cache():
         self.mem_writes.inc()
         if self.memcache:
             self.memcache.set(key, json.dumps(value))
-        if creds.backend.memcache and creds.backend.memcache.write_frequency:
+        if creds.backend.memcache.writes_enabled():
             self.mem_buffer_writes.inc()
             for _ in range(3):
-                keys, _ = memcached_client.get_deferred()
+                keys = memcached_client.DEFERRED_QUEUE.get()
                 self.mem_buffer_size.set(len(keys))
                 if key in keys:
                     return
-                if memcached_client.append_deferred(key):
-                    return
-                self.mem_buffer_fails.inc()
+                memcached_client.DEFERRED_QUEUE.push(key)
         self.cloud_writes.inc()
         self.write_func(key, value)
         

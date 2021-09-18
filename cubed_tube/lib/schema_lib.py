@@ -1,7 +1,16 @@
+"""
+schema_lib - The base class for all schema objects
+
+It looks like this may be duplicative to pydantic (and be surely lesser). But
+I made this! ::cry::
+
+TODO: Evaluate pydantic for replacing this whole module.
+"""
+
 
 from copy import deepcopy
-from dataclasses import dataclass, is_dataclass, asdict, fields, MISSING, Field
-from typing import Optional, Union, Any, List, get_origin, get_args
+from dataclasses import is_dataclass, asdict, fields, MISSING, Field
+from typing import Optional, Union, Any, Dict, get_origin, get_args
 
 class MissingFieldError(ValueError):
     pass
@@ -19,13 +28,15 @@ class Schema:
     Has support for list, dict, and Optional.
     """
     @classmethod
-    def from_dict(cls, data: dict, _path='$'):
+    def from_dict(cls, data: Dict, _path='$'):
         if not(is_dataclass(cls)):
-            raise ValueError("Schema objects must be decorated as dataclasses")
+            raise ValueError("schemas objects must be decorated as dataclasses")
         data = deepcopy(data)
         unknowns = set(data.keys()) - set(cls.__annotations__.keys())
         if unknowns:
-            raise ValueError("Unrecognized fields: " + str(unknowns))
+            raise ValueError(
+                f"[{_path}/{cls.__name__}] Unrecognized fields: {str(unknowns)}"
+            )
         for field in fields(cls):
             name = field.name
             try:
@@ -59,7 +70,7 @@ class Schema:
             if has_dataclass(type_) and not all(
                     has_dataclass(t) or t is type(None) for t in field_args):
                 raise ValueError(
-                    f'{_path}: Schema Unions do not support mixed types')
+                    f'{_path}: schemas Unions do not support mixed types')
             for sub_type in field_args:
                 exceptions = []
                 try:
@@ -94,85 +105,25 @@ class Schema:
         
         return value
 
-    def as_dict(self, allow_none=False):
-        return asdict(self, dict_factory=lambda items: {
-            k: v for k, v in items if allow_none or v is not None
-        })
+    def as_dict(self, allow_none=False) -> Dict:
+        def _dict_factory(items):
+            final = {}
+            for k, v in items:
+                if not allow_none and v is None:
+                    continue
+                final[k] = self._serialize_value(v, allow_none=allow_none)
+            return final
+        return asdict(self, dict_factory=_dict_factory)
 
 
-@dataclass
-class ConfigChannel(Schema):
-    name: str
-    playlist: Optional[str]
-    channel: Optional[str]
-    videos: Optional[List[str]]
-    type: Optional[str] = 'youtube'
-    record: Optional[Any] = None
+    def _serialize_value(self, value, allow_none=False):
+        if isinstance(value, Schema):
+            return value.as_dict(allow_none=allow_none)
+        if isinstance(value, list):
+            return [self._serialize_value(v, allow_none=allow_none)
+                    for v in value]
+        if isinstance(value, dict):
+            return {k: self._serialize_value(v, allow_none=allow_none)
+                    for k, v in value.items()}
+        return value
 
-@dataclass
-class ConfigSeries(Schema):
-    title: str
-    slug: str
-    channels: List[ConfigChannel]
-    start: Optional[int]
-    ignore_video_ids: Optional[List[str]]
-    default: bool = False
-    active: bool = True
-    record: Optional[Any] = None
-
-@dataclass
-class ConfigLink(Schema):
-    text: str
-    href: str
-
-@dataclass
-class ConfigLinkList(Schema):
-    text: str
-    links: List[ConfigLink]
-
-@dataclass
-class ConfigSite(Schema):
-    menu_links: Optional[List[Union[ConfigLink, ConfigLinkList]]]
-    header: Optional[str]
-
-@dataclass
-class Configuration(Schema):
-    title: str
-    series: List[ConfigSeries]
-    site: Optional[ConfigSite]
-    version: str = ''
-
-@dataclass
-class CredMemcache(Schema):
-    host: str
-    write_frequency: Optional[int]
-
-@dataclass
-class CredBackend(Schema):
-    GOOGLE_CLIENT_ID: str
-    GOOGLE_CLIENT_SECRET: str
-    SECRET_KEY: str
-    cors_origins: List[str]
-    domain: str
-    # NOTE: user_salt should not be changed even if leaked.
-    user_salt: Optional[str]
-    memcache: Optional[CredMemcache]
-    worker_port: Optional[int]
-
-@dataclass
-class CredCloud(Schema):
-    name: str
-    url: str
-    access_key: str
-    secret: str
-
-@dataclass
-class CredScraper(Schema):
-    yt_api_key: str
-
-@dataclass
-class Credentials(Schema):
-    site_name: str
-    scraper: CredScraper
-    backend: Optional[CredBackend]
-    cloud_storage: Optional[CredCloud]
