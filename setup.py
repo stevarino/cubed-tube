@@ -40,7 +40,8 @@ setuptools.setup(
         'prometheus-client>=0.11.0',
         'pymemcache>=3.5.0',
         'PyYAML>=5.3.1',
-        'requests>=2.0'
+        'requests>=2.0',
+        'jsonpath-ng==1.5.3',
     ],
     classifiers=[
     ],
