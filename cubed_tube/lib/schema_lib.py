@@ -31,6 +31,8 @@ class Schema:
     def from_dict(cls, data: Dict, _path='$'):
         if not(is_dataclass(cls)):
             raise ValueError("schemas objects must be decorated as dataclasses")
+        if data is None:
+            data = {}
         data = deepcopy(data)
         unknowns = set(data.keys()) - set(cls.__annotations__.keys())
         if unknowns:
