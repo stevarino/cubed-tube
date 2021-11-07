@@ -2,10 +2,9 @@
 util.py - Collection of convenience funcitons
 """
 
-from collections import defaultdict
 from datetime import datetime
-from functools import cache
 import hashlib
+import os
 import random
 from typing import Optional, Union, Dict, cast, TypeVar, Callable, List, Tuple, Any
 import yaml
@@ -136,6 +135,24 @@ def _load_config() -> schemas.Configuration:
     return schemas.Configuration.from_dict(
         _apply_overrides(data, load_overrides().configuration)
     )
+
+# decorator typing workaround
+def load_deploy(ttl: int=0) -> schemas.Deploy:
+    """Loads the deploy details file"""
+    return _load_deploy(ttl=ttl)
+
+
+@cache_func
+def _load_deploy() -> schemas.Deploy:
+    """Loads the deploy details file"""
+    filename = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),  # cubed_tube
+        'deploy.json')
+    try:
+        with open(filename, 'r') as fp:
+            return schemas.Deploy.from_dict(yaml.safe_load(filename))
+    except OSError:
+        return schemas.Deploy()
 
 
 def load_overrides() -> schemas.Overrides:

@@ -24,6 +24,7 @@ also works to keep dev/master versioning aligned.
 
 
 import argparse
+import datetime
 import json
 import glob
 import sys
@@ -105,6 +106,12 @@ for i in range(3):
     print('\r' + (' '*20), end='')
 print('\nLet\'s Go!')
 
+with open('cubed_tube/deploy.json', 'r') as fp:
+    fp.write(json.dumps({
+        'version': version,
+        'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    }, indent=2, sort_keys=True))
+
 with open('versions.json', 'w') as fp:
     fp.write(json.dumps(versions, indent=2))
 
@@ -118,3 +125,5 @@ if args.build:
 if args.deploy:
     sys.argv = ['', 'upload', '-r', 'cubedtube', 'dist/*']
     twine.main()
+
+os.remove('cubed_tube/deploy.json')

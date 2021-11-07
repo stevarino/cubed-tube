@@ -207,3 +207,10 @@ class Action(Schema):
     form: ActionForm
     actions: Optional[List[ActionStep]]
     listed: bool = field(default=True)
+
+
+@dataclass
+class Deploy(Schema):
+    """Deploy information"""
+    date: Optional[str]
+    version: str = '0.0.0'

@@ -27,7 +27,8 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     package_data={
         'cubed_tube.frontend.templates': ['*', '**/*'],
-        'cubed_tube.actions': ['*.yaml']
+        'cubed_tube.actions': ['*.yaml'],
+        'cubed_tube': ['deploy.json'],
     },
     install_requires=[
         'Authlib<=0.15.4',  # Authlib 1.0a has signature changes
